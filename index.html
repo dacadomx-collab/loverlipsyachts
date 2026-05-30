@@ -7,14 +7,8 @@
   <meta name="robots" content="noindex, nofollow" />
   <title>Lover Lips Yachts · Owner Dashboard</title>
   <link rel="stylesheet" href="assets/css/style.css" />
-
-  <!-- Theme applied before paint to avoid flash -->
-  <script>
-    (function(){
-      try{var t=localStorage.getItem('llyCockpitTheme');if(t==='dark')document.documentElement.dataset.theme='dark';}catch(e){}
-      try{var l=localStorage.getItem('llyCockpitLang');if(l)document.documentElement.lang=l;}catch(e){}
-    })();
-  </script>
+  <!-- Blocking: applies saved theme before first paint — prevents flash -->
+  <script src="assets/js/theme-init.js"></script>
 </head>
 
 <body data-active-lang="en">
@@ -454,8 +448,8 @@
                       <td data-lang="es"><span class="pill pill-green">Disponible</span></td>
                     </tr>
                     <tr>
-                      <td colspan="2" data-lang="en" style="font-style:italic">+ 39 additional vessels pending data lift from WordPress (Phase 2 deliverable)</td>
-                      <td colspan="2" data-lang="es" style="font-style:italic">+ 39 embarcaciones adicionales pendientes de extracción de WordPress (entregable Fase 2)</td>
+                      <td colspan="2" data-lang="en" class="u-italic">+ 39 additional vessels pending data lift from WordPress (Phase 2 deliverable)</td>
+                      <td colspan="2" data-lang="es" class="u-italic">+ 39 embarcaciones adicionales pendientes de extracción de WordPress (entregable Fase 2)</td>
                       <td></td><td></td>
                     </tr>
                   </tbody>
@@ -593,16 +587,16 @@
                     <tr>
                       <td data-lang="en"><strong>Primary Color</strong></td>
                       <td data-lang="es"><strong>Color Principal</strong></td>
-                      <td><span style="color:#FF007F;font-weight:700">#FF007F — Lover Pink</span></td>
-                      <td><span style="color:#FF007F;font-weight:700">#FF007F — Lover Pink</span></td>
+                      <td><span class="swatch-pink">#FF007F — Lover Pink</span></td>
+                      <td><span class="swatch-pink">#FF007F — Lover Pink</span></td>
                       <td data-lang="en"><span class="pill pill-green">Confirmed</span></td>
                       <td data-lang="es"><span class="pill pill-green">Confirmado</span></td>
                     </tr>
                     <tr>
                       <td data-lang="en"><strong>Accent Color</strong></td>
                       <td data-lang="es"><strong>Color Acento</strong></td>
-                      <td><span style="color:#D4AF37;font-weight:700">#D4AF37 — Champagne Gold</span></td>
-                      <td><span style="color:#D4AF37;font-weight:700">#D4AF37 — Champagne Gold</span></td>
+                      <td><span class="swatch-gold">#D4AF37 — Champagne Gold</span></td>
+                      <td><span class="swatch-gold">#D4AF37 — Champagne Gold</span></td>
                       <td data-lang="en"><span class="pill pill-green">Confirmed</span></td>
                       <td data-lang="es"><span class="pill pill-green">Confirmado</span></td>
                     </tr>
@@ -759,7 +753,7 @@
         <span data-lang="en">Owner Dashboard · Confidential</span>
         <span data-lang="es">Panel de Propietarios · Confidencial</span>
       </p>
-      <p style="margin-top:.4rem">
+      <p class="u-mt-xs">
         <span data-lang="en">Prepared for Lester Keizer &amp; Wife &nbsp;·&nbsp; May 30, 2026</span>
         <span data-lang="es">Preparado para Lester Keizer y Esposa &nbsp;·&nbsp; 30 de Mayo, 2026</span>
       </p>
