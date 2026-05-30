@@ -1,4 +1,4 @@
-# Deploy Fix v2.1 — server-dir corregido a ./public_html/ | 2026-05-30
+# Deploy Core v3.0 — Absolute Root True | 2026-05-30
 # =============================================================================
 # LOVER LIPS YACHTS — .github/workflows/deploy.yml
 # CI/CD: Auto-Deploy to Staging via FTPS on push to main
@@ -68,7 +68,7 @@ jobs:
           port:             21
           protocol:         ftps
           security:         loose
-          server-dir:       ./public_html/
+          server-dir:       ./
           local-dir:        ./
           dangerous-clean-slate: false
 
