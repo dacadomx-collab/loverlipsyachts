@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lover Lips Yachts | Master Brand Strategy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --pink-primary: #ff007f; /* Lover Lips Pink */
+            --pink-soft: #fff0f6;
+            --navy-deep: #0a1128;
+            --gold-accent: #d4af37;
+            --glass: rgba(255, 255, 255, 0.8);
+        }
+
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background: linear-gradient(135deg, #fdf2f8 0%, #ffffff 100%);
+            color: var(--navy-deep);
+        }
+
+        .bg-pink-brand { background-color: var(--pink-primary); }
+        .text-pink-brand { color: var(--pink-primary); }
+        .border-pink-brand { border-color: var(--pink-primary); }
+        .bg-navy-brand { background-color: var(--navy-deep); }
+        
+        /* Glassmorphism Elements */
+        .glass-card {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 0, 127, 0.1);
+            border-radius: 1.5rem;
+        }
+
+        /* Nav Animations */
+        .nav-btn {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 1rem;
+            margin: 0.25rem 0.75rem;
+        }
+        .nav-btn.active {
+            background: linear-gradient(90deg, var(--pink-primary), #ff4d94);
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(255, 0, 127, 0.3);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: var(--pink-primary); border-radius: 10px; }
+
+        .module-section { display: none; animation: slideUp 0.6s ease-out; }
+        .module-section.active { display: block; }
+
+        @keyframes slideUp { 
+            from { opacity: 0; transform: translateY(20px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+
+        .chart-container {
+            position: relative;
+            height: 350px;
+            width: 100%;
+        }
+
+        /* Pulse for the Chatbot Module */
+        .pulse-pink {
+            box-shadow: 0 0 0 0 rgba(255, 0, 127, 0.7);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            70% { box-shadow: 0 0 0 15px rgba(255, 0, 127, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 0, 127, 0); }
+        }
+    </style>
+</head>
+<body class="flex flex-col md:flex-row min-h-screen">
+
+    <nav class="bg-navy-brand text-white w-full md:w-72 flex-shrink-0 shadow-2xl z-20 flex flex-col sticky top-0 md:h-screen">
+        <div class="p-8 text-center">
+            <div class="inline-block p-3 bg-white rounded-full mb-4 shadow-lg shadow-pink-500/20">
+                <!-- Inline SVG Logo Representation -->
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="var(--pink-primary)" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+            </div>
+            <h1 class="text-2xl font-black tracking-tighter text-white">LOVER <span class="text-pink-brand">LIPS</span></h1>
+            <p class="text-[10px] uppercase tracking-[0.3em] text-gray-400 mt-1 font-bold">The Pink Standard BCS</p>
+        </div>
+
+        <div class="flex-1 py-4 space-y-1">
+            <button onclick="nav('mod1')" id="btn-mod1" class="nav-btn active flex items-center w-[calc(100%-1.5rem)] px-6 py-4 text-sm font-semibold">
+                <span class="mr-3">💎</span> Identidad & ADN
+            </button>
+            <button onclick="nav('mod2')" id="btn-mod2" class="nav-btn flex items-center w-[calc(100%-1.5rem)] px-6 py-4 text-sm font-semibold text-gray-400 hover:text-white">
+                <span class="mr-3">🌊</span> Mercado & Gap
+            </button>
+            <button onclick="nav('mod3')" id="btn-mod3" class="nav-btn flex items-center w-[calc(100%-1.5rem)] px-6 py-4 text-sm font-semibold text-gray-400 hover:text-white">
+                <span class="mr-3">🤖</span> Arquitectura IA
+            </button>
+            <button onclick="nav('mod4')" id="btn-mod4" class="nav-btn flex items-center w-[calc(100%-1.5rem)] px-6 py-4 text-sm font-semibold text-gray-400 hover:text-white">
+                <span class="mr-3">🚀</span> Dominación Digital
+            </button>
+        </div>
+
+        <div class="p-6">
+            <div class="bg-pink-900/30 rounded-2xl p-4 border border-pink-500/20">
+                <p class="text-xs text-pink-200">Consultoría de Élite v2.0</p>
+                <div class="flex mt-2">
+                    <div class="h-1 w-full bg-pink-500 rounded-full"></div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-1 p-6 md:p-12 overflow-y-auto relative">
+        
+        <!-- MODULE 1: IDENTIDAD -->
+        <section id="mod1" class="module-section active">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
+                <div>
+                    <span class="text-pink-brand font-bold tracking-widest text-sm uppercase">Módulo Uno</span>
+                    <h2 class="text-4xl md:text-5xl font-extrabold text-navy-brand mt-2">Identidad <span class="text-pink-brand">Audaz</span></h2>
+                </div>
+                <div class="bg-pink-soft px-4 py-2 rounded-full border border-pink-200 text-pink-brand text-xs font-bold">
+                    Target: Ultra-Lujo Emocional
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Brand Persona -->
+                <div class="lg:col-span-2 glass-card p-8 shadow-xl">
+                    <h3 class="text-2xl font-bold mb-6 flex items-center">
+                        <span class="bg-pink-brand text-white p-2 rounded-lg mr-3">✨</span> ADN de Marca (Reinventado)
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <h4 class="font-bold text-xs uppercase text-gray-400 mb-2 tracking-widest">Esencia</h4>
+                            <p class="text-gray-700 leading-relaxed italic">"No vendemos transporte marítimo, vendemos el escenario perfecto para historias de amor, éxito y libertad en el rosa del atardecer de La Paz."</p>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-xs uppercase text-gray-400 mb-2 tracking-widest">Promesa</h4>
+                            <p class="text-gray-700 leading-relaxed">Privacidad absoluta con una estética que rompe el aburrimiento tradicional del yate blanco.</p>
+                        </div>
+                    </div>
+                    <div class="mt-8 pt-8 border-t border-pink-100 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                        <div><p class="text-2xl">💖</p><p class="text-[10px] font-bold uppercase mt-1">Romance</p></div>
+                        <div><p class="text-2xl">🥂</p><p class="text-[10px] font-bold uppercase mt-1">Celebración</p></div>
+                        <div><p class="text-2xl">🐆</p><p class="text-[10px] font-bold uppercase mt-1">Audacia</p></div>
+                        <div><p class="text-2xl">🛡️</p><p class="text-[10px] font-bold uppercase mt-1">Privacidad</p></div>
+                    </div>
+                </div>
+
+                <!-- Color Theory -->
+                <div class="bg-navy-brand rounded-[1.5rem] p-8 text-white shadow-2xl">
+                    <h3 class="text-xl font-bold mb-6">Paleta Lover Lips</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center group">
+                            <div class="h-12 w-12 bg-[#ff007f] rounded-xl mr-4 shadow-lg shadow-pink-500/40 border-2 border-white/20"></div>
+                            <div>
+                                <p class="font-bold text-sm">Lover Pink</p>
+                                <p class="text-[10px] text-gray-400">Pasión y Diferenciación</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="h-12 w-12 bg-[#0a1128] rounded-xl mr-4 border-2 border-white/20"></div>
+                            <div>
+                                <p class="font-bold text-sm">Cortés Navy</p>
+                                <p class="text-[10px] text-gray-400">Autoridad Náutica</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="h-12 w-12 bg-[#d4af37] rounded-xl mr-4 border-2 border-white/20"></div>
+                            <div>
+                                <p class="font-bold text-sm">Champagne Gold</p>
+                                <p class="text-[10px] text-gray-400">Prestigio UHNWI</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SWOT Analysis -->
+            <div class="mt-12 grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="p-6 bg-pink-50 rounded-2xl border-b-4 border-pink-500">
+                    <h4 class="font-bold text-pink-600 mb-2">Fortaleza</h4>
+                    <p class="text-xs text-gray-600">Identidad visual única e "Instagrammable" (Pink Lips).</p>
+                </div>
+                <div class="p-6 bg-blue-50 rounded-2xl border-b-4 border-blue-500">
+                    <h4 class="font-bold text-blue-600 mb-2">Oportunidad</h4>
+                    <p class="text-xs text-gray-600">Dominio de nichos románticos y eventos VIP exclusivos.</p>
+                </div>
+                <div class="p-6 bg-yellow-50 rounded-2xl border-b-4 border-yellow-500">
+                    <h4 class="font-bold text-yellow-600 mb-2">Debilidad</h4>
+                    <p class="text-xs text-gray-600">Dependencia de OTAs (Booking/Expedia) actualmente.</p>
+                </div>
+                <div class="p-6 bg-red-50 rounded-2xl border-b-4 border-red-500">
+                    <h4 class="font-bold text-red-600 mb-2">Amenaza</h4>
+                    <p class="text-xs text-gray-600">Saturación de precios bajos en yates estándar.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 2: COMPETENCIA -->
+        <section id="mod2" class="module-section">
+            <div class="mb-10">
+                <span class="text-pink-brand font-bold tracking-widest text-sm uppercase">Módulo Dos</span>
+                <h2 class="text-4xl font-extrabold text-navy-brand mt-2">Análisis de <span class="text-pink-brand">Brecha</span></h2>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                <div class="glass-card p-8">
+                    <h3 class="text-xl font-bold mb-6">Lover Lips vs La Paz (Promedio)</h3>
+                    <div class="chart-container">
+                        <canvas id="compRadar"></canvas>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <h4 class="font-bold text-navy-brand mb-4 flex items-center">
+                            <span class="text-pink-brand mr-2">●</span> Top 10 Competidores (Engineering)
+                        </h4>
+                        <div class="overflow-hidden">
+                            <table class="w-full text-left text-xs">
+                                <thead class="text-gray-400 uppercase font-bold border-b border-gray-50">
+                                    <tr><th class="pb-2">Empresa</th><th class="pb-2">Debilidad Digital</th></tr>
+                                </thead>
+                                <tbody class="text-gray-600">
+                                    <tr class="border-b border-gray-50"><td class="py-3 font-bold">Baja Charters</td><td>Web obsoleta, proceso manual.</td></tr>
+                                    <tr class="border-b border-gray-50"><td class="py-3 font-bold">The Cortez Club</td><td>Falta de branding emocional.</td></tr>
+                                    <tr class="border-b border-gray-50"><td class="py-3 font-bold">Yachts La Paz</td><td>UX genérica tipo "directorio".</td></tr>
+                                    <tr><td class="py-3 font-bold">VIP Tours</td><td>Sin chatbot, respuesta lenta.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-pink-brand p-8 rounded-3xl text-white shadow-xl shadow-pink-500/20">
+                        <h4 class="text-xl font-bold mb-2">El "Gap" Ganador</h4>
+                        <p class="text-sm opacity-90 leading-relaxed">Mientras los demás compiten por "precio por hora", nosotros competiremos por la **"Estética del Recuerdo"**. El mercado de lujo busca exclusividad visual; Lover Lips es el único que lo ofrece explícitamente.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 3: CHATBOT IA -->
+        <section id="mod3" class="module-section">
+            <div class="mb-10">
+                <span class="text-pink-brand font-bold tracking-widest text-sm uppercase">Módulo Tres</span>
+                <h2 class="text-4xl font-extrabold text-navy-brand mt-2">Cerebro <span class="text-pink-brand">AI Concierge</span></h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                <div class="glass-card p-6 border-l-8 border-pink-500">
+                    <h5 class="font-bold text-pink-600 text-xs uppercase mb-2">Regla de Oro #1</h5>
+                    <p class="text-sm font-semibold italic text-navy-brand">"Ninguna tarifa sale de la IA sin que el lead entregue su WhatsApp/Email."</p>
+                </div>
+                <div class="glass-card p-6 border-l-8 border-navy-brand">
+                    <h5 class="font-bold text-gray-400 text-xs uppercase mb-2">Regla de Oro #2</h5>
+                    <p class="text-sm font-semibold italic text-navy-brand">"La IA debe hablar como un Concierge de Hotel de 5 Diamantes."</p>
+                </div>
+                <div class="glass-card p-6 border-l-8 border-gold-accent">
+                    <h5 class="font-bold text-gold-accent text-xs uppercase mb-2">Regla de Oro #3</h5>
+                    <p class="text-sm font-semibold italic text-navy-brand">"Si el presupuesto es UHNWI, activar alerta humana inmediata."</p>
+                </div>
+            </div>
+
+            <!-- Chatbot Simulator Preview -->
+            <div class="max-w-2xl mx-auto glass-card shadow-2xl overflow-hidden border border-pink-200">
+                <div class="bg-pink-brand p-4 text-white flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="h-10 w-10 bg-white rounded-full flex items-center justify-center mr-3">💖</div>
+                        <div>
+                            <p class="font-bold text-sm">Lover Lips AI Assistant</p>
+                            <p class="text-[10px] opacity-80">Online | VIP Concierge</p>
+                        </div>
+                    </div>
+                    <div class="text-xs font-bold bg-white/20 px-2 py-1 rounded">PRO</div>
+                </div>
+                <div class="p-6 space-y-4 bg-white/50 h-80 overflow-y-auto text-sm">
+                    <div class="flex justify-start">
+                        <div class="bg-pink-soft p-3 rounded-2xl rounded-tl-none max-w-[80%] text-gray-700">
+                            ¡Bienvenido a bordo! Soy tu asistente personal de Lover Lips. Para diseñar tu experiencia perfecta en el Mar de Cortés, ¿podrías indicarme tu **fecha ideal de zarpe**? 🥂
+                        </div>
+                    </div>
+                    <div class="flex justify-end">
+                        <div class="bg-navy-brand text-white p-3 rounded-2xl rounded-tr-none max-w-[80%]">
+                            Hola, queremos ir el 15 de agosto, somos 10 personas.
+                        </div>
+                    </div>
+                    <div class="flex justify-start">
+                        <div class="bg-pink-soft p-3 rounded-2xl rounded-tl-none max-w-[80%] text-gray-700">
+                            ¡Excelente elección! El clima en agosto es espectacular. ¿Prefieres una ruta de **8 horas a Balandra** para disfrutar el sol al máximo o un **Atardecer Romántico de 4 horas**?
+                        </div>
+                    </div>
+                    <div class="flex justify-start pulse-pink">
+                        <div class="bg-pink-brand text-white p-4 rounded-2xl font-bold">
+                            [DATO CAPTURADO: Fecha + Pax + Ruta] -> Generando Cotización...
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4 bg-gray-50 border-t border-gray-100 flex gap-2">
+                    <div class="flex-1 bg-white border border-gray-200 rounded-full px-4 py-2 text-xs text-gray-400 italic">Escribiendo respuesta...</div>
+                    <div class="h-8 w-8 bg-pink-brand rounded-full"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 4: DOMINACION -->
+        <section id="mod4" class="module-section">
+            <div class="mb-10">
+                <span class="text-pink-brand font-bold tracking-widest text-sm uppercase">Módulo Cuatro</span>
+                <h2 class="text-4xl font-extrabold text-navy-brand mt-2">Dominación <span class="text-pink-brand">Digital</span></h2>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+                <!-- Tech Stack -->
+                <div class="glass-card p-8 border-t-8 border-pink-500">
+                    <h3 class="text-xl font-bold mb-6">Arsenal Tecnológico</h3>
+                    <div class="space-y-6">
+                        <div class="flex items-start">
+                            <div class="bg-pink-soft p-2 rounded-lg mr-4 text-pink-brand">01</div>
+                            <div>
+                                <h4 class="font-bold text-sm">Next.js 14 + Framer Motion</h4>
+                                <p class="text-xs text-gray-500">Animaciones fluidas y carga instantánea. El lujo no espera.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="bg-pink-soft p-2 rounded-lg mr-4 text-pink-brand">02</div>
+                            <div>
+                                <h4 class="font-bold text-sm">Stripe Connect (Escalable)</h4>
+                                <p class="text-xs text-gray-500">Reservas instantáneas con tarjetas internacionales.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="bg-pink-soft p-2 rounded-lg mr-4 text-pink-brand">03</div>
+                            <div>
+                                <h4 class="font-bold text-sm">Voiceflow AI Engine</h4>
+                                <p class="text-xs text-gray-500">La inteligencia detrás del Chatbot que vende mientras duermes.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SEO Proj -->
+                <div class="glass-card p-8">
+                    <h3 class="text-xl font-bold mb-6">Proyección de Leads (Orgánico)</h3>
+                    <div class="chart-container">
+                        <canvas id="leadsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Social Media Funnel -->
+            <div class="bg-navy-brand p-10 rounded-[2.5rem] text-center relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-pink-500/10 rounded-full -mr-32 -mt-32"></div>
+                <h3 class="text-3xl font-bold text-white mb-4">Estrategia de Viralidad <span class="text-pink-brand">Aesthetic</span></h3>
+                <p class="text-gray-400 max-w-2xl mx-auto mb-10">Convertiremos cada charter en un activo de marketing. El color rosa contrastando con el turquesa de Balandra es el contenido visual más potente de BCS.</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white/5 p-6 rounded-2xl border border-white/10">
+                        <p class="text-pink-brand font-black text-2xl mb-2">TofU</p>
+                        <p class="text-white font-bold text-sm mb-1">REELS POV</p>
+                        <p class="text-xs text-gray-500 text-balance">"Pov: Estás en el Pink Lips en el Mar de Cortés". Música trending, lujo aspiracional.</p>
+                    </div>
+                    <div class="bg-white/5 p-6 rounded-2xl border border-white/10">
+                        <p class="text-pink-brand font-black text-2xl mb-2">MofU</p>
+                        <p class="text-white font-bold text-sm mb-1">STORYTELLING</p>
+                        <p class="text-xs text-gray-500 text-balance">Testimonios de pedidas de mano y eventos corporativos élite. Construcción de confianza.</p>
+                    </div>
+                    <div class="bg-pink-brand p-6 rounded-2xl shadow-lg">
+                        <p class="text-white font-black text-2xl mb-2">BofU</p>
+                        <p class="text-white font-bold text-sm mb-1">CONVERSIÓN</p>
+                        <p class="text-xs text-pink-100 text-balance">CTAs directos: "Escribe YATE y recibe tu itinerario VIP personalizado".</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // --- Tab Navigation ---
+        function nav(modId) {
+            document.querySelectorAll('.module-section').forEach(m => m.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById(modId).classList.add('active');
+            document.getElementById('btn-' + modId).classList.add('active');
+
+            // Logic to prevent re-rendering charts unnecessarily but fixing layout
+            if(modId === 'mod2') initRadar();
+            if(modId === 'mod4') initBar();
+        }
+
+        // --- Chart Configurations ---
+        Chart.defaults.color = '#0a1128';
+        Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+
+        function initRadar() {
+            const ctx = document.getElementById('compRadar').getContext('2d');
+            if (window.myRadar) window.myRadar.destroy();
+            window.myRadar = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['UX Digital', 'Identidad Visual', 'Servicio Concierge', 'Flota Premium', 'Tecnología IA'],
+                    datasets: [{
+                        label: 'Lover Lips',
+                        data: [95, 100, 90, 85, 98],
+                        backgroundColor: 'rgba(255, 0, 127, 0.2)',
+                        borderColor: '#ff007f',
+                        pointBackgroundColor: '#ff007f',
+                        borderWidth: 3
+                    }, {
+                        label: 'Competencia Promedio',
+                        data: [40, 50, 70, 75, 20],
+                        backgroundColor: 'rgba(10, 17, 40, 0.1)',
+                        borderColor: '#0a1128',
+                        borderWidth: 2,
+                        borderDash: [5, 5]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: { beginAtZero: true, max: 100, ticks: { display: false } }
+                    }
+                }
+            });
+        }
+
+        function initBar() {
+            const ctx = document.getElementById('leadsChart').getContext('2d');
+            if (window.myBar) window.myBar.destroy();
+            window.myBar = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Mes 1', 'Mes 2', 'Mes 3', 'Mes 4', 'Mes 5', 'Mes 6'],
+                    datasets: [{
+                        label: 'Leads Capturados (IA)',
+                        data: [15, 45, 110, 240, 480, 750],
+                        borderColor: '#ff007f',
+                        backgroundColor: 'rgba(255, 0, 127, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { display: false } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // Initialize first chart
+        window.onload = () => {
+            // Add a small delay for animation effect
+            setTimeout(() => {
+                initRadar();
+                initBar();
+            }, 500);
+        };
+    </script>
+</body>
+</html>

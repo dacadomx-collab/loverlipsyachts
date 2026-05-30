@@ -1,0 +1,110 @@
+# =============================================================================
+# LOVER LIPS YACHTS — .github/workflows/deploy.yml
+# CI/CD: Auto-Deploy to Staging via FTPS on push to main
+# Target: https://lly.tourfindy.com (Document Root: /public_html/lly)
+# =============================================================================
+#
+# SETUP INSTRUCTIONS (one-time):
+#   1. Go to: GitHub Repo → Settings → Secrets and Variables → Actions
+#   2. Add these Repository Secrets (New Repository Secret):
+#      ┌──────────────────┬──────────────────────────────────┐
+#      │ Secret Name      │ Value                            │
+#      ├──────────────────┼──────────────────────────────────┤
+#      │ FTP_SERVER       │ ftp.tourfindy.com                │
+#      │ FTP_USERNAME     │ lly@tourfindy.com                │
+#      │ FTP_PASSWORD     │ (your cPanel FTP password)       │
+#      └──────────────────┴──────────────────────────────────┘
+#   3. Push to `main` branch — deploy triggers automatically.
+# =============================================================================
+
+name: 🚀 Deploy — Staging lly.tourfindy.com
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Reason for manual deploy"
+        required: false
+        default: "Manual trigger"
+
+jobs:
+  deploy:
+    name: FTP Deploy to Staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+
+      # ── 1. Checkout code ─────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      # ── 2. Show deploy summary ────────────────────────────────────────
+      - name: Deploy summary
+        run: |
+          echo "=========================================="
+          echo "  LOVER LIPS YACHTS — Staging Deploy"
+          echo "=========================================="
+          echo "  Triggered by : ${{ github.actor }}"
+          echo "  Branch       : ${{ github.ref_name }}"
+          echo "  Commit       : ${{ github.sha }}"
+          echo "  Target       : ftp.tourfindy.com → /public_html/lly"
+          echo "  Protocol     : FTPS (Explicit TLS, Port 21)"
+          echo "=========================================="
+
+      # ── 3. Deploy via FTPS ───────────────────────────────────────────
+      - name: Deploy via FTPS Explicit
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server:           ${{ secrets.FTP_SERVER }}
+          username:         ${{ secrets.FTP_USERNAME }}
+          password:         ${{ secrets.FTP_PASSWORD }}
+          port:             21
+          protocol:         ftps
+          security:         loose
+          server-dir:       /public_html/lly/
+          local-dir:        ./
+          dangerous-clean-slate: false
+
+          # ── Files excluded from deployment ──
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/.github/**
+            **/node_modules/**
+            core/.env
+            core/.env.staging
+            core/.env.production
+            info.txt
+            knowledge/info.txt
+            **/*.log
+            **/*.tmp
+            **/*.bak
+            **/*.zip
+            **/*.rar
+            **/*.mp4
+            **/*.mov
+
+      # ── 4. Post-deploy verification ───────────────────────────────────
+      - name: Verify staging URL
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://lly.tourfindy.com/ --max-time 10 || echo "000")
+          echo "HTTP Status: $STATUS"
+          if [ "$STATUS" = "200" ] || [ "$STATUS" = "301" ] || [ "$STATUS" = "302" ]; then
+            echo "✅ Staging site is responding (HTTP $STATUS)"
+          else
+            echo "⚠️  Staging site returned HTTP $STATUS — check server config"
+          fi
+
+      # ── 5. Success notification ───────────────────────────────────────
+      - name: Deploy complete
+        if: success()
+        run: |
+          echo "✅ Deploy completed successfully"
+          echo "🌐 Preview: https://lly.tourfindy.com"
+          echo "📋 Commit : ${{ github.sha }}"
