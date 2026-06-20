@@ -1,32 +1,46 @@
 # =============================================================================
-# PLANTILLA GENÉRICA : .htaccess (Raíz del proyecto)
-# PROPÓSITO : Blindaje Nivel Militar (Deshabilitar indexado, ocultar .env,
-#             forzar rutas API y limpiar URLs de Next.js)
+# .htaccess — Lover Lips Yachts · Owner Dashboard (lly.tourfindy.com)
+# Static HTML/CSS/JS site on Apache. No Next.js, no clean-URL routing needed
+# (the dashboard is a single-page app — all navigation happens via JS, not
+# separate .html routes), so the previous Next.js-style rewrite block was
+# dead weight inherited from a generic template. Removed below.
 # =============================================================================
 
 Options -Indexes
+DirectoryIndex index.html
 
+# --- Block all dotfiles: .env, .htaccess, .htpasswd, .git*, .ini ----------
 <FilesMatch "^\.">
     Require all denied
 </FilesMatch>
-
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteRule ^knowledge(/.*)?$ - [F,L]
-</IfModule>
-
-<FilesMatch "(^\.htaccess|^\.htpasswd|\.ini$)">
+<FilesMatch "(^\.htaccess$|^\.htpasswd$|\.ini$)">
     Require all denied
 </FilesMatch>
 
+# --- Block internal-only folders from public access -----------------------
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^knowledge(/.*)?$ - [F,L]
+    RewriteRule ^core(/.*)?$      - [F,L]
+    RewriteRule ^\.git            - [F,L]
+    RewriteRule ^\.github         - [F,L]
+    RewriteRule ^deploy\.yml      - [F,L]
+</IfModule>
+
+# --- PHP execution is denied by default (this is a static site) -----------
 <FilesMatch "\.php$">
     Require all denied
 </FilesMatch>
 
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteRule ^api/[^/]+\.php$ - [L]
-</IfModule>
+# --- TEMPORARY infrastructure diagnostics ----------------------------------
+# Narrow exception for the two token-gated test scripts only. Both scripts
+# still require a secret ?token= match (see core/.env DIAG_TOKEN) before
+# they do anything, and never print credentials to the browser.
+# REMOVE THIS BLOCK + delete test_db.php / test_email.php from the server
+# once the connectivity check has been confirmed.
+<FilesMatch "^(test_db|test_email)\.php$">
+    Require all granted
+</FilesMatch>
 
 <IfModule mod_headers.c>
     Header always set X-Content-Type-Options "nosniff"
@@ -39,19 +53,3 @@ Options -Indexes
 
 ErrorDocument 403 "Acceso denegado."
 ErrorDocument 404 "Recurso no encontrado."
-
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteCond %{REQUEST_URI} !^/api/
-    RewriteCond %{DOCUMENT_ROOT}/%{REQUEST_URI}.html -f
-    RewriteRule ^(.*)$ $1.html [L]
-    RewriteRule ^$ index.html [L]
-</IfModule>
-
-# Ocultar y bloquear acceso a repositorios Git y flujos CI/CD
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteRule ^\.git - [F,L]
-    RewriteRule ^\.github - [F,L]
-    RewriteRule ^deploy\.yml - [F,L]
-</IfModule>
