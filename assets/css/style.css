@@ -21,6 +21,9 @@
   --gold:          #D4AF37;
   --gold-10:       rgba(212,175,55,.10);
   --gold-20:       rgba(212,175,55,.20);
+  --navy:          #0B3D5C;
+  --navy-10:       rgba(11,61,92,.08);
+  --navy-20:       rgba(11,61,92,.18);
 
   /* Typography */
   --ink:           #1E293B;
@@ -85,6 +88,10 @@
 
   --topbar-bg:     rgba(11,11,14,.92);
   --topbar-border: rgba(255,255,255,.06);
+
+  --navy:          #1C5478;
+  --navy-10:       rgba(28,84,120,.16);
+  --navy-20:       rgba(28,84,120,.30);
 
   --sh-card:       0 2px 20px rgba(0,0,0,.35), 0 1px 4px rgba(0,0,0,.25);
   --sh-hover:      0 8px 40px rgba(255,0,127,.20), 0 2px 12px rgba(0,0,0,.40);
@@ -1771,3 +1778,427 @@ body[data-active-lang="es"] ul[data-lang="es"] { display: flex; }
   .proposal-alliance-card { padding: 3rem 3.5rem; }
   .proposal-alliance-title { font-size: 1.3rem; }
 }
+
+/* ─────────────────────────────────────────────────────────────────────
+   19. NEWS HUB — FEATURED BOOK SECTION
+───────────────────────────────────────────────────────────────────── */
+.book-feature {
+  display: grid;
+  gap: 2.5rem;
+  align-items: start;
+}
+
+/* ── Left column: copy & conversion ── */
+.book-feature-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--navy);
+  background: var(--navy-10);
+  border: 1px solid var(--navy-20);
+  border-radius: var(--r-full);
+  padding: .35rem 1rem;
+  margin-bottom: 1rem;
+}
+.book-feature-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.15;
+  margin-bottom: .6rem;
+}
+.book-feature-subtitle {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.05rem;
+  color: var(--pink);
+  margin-bottom: 1.5rem;
+}
+.book-feature-synopsis p {
+  font-size: .95rem;
+  color: var(--ink-60);
+  line-height: 1.75;
+  margin-bottom: 1.5rem;
+}
+.book-feature-sub-label {
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: .85rem;
+}
+.book-feature-list {
+  list-style: none;
+  margin: 0 0 1.75rem;
+  padding: 0;
+  display: grid;
+  gap: .65rem;
+}
+.book-feature-list li {
+  position: relative;
+  padding-left: 1.4rem;
+  font-size: .85rem;
+  color: var(--ink-60);
+  line-height: 1.55;
+}
+.book-feature-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: .5rem;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--pink), var(--gold));
+}
+.book-feature-testimonial {
+  background: var(--surface-2);
+  border-left: 3px solid var(--gold);
+  border-radius: var(--r-md);
+  padding: 1.5rem 1.75rem;
+  margin: 0 0 1.75rem;
+}
+.book-feature-testimonial p {
+  font-size: .85rem;
+  font-style: italic;
+  color: var(--ink-60);
+  line-height: 1.7;
+  margin-bottom: .85rem;
+}
+.book-feature-testimonial-author {
+  font-size: .75rem;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: .02em;
+}
+
+.book-feature-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .9rem;
+  margin-bottom: 1.75rem;
+}
+.book-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .55rem;
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  padding: .9rem 1.75rem;
+  border-radius: var(--r-full);
+  text-decoration: none;
+  transition: var(--ease);
+  white-space: nowrap;
+}
+.book-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+.book-btn--primary {
+  color: #fff;
+  background: linear-gradient(135deg, var(--pink), var(--gold));
+  box-shadow: 0 4px 20px rgba(255,0,127,.32), 0 1px 4px rgba(255,0,127,.20);
+}
+.book-btn--primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(255,0,127,.44);
+  color: #fff;
+}
+.book-btn--secondary {
+  color: var(--ink);
+  background: transparent;
+  border: 1.5px solid var(--gold-20);
+}
+.book-btn--secondary:hover {
+  border-color: var(--gold);
+  background: var(--gold-10);
+  color: var(--ink);
+  transform: translateY(-2px);
+}
+
+.book-feature-editorial-nav {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.book-feature-editorial-nav a {
+  color: var(--ink-60);
+  text-decoration: none;
+  transition: color var(--ease);
+}
+.book-feature-editorial-nav a:hover { color: var(--pink); }
+.book-feature-editorial-sep { color: var(--ink-10); }
+
+/* ── Right column: visual render ── */
+.book-feature-visual { display: flex; justify-content: center; }
+.book-feature-frame {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  padding: 2rem;
+  border-radius: var(--r-xl);
+  background: linear-gradient(160deg, var(--navy-10) 0%, var(--gold-10) 100%);
+  border: 1px solid var(--gold-20);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.book-feature-cover {
+  width: 100%;
+  height: auto;
+  border-radius: var(--r-sm);
+  box-shadow: 0 30px 60px -15px rgba(11,61,92,.35), 0 8px 24px rgba(0,0,0,.15);
+  transition: transform var(--ease);
+}
+.book-feature-frame:hover .book-feature-cover {
+  transform: translateY(-6px) rotate(-1deg);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   20. NEWS HUB — ARF-GRID (LATEST ARTICLES)
+   Parent: flex + wrap + centered. Children: never fixed px widths —
+   flex-basis (grows/shrinks) capped by a clean max-width for desktop.
+───────────────────────────────────────────────────────────────────── */
+.arf-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.arf-card {
+  flex: 1 1 300px;
+  max-width: 360px;
+  background: var(--surface);
+  border: 1px solid var(--ink-10);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: var(--sh-card);
+  transition: transform var(--ease), box-shadow var(--ease);
+  isolation: isolate;
+}
+.arf-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--sh-hover);
+}
+
+.arf-card-media {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  z-index: 1;
+}
+.arf-card-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--ease);
+}
+.arf-card:hover .arf-card-media img {
+  transform: scale(1.06);
+}
+
+.arf-card-body { padding: 1.4rem 1.5rem 1.6rem; position: relative; z-index: 2; }
+.arf-card-tag {
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: .55rem;
+}
+.arf-card-title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.35;
+  margin-bottom: 1rem;
+}
+.arf-card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  font-size: .76rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--pink);
+  text-decoration: none;
+  transition: gap var(--ease);
+}
+.arf-card-link:hover { gap: .55rem; }
+
+/* ─────────────────────────────────────────────────────────────────────
+   21. RESPONSIVE — NEWS HUB
+───────────────────────────────────────────────────────────────────── */
+@media (min-width: 860px) {
+  .book-feature {
+    grid-template-columns: 1fr 360px;
+  }
+  .book-feature-visual { order: 2; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   22. PRIVATE ACCESS GATE — server-rendered login page
+   index.php only ever sends this markup to an unauthenticated visitor —
+   the dashboard HTML does not exist in the response at all, so there is
+   nothing for client-side code (or curl) to bypass.
+───────────────────────────────────────────────────────────────────── */
+.auth-page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, var(--navy) 0%, #081C2B 100%);
+}
+
+.gate-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--surface);
+  border-radius: var(--r-xl);
+  border: 1px solid var(--gold-20);
+  padding: 2.5rem 2.25rem;
+  text-align: center;
+  box-shadow: 0 30px 80px rgba(0,0,0,.35);
+}
+.gate-logo {
+  width: 56px;
+  height: auto;
+  margin: 0 auto 1.25rem;
+}
+.gate-eyebrow {
+  font-size: .65rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: .5rem;
+}
+.gate-title {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: .65rem;
+}
+.gate-sub {
+  font-size: .82rem;
+  color: var(--ink-60);
+  line-height: 1.55;
+  margin-bottom: 1.75rem;
+}
+
+.gate-form {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  text-align: left;
+}
+.gate-label {
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ink-60);
+  margin-top: .75rem;
+}
+.gate-input {
+  font-family: var(--font-body);
+  font-size: .9rem;
+  padding: .75rem .9rem;
+  border-radius: var(--r-md);
+  border: 1px solid var(--ink-10);
+  background: var(--bg-alt);
+  color: var(--ink);
+  transition: border-color var(--ease);
+}
+.gate-input:focus {
+  outline: none;
+  border-color: var(--pink);
+}
+
+.gate-error {
+  display: none;
+  font-size: .76rem;
+  color: var(--pink);
+  margin-top: .75rem;
+}
+.gate-error.visible { display: block; }
+
+.gate-remember {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-top: 1.1rem;
+  font-size: .8rem;
+  color: var(--ink-60);
+}
+.gate-remember input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--pink);
+  cursor: pointer;
+}
+.gate-remember label { cursor: pointer; }
+
+.gate-submit {
+  margin-top: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: #fff;
+  background: linear-gradient(135deg, var(--pink), var(--gold));
+  border: none;
+  border-radius: var(--r-full);
+  padding: .9rem 1.5rem;
+  cursor: pointer;
+  transition: var(--ease);
+}
+.gate-submit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(255,0,127,.4);
+}
+.gate-submit:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.gate-lang {
+  margin-top: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+}
+.gate-lang button {
+  background: none;
+  border: none;
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .05em;
+  color: var(--ink-60);
+  cursor: pointer;
+  padding: 0;
+}
+.gate-lang button:hover { color: var(--pink); }
+.gate-lang span { color: var(--ink-30); font-size: .7rem; }

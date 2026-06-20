@@ -51,6 +51,39 @@ function restoreTheme() {
   } catch (e) {}
 }
 
+/* ─── Private Access Gate ─────────────────────────────────────────── */
+/* UX deterrent only — credentials live in client JS and are readable
+   via DevTools. Real protection for confidential data must come from
+   server-side HTTP Basic Auth (.htaccess), not this layer alone.     */
+
+var LLY_GATE_USER = 'lester.keizer@gmail.com';
+var LLY_GATE_PASS = 'NineLives#LLY2026';
+
+function handleGateSubmit(event) {
+  event.preventDefault();
+
+  var userInput = document.getElementById('gate-user');
+  var passInput = document.getElementById('gate-pass');
+  var errorBox  = document.getElementById('gate-error');
+
+  var emailOk = userInput && userInput.value.trim().toLowerCase() === LLY_GATE_USER;
+  var passOk  = passInput && passInput.value === LLY_GATE_PASS;
+
+  if (emailOk && passOk) {
+    try { localStorage.setItem('llyDashboardAuth', 'granted'); } catch (e) {}
+    document.documentElement.removeAttribute('data-gate');
+    if (errorBox) errorBox.classList.remove('visible');
+  } else {
+    if (errorBox) errorBox.classList.add('visible');
+    if (passInput) passInput.value = '';
+  }
+}
+
+function initAuthGate() {
+  var form = document.getElementById('login-gate-form');
+  if (form) form.addEventListener('submit', handleGateSubmit);
+}
+
 /* ─── Accordion System ────────────────────────────────────────────── */
 
 function toggleAccordion(triggerBtn) {
@@ -207,4 +240,5 @@ document.addEventListener('DOMContentLoaded', function () {
   restoreLang();       // restore saved preference first …
   resolveUrlParams();  // … URL params override language + activate panel
   initSmoothScroll();
+  initAuthGate();
 });

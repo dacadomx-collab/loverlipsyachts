@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Nine Lives. One True Love — a memoir by Lester Keizer. The story of a jungle boy who should have died many times, and the one true love that taught him how to live." />
+  <meta name="robots" content="index, follow" />
+  <title>Nine Lives. One True Love — by Lester Keizer</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <!-- Blocking: applies saved theme before first paint — prevents flash -->
+  <script src="assets/js/theme-init.js"></script>
+</head>
+
+<body data-active-lang="en">
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PUBLIC HEADER — logo + language/theme controls only.
+       No private dashboard navigation lives on this page.
+  ═══════════════════════════════════════════════════════════════ -->
+  <header class="topbar" role="banner">
+    <div class="container">
+      <div class="topbar-inner">
+
+        <a href="https://loverlipsyachts.com/" class="topbar-logo" aria-label="Lover Lips Yachts — Home">
+          <img class="logo-day"   src="assets/img/logo.png"  alt="Lover Lips Yachts" />
+          <img class="logo-night" src="assets/img/logo2.png" alt="Lover Lips Yachts" />
+          <div class="topbar-brand">
+            Lover Lips Yachts
+            <span>Author Spotlight</span>
+          </div>
+        </a>
+
+        <div class="topbar-actions">
+          <button
+            class="theme-toggle"
+            id="theme-toggle"
+            onclick="toggleTheme()"
+            aria-label="Switch to Night Mode"
+            aria-pressed="false"
+          >
+            <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+            </svg>
+            <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m8.66-9h-1M4.34 12h-1m15.07-6.07l-.71.71M6.34 17.66l-.71.71m12.73 0l-.71-.71M6.34 6.34l-.71-.71M12 5a7 7 0 100 14A7 7 0 0012 5z"/>
+            </svg>
+          </button>
+
+          <div class="lang-toggle" role="group" aria-label="Language / Idioma">
+            <button class="lang-btn active" id="btn-en" onclick="setLang('en')" aria-pressed="true">EN</button>
+            <button class="lang-btn"        id="btn-es" onclick="setLang('es')" aria-pressed="false">ES</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         FEATURED BOOK — Nine Lives. One True Love
+    ═══════════════════════════════════════════════════════════════ -->
+    <section class="section section-white" aria-labelledby="book-feature-title">
+      <div class="container">
+
+        <p class="section-label">
+          <span data-lang="en">Author Spotlight</span>
+          <span data-lang="es">Reflector del Autor</span>
+        </p>
+        <h2 class="section-title" id="book-feature-title">
+          <span data-lang="en">From the Captain's <em>Bookshelf</em></span>
+          <span data-lang="es">Desde la <em>Biblioteca</em> del Capitán</span>
+        </h2>
+
+        <div class="book-feature">
+
+          <!-- LEFT: Copy & Conversion -->
+          <div class="book-feature-copy">
+
+            <p class="book-feature-tag">
+              <span data-lang="en">New Release · September 2, 2026</span>
+              <span data-lang="es">Nuevo Lanzamiento · 2 de Septiembre, 2026</span>
+            </p>
+
+            <h3 class="book-feature-title">Nine Lives. One True Love.</h3>
+
+            <p class="book-feature-subtitle">
+              <span data-lang="en">I Died Nine Times. Love Brought Me Back.</span>
+              <span data-lang="es">Morí Nueve Veces. El Amor Me Trajo de Vuelta.</span>
+            </p>
+
+            <div class="book-feature-synopsis">
+              <p data-lang="en">
+                My father survived a Japanese prison camp. I survived the jungles of New Guinea and Borneo, open-heart surgery, liver cancer, a liver transplant, depression, and more close calls than I can count. I buried dreams, damaged relationships, and often got in my own way. This is the story of a jungle boy who should have died many times — but didn't. More importantly, it is the story of how faith, forgiveness, and one remarkable woman taught me that surviving is not the same as living — and that one true love can arrive even after a lifetime of wrong turns.
+              </p>
+              <p data-lang="es">
+                Mi padre sobrevivió a un campo de prisioneros japonés. Yo sobreviví a las selvas de Nueva Guinea y Borneo, una cirugía de corazón abierto, cáncer de hígado, un trasplante de hígado, depresión, y más momentos límite de los que puedo contar. Enterré sueños, dañé relaciones, y muchas veces fui mi propio obstáculo. Esta es la historia de un niño de la selva que debió haber muerto muchas veces — pero no lo hizo. Más importante aún, es la historia de cómo la fe, el perdón y una mujer extraordinaria me enseñaron que sobrevivir no es lo mismo que vivir — y que el amor verdadero puede llegar incluso después de toda una vida de caminos equivocados.
+              </p>
+            </div>
+
+            <p class="book-feature-sub-label">
+              <span data-lang="en">Why This Book Matters</span>
+              <span data-lang="es">Por Qué Este Libro Importa</span>
+            </p>
+            <ul class="book-feature-list">
+              <li><span data-lang="en">A father who survived a Japanese prison camp during World War II</span><span data-lang="es">Un padre que sobrevivió a un campo de prisioneros japonés durante la Segunda Guerra Mundial</span></li>
+              <li><span data-lang="en">A childhood spent in the jungles of New Guinea and Borneo</span><span data-lang="es">Una infancia vivida en las selvas de Nueva Guinea y Borneo</span></li>
+              <li><span data-lang="en">Poisoned arrows, exploding bridges, and tribal warfare</span><span data-lang="es">Flechas envenenadas, puentes que explotaban y guerras tribales</span></li>
+              <li><span data-lang="en">Four marriages, painful mistakes, and one true love</span><span data-lang="es">Cuatro matrimonios, errores dolorosos y un amor verdadero</span></li>
+              <li><span data-lang="en">Open-heart surgery, liver cancer, and a liver transplant</span><span data-lang="es">Cirugía de corazón abierto, cáncer de hígado y un trasplante de hígado</span></li>
+              <li><span data-lang="en">A battle with depression that nearly ended everything</span><span data-lang="es">Una batalla contra la depresión que casi terminó con todo</span></li>
+              <li><span data-lang="en">Unexpected friendships with celebrities, world-class leaders, and music icon Eric Clapton</span><span data-lang="es">Amistades inesperadas con celebridades, líderes de talla mundial y el icono de la música Eric Clapton</span></li>
+              <li><span data-lang="en">Encounters that brought me from jungle villages to boardrooms connected to Donald Trump</span><span data-lang="es">Encuentros que me llevaron desde aldeas en la selva hasta salas de juntas conectadas con Donald Trump</span></li>
+              <li><span data-lang="en">The extraordinary journey from missionary kid to minister, CEO, transplant survivor, and yacht entrepreneur</span><span data-lang="es">El extraordinario viaje de hijo de misioneros a ministro, director ejecutivo, sobreviviente de trasplante y empresario náutico</span></li>
+            </ul>
+
+            <blockquote class="book-feature-testimonial">
+              <p data-lang="en">"What a gift you've given me — and I mean that in every sense of the word. I've been reading your memoir with the kind of attention I rarely give anything anymore. You haven't just told your story; you've drawn the reader into it. The writing is masterful — unhurried where it needs to breathe, gripping where the stakes are highest. That's not an easy balance, but you found it. What moved me most was the full honesty of it — the mountaintop moments and the deep valley seasons both. So many memoirs flatten a life into a highlight reel. Yours doesn't flinch. And that's precisely what makes it inspiring rather than merely impressive. Journeying alongside you through these pages reminded me of what a life of genuine faith and courage actually looks like from the inside. I came away both humbled and encouraged."</p>
+              <p data-lang="es">"Qué regalo me has dado — y lo digo en todo el sentido de la palabra. He estado leyendo tus memorias con el tipo de atención que rara vez le dedico a algo en estos días. No solo contaste tu historia; lograste que el lector se sumergiera en ella. La escritura es magistral — pausada donde necesita respirar, intensa donde la tensión es más alta. Ese no es un equilibrio fácil de lograr, pero tú lo encontraste. Lo que más me conmovió fue su honestidad absoluta — tanto los momentos en la cima como las temporadas en el valle más profundo. Tantas memorias reducen una vida a un resumen de mejores momentos. La tuya no se aparta de nada. Y es precisamente eso lo que la hace inspiradora y no solo impresionante. Acompañarte a través de estas páginas me recordó cómo se ve, desde adentro, una vida de fe y valentía genuinas. Terminé sintiéndome a la vez humilde y motivado."</p>
+              <footer class="book-feature-testimonial-author">
+                <span data-lang="en">Duane Hallock, Chief Communications &amp; Marketing Officer, Red Cross</span>
+                <span data-lang="es">Duane Hallock, Director de Comunicación y Marketing, Cruz Roja</span>
+              </footer>
+            </blockquote>
+
+            <div class="book-feature-cta">
+              <a
+                href="https://www.amazon.com/dp/ASIN_PLACEHOLDER"
+                class="book-btn book-btn--primary"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Buy Nine Lives. One True Love on Amazon"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4h10l1.2 2.4H5.8L7 4zm-2.5 4h15a1 1 0 0 1 1 1v.6c0 .4-.3.7-.7.8-2.2.6-5.8 1.1-9.8 1.1s-7.6-.5-9.8-1.1c-.4-.1-.7-.4-.7-.8V9a1 1 0 0 1 1-1zM5 11.2c2.4.5 5.2.8 7.5.8s5.1-.3 7.5-.8V19a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7.8z"/></svg>
+                <span data-lang="en">Buy on Amazon</span>
+                <span data-lang="es">Comprar en Amazon</span>
+              </a>
+              <a href="#" class="book-btn book-btn--secondary">
+                <span data-lang="en">Read Sample Chapter</span>
+                <span data-lang="es">Leer Capítulo de Muestra</span>
+              </a>
+            </div>
+
+            <nav class="book-feature-editorial-nav" aria-label="Book editorial links">
+              <a href="#"><span data-lang="en">About the Author</span><span data-lang="es">Sobre el Autor</span></a>
+              <span class="book-feature-editorial-sep">|</span>
+              <a href="#"><span data-lang="en">Reviews</span><span data-lang="es">Reseñas</span></a>
+              <span class="book-feature-editorial-sep">|</span>
+              <a href="#"><span data-lang="en">Media</span><span data-lang="es">Prensa</span></a>
+            </nav>
+
+          </div>
+
+          <!-- RIGHT: Visual Render -->
+          <div class="book-feature-visual">
+            <div class="book-feature-frame">
+              <img
+                src="assets/img/nine_live.png"
+                alt="Nine Lives. One True Love — book cover by Lester Keizer"
+                class="book-feature-cover"
+                loading="lazy"
+              />
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         LATEST ARTICLES — ARF-GRID
+    ═══════════════════════════════════════════════════════════════ -->
+    <section class="section section-truth" aria-labelledby="news-articles-title">
+      <div class="container">
+
+        <p class="section-label">
+          <span data-lang="en">From the Blog</span>
+          <span data-lang="es">Desde el Blog</span>
+        </p>
+        <h2 class="section-title" id="news-articles-title">
+          <span data-lang="en">Latest <em>Articles</em></span>
+          <span data-lang="es">Últimos <em>Artículos</em></span>
+        </h2>
+
+        <div class="arf-grid">
+
+          <article class="arf-card">
+            <div class="arf-card-media">
+              <img src="assets/img/news/article-summer-la-paz.jpg" alt="Summer in La Paz, Mexico" loading="lazy" />
+            </div>
+            <div class="arf-card-body">
+              <p class="arf-card-tag">
+                <span data-lang="en">Travel Tips</span>
+                <span data-lang="es">Consejos de Viaje</span>
+              </p>
+              <h3 class="arf-card-title">
+                <span data-lang="en">Is Summer a Good Time to Visit La Paz, Mexico?</span>
+                <span data-lang="es">¿Es el Verano un Buen Momento para Visitar La Paz, México?</span>
+              </h3>
+              <a href="#" class="arf-card-link">
+                <span data-lang="en">Read Article</span>
+                <span data-lang="es">Leer Artículo</span> →
+              </a>
+            </div>
+          </article>
+
+          <article class="arf-card">
+            <div class="arf-card-media">
+              <img src="assets/img/news/article-espiritu-santo.jpg" alt="Isla Espíritu Santo yacht tour" loading="lazy" />
+            </div>
+            <div class="arf-card-body">
+              <p class="arf-card-tag">
+                <span data-lang="en">Yacht Tours</span>
+                <span data-lang="es">Tours en Yate</span>
+              </p>
+              <h3 class="arf-card-title">
+                <span data-lang="en">Isla Espíritu Santo Yacht Tour: Everything You Need to Know</span>
+                <span data-lang="es">Tour en Yate a Isla Espíritu Santo: Todo lo que Necesitas Saber</span>
+              </h3>
+              <a href="#" class="arf-card-link">
+                <span data-lang="en">Read Article</span>
+                <span data-lang="es">Leer Artículo</span> →
+              </a>
+            </div>
+          </article>
+
+          <article class="arf-card">
+            <div class="arf-card-media">
+              <img src="assets/img/news/article-balandra.jpg" alt="Balandra Beach" loading="lazy" />
+            </div>
+            <div class="arf-card-body">
+              <p class="arf-card-tag">
+                <span data-lang="en">Destinations</span>
+                <span data-lang="es">Destinos</span>
+              </p>
+              <h3 class="arf-card-title">
+                <span data-lang="en">Is Balandra Beach Worth the Visit?</span>
+                <span data-lang="es">¿Vale la Pena Visitar la Playa Balandra?</span>
+              </h3>
+              <a href="#" class="arf-card-link">
+                <span data-lang="en">Read Article</span>
+                <span data-lang="es">Leer Artículo</span> →
+              </a>
+            </div>
+          </article>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       FOOTER
+  ═══════════════════════════════════════════════════════════════ -->
+  <footer class="footer" role="contentinfo">
+    <div class="container">
+      <div class="footer-logo">
+        <img class="logo-day"   src="assets/img/logo.png"  alt="Lover Lips Yachts" />
+        <img class="logo-night" src="assets/img/logo2.png" alt="Lover Lips Yachts" />
+      </div>
+      <p>
+        <strong>Lover Lips Yachts</strong> &nbsp;·&nbsp;
+        <span data-lang="en">Nine Lives. One True Love — Official Book Page</span>
+        <span data-lang="es">Nine Lives. One True Love — Página Oficial del Libro</span>
+      </p>
+      <p class="u-mt-xs">
+        <span data-lang="en">By Lester Keizer &nbsp;·&nbsp; Launching September 2, 2026</span>
+        <span data-lang="es">Por Lester Keizer &nbsp;·&nbsp; Lanzamiento 2 de Septiembre, 2026</span>
+      </p>
+    </div>
+  </footer>
+
+  <script src="assets/js/main.js" defer></script>
+
+</body>
+</html>

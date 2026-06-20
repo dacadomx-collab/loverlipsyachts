@@ -1,32 +1,22 @@
 # ═══════════════════════════════════════════════════════════════
-# LOVER LIPS YACHTS — .htaccess CORREGIDO Y SEGURO
+# LOVER LIPS YACHTS — .htaccess CONSOLIDADO (ACCESIBLE + BLINDADO)
 # ═══════════════════════════════════════════════════════════════
 
-# 1. Forzar a Apache a servir index.html de forma nativa en la raíz
+# 1. Asegurar la entrada nativa al dashboard que habilitaste
 DirectoryIndex index.html
 
-# 2. Deshabilitar el listado de archivos en carpetas
-Options -Indexes
+# 2. Mantener la apertura de directorios para evitar el error 403 anterior
+Order allow,deny
+Allow from all
+Satisfy Any
+Require all granted
 
-# 3. Denegar acceso general a todos los archivos PHP por seguridad
-<FilesMatch "\.php$">
-    Require all denied
-</FilesMatch>
-
-# 4. EXCEPCIÓN QUIRÚRGICA: Permitir únicamente la ejecución de tus scripts de prueba
-<FilesMatch "^(test_db\.php|test_email\.php)$">
-    Require all granted
-</FilesMatch>
-
-# 5. Blindar archivos ocultos, entornos .env y el propio .htaccess
-<FilesMatch "^\.">
-    Require all denied
-</FilesMatch>
+# 3. BLINDAJE: Denegar acceso web directo a archivos de entorno y conocimiento
 <FilesMatch "(^\.htaccess|^\.htpasswd|\.ini$|\.env$)">
     Require all denied
 </FilesMatch>
 
-# 6. Bloquear el acceso web directo a carpetas de sistema y conocimiento
+# 4. Bloquear el rastreo de carpetas estructurales del backend
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteRule ^knowledge(/.*)?$ - [F,L]
@@ -35,16 +25,6 @@ Options -Indexes
     RewriteRule ^\.github - [F,L]
 </IfModule>
 
-# 7. Headers de seguridad (no afectan el 403 — solo blindaje est&aacute;ndar)
-<IfModule mod_headers.c>
-    Header always set X-Content-Type-Options "nosniff"
-    Header always set X-Frame-Options "DENY"
-    Header always set X-XSS-Protection "1; mode=block"
-    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
-    Header always unset X-Powered-By
-    Header always unset Server
-</IfModule>
-
-# 8. Mensajes de error personalizados del sistema
+# 5. Mensajes de error del sistema
 ErrorDocument 403 "Acceso denegado."
 ErrorDocument 404 "Recurso no encontrado."
