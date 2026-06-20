@@ -1,21 +1,7 @@
 # =============================================================================
-# .gitignore — Lover Lips Yachts (LLY) · Full-Stack Dashboard
-# Solo se rastrea: código fuente, assets funcionales y configuración pública.
-# Arquitecto: DCD LABS | Actualizado: 2026-05-30
+# .gitignore — BIG-i Web Page (Next.js Static Export)
+# Solo se rastrea: código fuente, assets funcionales y configuración.
 # =============================================================================
-
-# ─── ENTORNOS Y SECRETOS (NUNCA al repositorio) ───────────────────────────────
-core/.env
-core/.env.staging
-core/.env.production
-# Solo los .example y .staging.example están permitidos en el repo
-
-# ─── CARPETAS DE NUEVA ARQUITECTURA ───────────────────────────────────────────
-# Placeholder vacíos (solo el .gitkeep se versionará)
-assets/css/*
-assets/js/*
-!assets/css/.gitkeep
-!assets/js/.gitkeep
 
 # --- DEPENDENCIAS ---
 /node_modules
