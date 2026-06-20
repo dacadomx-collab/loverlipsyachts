@@ -96,7 +96,7 @@ if ($isAuthenticated) {
         <span data-lang="es">Este panel contiene información confidencial del negocio. Inicia sesión para continuar.</span>
       </p>
 
-      <form id="login-form" class="gate-form" autocomplete="off">
+      <form id="login-form" class="gate-form" method="post" autocomplete="off">
         <label class="gate-label" for="login-email">
           <span data-lang="en">Email</span>
           <span data-lang="es">Correo</span>

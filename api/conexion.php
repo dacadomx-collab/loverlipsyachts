@@ -24,6 +24,11 @@ final class Conexion
             return self::$instance;
         }
 
+        // Conexión unificada: core/.env es la única fuente de verdad.
+        // lly.tourfindy.com es el entorno oficial de Staging — DB_HOST
+        // ahí es "localhost" porque Apache/PHP/MySQL viven en la misma
+        // máquina cPanel. Esto solo conecta cuando el código corre en
+        // ese servidor real, no desde XAMPP local.
         $env = self::loadEnv(__DIR__ . '/../core/.env');
 
         $host = $env['DB_HOST'] ?? '';
