@@ -15,6 +15,7 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
   <meta name="robots" content="noindex, nofollow" />
   <title>Lover Lips Yachts · Owner Dashboard</title>
   <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="icon" type="image/png" href="assets/img/logo.png" />
   <!-- Blocking: applies saved theme before first paint — prevents flash -->
   <script src="assets/js/theme-init.js"></script>
 </head>
@@ -244,6 +245,58 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
         </p>
 
         <div class="reports-grid">
+
+          <!-- Report F: Public Book Landing Page (book.html) -->
+          <article class="report-card">
+            <div class="report-card-head">
+              <div class="report-number">F</div>
+              <div class="report-card-meta">
+                <p class="report-date">
+                  <span data-lang="en">June 20, 2026</span>
+                  <span data-lang="es">20 de Junio, 2026</span>
+                </p>
+                <span class="pill pill-orange">
+                  <span data-lang="en">Awaiting Reconciliation</span>
+                  <span data-lang="es">Por Conciliar</span>
+                </span>
+              </div>
+            </div>
+            <p class="report-tag">
+              <span data-lang="en">Frontend &amp; Marketing · Lead Magnet Landing Page</span>
+              <span data-lang="es">Frontend y Marketing · Landing Page Imán de Leads</span>
+            </p>
+            <h3 class="report-title">
+              <span data-lang="en">Public Book Landing Page — Organic Marketing</span>
+              <span data-lang="es">Landing Page Pública del Libro — Marketing Orgánico</span>
+            </h3>
+            <div class="report-body">
+              <p data-lang="en">
+                We designed and deployed a high-conversion, ultra-luxury landing page for your upcoming memoir. This page acts as the ultimate Bottom-of-Funnel (BofU) lead magnet, designed to capture qualified prospects from social media without spending on paid ads. It includes aesthetic storytelling, mobile-first design, and seamless WhatsApp integration.
+              </p>
+              <p data-lang="es">
+                Diseñamos y desplegamos una landing page de ultra-lujo y alta conversión para tus próximas memorias. Esta página actúa como el imán de prospectos definitivo (BofU), diseñada para capturar clientes calificados desde redes sociales sin gastar en pautas publicitarias. Incluye storytelling estético, diseño mobile-first e integración directa con WhatsApp.
+              </p>
+
+              <!-- Landing Page Screenshot Showcase -->
+              <div class="report-score-frame">
+                <p class="report-score-frame-label">
+                  <span data-lang="en">Landing Page Preview</span>
+                  <span data-lang="es">Vista Previa de la Landing Page</span>
+                </p>
+                <img
+                  src="assets/img/LandingPage.png"
+                  alt="Nine Lives. One True Love — public landing page preview"
+                  class="report-score-img"
+                  loading="lazy"
+                />
+              </div>
+
+              <a href="book.html" class="report-strategic-gold-btn" target="_blank" rel="noopener noreferrer">
+                <span data-lang="en">View Public Book Page</span>
+                <span data-lang="es">Ver Página Pública del Libro</span>
+              </a>
+            </div>
+          </article>
 
           <!-- Report E: Organic Marketing Strategy (business plan, not a dev report) -->
           <article class="report-card report-card--strategic">

@@ -1,6 +1,26 @@
 # 🗂️ 02_SYSTEM_CODEX_REGISTRY.md
 Fuente única de verdad de nomenclatura (Mandamiento 18). Este archivo no existía antes de hoy — se crea ahora con el inventario real encontrado en el sistema de archivos, no con nombres inventados.
 
+## ✅ Ajustes de precisión — Report F
+- Fecha corregida a `June 20, 2026` / `20 de Junio, 2026` (antes 22 de junio).
+- Badge cambiado de `pill-green` "Account Settled" a `pill-orange` "Awaiting Reconciliation" / "Por Conciliar" — refleja estatus financiero pendiente, no el estatus de despliegue del código (`book.html` sigue desplegado y funcional).
+- Preview visual agregado: `assets/img/LandingPage.png` (confirmado existente en el filesystem antes de referenciarlo) usando exactamente el componente `.report-score-frame`/`.report-score-img` ya construido para el Report D — mismo patrón, cero CSS nuevo.
+- Verificado: `php -l` limpio, 6/6 `<section>` balanceadas, cero estilos inline.
+
+## ✅ Favicon (Regla de Oro) + Report F
+
+### Corrección de nomenclatura
+La directiva pedía otra tarjeta "Report E" — ya existía un Report E (Estrategia de Marketing → `strategy.php`). Se asignó **Report F** a la nueva tarjeta de la landing pública del libro, manteniendo el orden alfabético/cronológico inverso del grid: `F → E → D → C → B → A`. También se corrigió el nombre de archivo referenciado: el activo real es `book.html`, no `book.php` (no existe).
+
+### Favicon
+`<link rel="icon" type="image/png" href="assets/img/logo.png" />` inyectado justo después de la hoja de estilos en las 4 pantallas activas: `index.php`, `dashboard.php`, `strategy.php`, `book.html`.
+
+### Report F (`dashboard.php` → `#hub-reports .reports-grid`)
+Tarjeta estándar (no `--strategic`, ya está completada): número `F`, badge `pill-green` "Account Settled/Saldo Conciliado", botón `.report-strategic-gold-btn` (reutilizado, mismo componente que el botón del Report E) enlazando a `book.html` con `target="_blank"`.
+
+### Verificación
+`php -l` sin errores en `dashboard.php`/`index.php`/`strategy.php` · 6/6 `<section>` balanceadas en `dashboard.php` · cero estilos inline · favicon confirmado en las 4 pantallas vía grep.
+
 ## ✅ Correcciones de negocio y adiciones — `strategy.php`
 
 ### 🚨 Corrección crítica revertida: alianza 50/50 Cash/Trade hacia el cliente

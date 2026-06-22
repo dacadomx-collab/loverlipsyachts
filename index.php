@@ -28,6 +28,7 @@ if (lly_is_authenticated()) {
   <meta name="robots" content="noindex, nofollow" />
   <title>Lover Lips Yachts · Owner Dashboard</title>
   <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="icon" type="image/png" href="assets/img/logo.png" />
   <!-- Blocking: applies saved theme before first paint — prevents flash -->
   <script src="assets/js/theme-init.js"></script>
 </head>
