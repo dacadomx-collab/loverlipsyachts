@@ -7,6 +7,12 @@
 DirectoryIndex index.php
 Options -Indexes
 
+# Línea base: el hosting de tourfindy.com deniega por defecto a nivel de
+# servidor si esta línea falta — sin ella, hasta los archivos públicos
+# (CSS, JS, imágenes, book.html) devuelven 403. Las reglas más específicas
+# abajo (.php, dotfiles, carpetas sensibles) siguen ganando sobre esta.
+Require all granted
+
 # ── Bloqueo de archivos ocultos y de configuración ──────────────
 <FilesMatch "^\.">
     Require all denied
