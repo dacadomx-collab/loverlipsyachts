@@ -42,12 +42,6 @@ Require all granted
     Require all granted
 </FilesMatch>
 
-# Excepciones TEMPORALES de diagnóstico — quitar junto con estos
-# archivos cuando ya no se necesiten.
-<FilesMatch "^(test_db|test_email|setup_admin)\.php$">
-    Require all granted
-</FilesMatch>
-
 # ── Headers de seguridad ─────────────────────────────────────────
 <IfModule mod_headers.c>
     Header always set X-Content-Type-Options "nosniff"

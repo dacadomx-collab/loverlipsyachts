@@ -1,6 +1,24 @@
 # 🗂️ 02_SYSTEM_CODEX_REGISTRY.md
 Fuente única de verdad de nomenclatura (Mandamiento 18). Este archivo no existía antes de hoy — se crea ahora con el inventario real encontrado en el sistema de archivos, no con nombres inventados.
 
+## 🏁 CIERRE DE HITO — 2026-06-22
+
+### Estado verificado del sistema
+- Login server-side (`index.php` → `core/auth_check.php` → `api/conexion.php`) operando en producción, confirmado con pruebas reales (no simuladas) contra `lly.tourfindy.com`.
+- `dashboard.php` (privado) y `strategy.php` (privado, deep-link) con guards independientes — ambos confirmados en 403 ante acceso directo sin sesión.
+- `book.html` (público) sin contenido confidencial — la propuesta de marketing vive exclusivamente en `strategy.php`.
+- 6 Reports en `#hub-reports` (F→A), orden alfabético inverso consistente.
+- `.htaccess` con línea base `Require all granted` + denegación específica por archivo — sin regresiones desde el incidente de site-wide 403.
+- `knowledge/` fuera de git (`.gitignore` + `git rm --cached`), `Lover_Lips_Yachts_FUENTEDEVERDAD_CONSOLIDADA.md` purgado y reescrito sin contaminación cruzada.
+
+### Limpieza de código muerto ejecutada hoy
+`test_db.php`, `test_email.php`, `setup_admin.php` — eliminados del repo (`git rm`) y de las excepciones de `.htaccess`. Cumplieron su propósito (conexión a BD probada, cuenta admin creada, login verificado en vivo de forma repetida) y ya representan superficie de ataque innecesaria, no beneficio.
+**Acción pendiente fuera de mi alcance:** estos 3 archivos siguen físicamente en el servidor de `lly.tourfindy.com` — el pipeline de FTP (`dangerous-clean-slate: false`) no borra remotos ausentes en el repo local. Deben eliminarse manualmente vía FTP/cPanel File Manager tras este push, igual que se hizo con el `index.html` legacy.
+
+### ➡️ Siguiente Nivel — Próximas Fases
+- **Fase 1 — Levantamiento y Estandarización del Catálogo de la Flota:** extraer y estructurar las 40 embarcaciones restantes desde WordPress (datos, tarifas, fotos) hacia el "Source of Truth" del dashboard.
+- **Fase 2 — Diseño del Schema SQL para el Chatbot IA:** nuevas tablas (conversaciones, leads, reglas `NO_PRICE_WITHOUT_LEAD_DATA` y White-Glove Escalation) — requiere autorización humana explícita antes de crear/alterar esquema, por Mandamiento 9.
+
 ## ✅ Ajustes de precisión — Report F
 - Fecha corregida a `June 20, 2026` / `20 de Junio, 2026` (antes 22 de junio).
 - Badge cambiado de `pill-green` "Account Settled" a `pill-orange` "Awaiting Reconciliation" / "Por Conciliar" — refleja estatus financiero pendiente, no el estatus de despliegue del código (`book.html` sigue desplegado y funcional).
