@@ -1,30 +1,56 @@
 # ═══════════════════════════════════════════════════════════════
 # LOVER LIPS YACHTS — .htaccess CONSOLIDADO (ACCESIBLE + BLINDADO)
+# index.php es el gatekeeper server-side real — index.html quedó
+# retirado (ver index.html, ahora un stub inerte).
 # ═══════════════════════════════════════════════════════════════
 
-# 1. Asegurar la entrada nativa al dashboard que habilitaste
-DirectoryIndex index.html
+DirectoryIndex index.php
+Options -Indexes
 
-# 2. Mantener la apertura de directorios para evitar el error 403 anterior
-Order allow,deny
-Allow from all
-Satisfy Any
-Require all granted
-
-# 3. BLINDAJE: Denegar acceso web directo a archivos de entorno y conocimiento
-<FilesMatch "(^\.htaccess|^\.htpasswd|\.ini$|\.env$)">
+# ── Bloqueo de archivos ocultos y de configuración ──────────────
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+<FilesMatch "(^\.htaccess$|^\.htpasswd$|\.ini$|\.env$|\.sql$)">
     Require all denied
 </FilesMatch>
 
-# 4. Bloquear el rastreo de carpetas estructurales del backend
+# ── Bloqueo de carpetas estructurales/sensibles completas ───────
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteRule ^knowledge(/.*)?$ - [F,L]
-    RewriteRule ^core(/.*)?$ - [F,L]
-    RewriteRule ^\.git - [F,L]
-    RewriteRule ^\.github - [F,L]
+    RewriteRule ^core(/.*)?$      - [F,L]
+    RewriteRule ^sql(/.*)?$       - [F,L]
+    RewriteRule ^\.git            - [F,L]
+    RewriteRule ^\.github         - [F,L]
 </IfModule>
 
-# 5. Mensajes de error del sistema
+# ── PHP denegado por defecto. dashboard.php y api/conexion.php no
+#    aparecen en las excepciones a propósito: solo deben ejecutarse
+#    vía require()/include(), nunca por URL directa. ───────────────
+<FilesMatch "\.php$">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "^(index|login)\.php$">
+    Require all granted
+</FilesMatch>
+
+# Excepciones TEMPORALES de diagnóstico — quitar junto con estos
+# archivos cuando ya no se necesiten.
+<FilesMatch "^(test_db|test_email|setup_admin)\.php$">
+    Require all granted
+</FilesMatch>
+
+# ── Headers de seguridad ─────────────────────────────────────────
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    Header always unset X-Powered-By
+    Header always unset Server
+</IfModule>
+
 ErrorDocument 403 "Acceso denegado."
 ErrorDocument 404 "Recurso no encontrado."
