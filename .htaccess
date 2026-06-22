@@ -38,7 +38,7 @@ Require all granted
     Require all denied
 </FilesMatch>
 
-<FilesMatch "^(index|login)\.php$">
+<FilesMatch "^(index|login|strategy)\.php$">
     Require all granted
 </FilesMatch>
 

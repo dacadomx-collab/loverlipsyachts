@@ -245,6 +245,49 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
 
         <div class="reports-grid">
 
+          <!-- Report E: Organic Marketing Strategy (business plan, not a dev report) -->
+          <article class="report-card report-card--strategic">
+            <div class="report-card-head">
+              <div class="report-number report-number--gold">E</div>
+              <div class="report-card-meta">
+                <p class="report-date">
+                  <span data-lang="en">June 22, 2026</span>
+                  <span data-lang="es">22 de Junio, 2026</span>
+                </p>
+                <span class="pill pill-orange">
+                  <span data-lang="en">Awaiting Reconciliation</span>
+                  <span data-lang="es">Por Conciliar</span>
+                </span>
+              </div>
+            </div>
+            <p class="report-tag">
+              <span data-lang="en">Business Strategy · Proposed Organic Marketing Setup</span>
+              <span data-lang="es">Estrategia de Negocio · Estrategia Propuesta en Desarrollo</span>
+            </p>
+            <h3 class="report-title">
+              <span data-lang="en">"Nine Lives" Organic Launch Campaign</span>
+              <span data-lang="es">Campaña de Lanzamiento Orgánico de "Nine Lives"</span>
+            </h3>
+
+            <div class="report-strategic-inner">
+              <div class="report-strategic-cover">
+                <img src="assets/img/nine_live.png" alt="Nine Lives. One True Love — book cover" loading="lazy" />
+              </div>
+              <div class="report-body">
+                <p data-lang="en">
+                  A 90-day, zero-paid-media guerrilla digital campaign for the September 2, 2026 book launch — aesthetic funnel, transactional SEO bridges, and three ready-to-publish bilingual copy templates. Full research, copy and AI conversion rules are detailed in the dedicated strategy presentation below for your review and authorization.
+                </p>
+                <p data-lang="es">
+                  Una campaña de guerrilla digital de 90 días, sin pauta pagada, para el lanzamiento del libro el 2 de septiembre de 2026 — embudo estético, puentes de SEO transaccional y tres plantillas de copy bilingües listas para publicar. La investigación completa, el copy y las reglas de conversión de la IA están detalladas en la presentación dedicada de abajo, para tu revisión y autorización.
+                </p>
+                <a href="strategy.php" class="report-strategic-gold-btn">
+                  <span data-lang="en">Review Proposed Marketing Strategy</span>
+                  <span data-lang="es">Revisar Estrategia de Marketing Propuesta</span>
+                </a>
+              </div>
+            </div>
+          </article>
+
           <!-- Report D: Global SEO & Performance Architecture -->
           <article class="report-card report-card--featured">
             <div class="report-card-head">
@@ -1326,6 +1369,11 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
       </p>
     </div>
   </footer>
+
+  <!-- Floating "Back to Top" — hidden until scroll > 300px (see main.js) -->
+  <button id="back-to-top" class="back-to-top" aria-label="Back to top" type="button">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
+  </button>
 
   <script src="assets/js/main.js" defer></script>
 

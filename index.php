@@ -12,54 +12,9 @@ declare(strict_types=1);
  */
 
 require __DIR__ . '/api/conexion.php';
+require __DIR__ . '/core/auth_check.php';
 
-session_start();
-
-function lly_check_remember_me(): bool
-{
-    if (empty($_COOKIE['lly_remember'])) {
-        return false;
-    }
-
-    $token = (string) $_COOKIE['lly_remember'];
-    $pdo   = Conexion::getConnection();
-
-    $stmt = $pdo->prepare(
-        'SELECT id, email FROM lly_users WHERE remember_token = :token AND token_expiry > NOW() LIMIT 1'
-    );
-    $stmt->execute(['token' => $token]);
-    $user = $stmt->fetch();
-
-    if (!$user) {
-        return false;
-    }
-
-    session_regenerate_id(true);
-    $_SESSION['lly_user_id'] = (int) $user['id'];
-    $_SESSION['lly_email']   = $user['email'];
-
-    // Rotate the token on every remember-login: sliding 30-day window,
-    // and the old cookie value stops working the moment it's used once.
-    $newToken  = bin2hex(random_bytes(32));
-    $newExpiry = (new DateTimeImmutable('+30 days'))->format('Y-m-d H:i:s');
-
-    $update = $pdo->prepare('UPDATE lly_users SET remember_token = :token, token_expiry = :expiry WHERE id = :id');
-    $update->execute(['token' => $newToken, 'expiry' => $newExpiry, 'id' => $user['id']]);
-
-    setcookie('lly_remember', $newToken, [
-        'expires'  => (new DateTimeImmutable('+30 days'))->getTimestamp(),
-        'path'     => '/',
-        'secure'   => true,
-        'httponly' => true,
-        'samesite' => 'Strict',
-    ]);
-
-    return true;
-}
-
-$isAuthenticated = !empty($_SESSION['lly_user_id']) || lly_check_remember_me();
-
-if ($isAuthenticated) {
+if (lly_is_authenticated()) {
     define('LLY_DASHBOARD_GATEKEEPER', true);
     require __DIR__ . '/dashboard.php';
     exit;

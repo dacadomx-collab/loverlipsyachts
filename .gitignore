@@ -31,6 +31,11 @@ next-env.d.ts
 # SECRETOS ESPECÍFICOS
 info.txt
 
+# --- CARPETA DE CONOCIMIENTO INTERNO (Codex, Mandamientos, estrategias
+#     confidenciales de negocio) — referencia local exclusiva, JAMÁS al
+#     repositorio público. ---
+/knowledge/
+
 # --- PLATAFORMAS DE DEPLOY ---
 .vercel
 

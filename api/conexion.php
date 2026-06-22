@@ -24,14 +24,26 @@ final class Conexion
             return self::$instance;
         }
 
-        // Conexión unificada: core/.env es la única fuente de verdad.
-        // lly.tourfindy.com es el entorno oficial de Staging — DB_HOST
-        // ahí es "localhost" porque Apache/PHP/MySQL viven en la misma
-        // máquina cPanel. Esto solo conecta cuando el código corre en
-        // ese servidor real, no desde XAMPP local.
+        // Conexión unificada: core/.env sigue siendo la única fuente de
+        // verdad para DB_NAME/DB_USER/DB_PASS — no se toca ni se duplica.
+        // En producción (lly.tourfindy.com), DB_HOST="localhost" es correcto
+        // porque Apache/PHP/MySQL viven en la misma máquina cPanel.
+        //
+        // Puente híbrido SOLO para XAMPP local: "localhost" ahí apunta a la
+        // MariaDB de XAMPP (sin la tabla lly_users), nunca a tourfindy.com.
+        // Se sobreescribe el host únicamente cuando la petición llega por
+        // localhost/127.0.0.1 — el flujo en vivo no entra a este bloque.
         $env = self::loadEnv(__DIR__ . '/../core/.env');
 
-        $host = $env['DB_HOST'] ?? '';
+        $requestHost = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '';
+        $isLocalEnv  = in_array($requestHost, ['localhost', '127.0.0.1'], true)
+            || str_starts_with($requestHost, 'localhost:')
+            || str_starts_with($requestHost, '127.0.0.1:');
+
+        // Hostname externo real, validado en esta misma sesión (Remote
+        // MySQL debe seguir habilitado en cPanel para la IP de quien prueba
+        // en local — si vuelve a dar 500, eso es lo primero a revisar).
+        $host = $isLocalEnv ? 'chir205.websitehostserver.net' : ($env['DB_HOST'] ?? '');
         $name = $env['DB_NAME'] ?? '';
         $user = $env['DB_USER'] ?? '';
         $pass = $env['DB_PASS'] ?? '';
