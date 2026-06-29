@@ -90,6 +90,8 @@ jobs:
             **/*.rar
             **/*.mp4
             **/*.mov
+            BackUp/**
+            **/BackUp/**
             # Diagnostic scripts — manual FTP upload/delete only, never auto-deployed.
             # Remove these two lines temporarily if you ever want them pushed via CI.
             test_db.php

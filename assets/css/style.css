@@ -2268,6 +2268,52 @@ body[data-active-lang="es"] ul[data-lang="es"] { display: flex; }
   flex-wrap: wrap;
 }
 
+/* ── Share Widget — canonical ARF-Grid parent + responsive children ──
+   Parent (.share-grid): display:flex, flex-wrap:wrap, justify-content:center.
+   Children (.share-btn): flexible flex-basis, capped max-width, atomic
+   hover (translateY + shadow/border only — never scale/rotate, so the
+   grid layout never shifts or distorts on hover). ── */
+.share-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.75rem;
+}
+.share-btn {
+  flex: 0 1 160px;
+  max-width: 200px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem;
+  padding: .85rem 1.5rem;
+  border-radius: var(--r-full);
+  background: var(--surface);
+  border: 1.5px solid var(--ink-10);
+  color: var(--ink);
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  text-decoration: none;
+  box-shadow: var(--sh-card);
+  transition: transform var(--ease), box-shadow var(--ease), border-color var(--ease), background var(--ease);
+}
+.share-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+.share-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--sh-hover);
+}
+.share-btn--whatsapp svg { color: #25D366; }
+.share-btn--whatsapp:hover { border-color: #25D366; background: rgba(37,211,102,.08); }
+.share-btn--facebook svg { color: #1877F2; }
+.share-btn--facebook:hover { border-color: #1877F2; background: rgba(24,119,242,.08); }
+.share-btn--x svg { color: var(--ink); }
+.share-btn--x:hover { border-color: var(--ink); background: var(--ink-10); }
+.share-btn--linkedin svg { color: #0A66C2; }
+.share-btn--linkedin:hover { border-color: #0A66C2; background: rgba(10,102,194,.08); }
+
 /* ── Curiosity Grid (children of the canonical .arf-grid parent) ── */
 .curiosity-card {
   flex: 1 1 220px;

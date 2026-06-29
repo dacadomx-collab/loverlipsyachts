@@ -246,6 +246,100 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
 
         <div class="reports-grid">
 
+          <!-- Report H: Navigation Menu & Live Server Deployment -->
+          <article class="report-card report-card--featured">
+            <div class="report-card-head">
+              <div class="report-number report-number--gold">H</div>
+              <div class="report-card-meta">
+                <p class="report-date">
+                  <span data-lang="en">June 29, 2026</span>
+                  <span data-lang="es">29 de Junio, 2026</span>
+                </p>
+                <span class="pill pill-green">
+                  <span data-lang="en">Account Settled</span>
+                  <span data-lang="es">Saldo Conciliado</span>
+                </span>
+              </div>
+            </div>
+            <p class="report-tag">
+              <span data-lang="en">Infrastructure · Navigation Menu &amp; Live Server Deployment</span>
+              <span data-lang="es">Infraestructura · Menú de Navegación y Despliegue en Servidor</span>
+            </p>
+            <h3 class="report-title">
+              <span data-lang="en">Public Navigation &amp; Server Infrastructure Deployment</span>
+              <span data-lang="es">Despliegue de Navegación Pública e Infraestructura de Servidor</span>
+            </h3>
+            <div class="report-body">
+              <p data-lang="en">
+                We generated a lightweight, uncompressed standalone <strong>HTML/CSS/JS framework</strong> for the book spotlight — bypassing WordPress database queries entirely so this page renders at <strong>5-star mobile speed</strong> regardless of any load on the main site.
+              </p>
+              <p data-lang="es">
+                Generamos un framework <strong>HTML/CSS/JS</strong> autónomo, ligero y sin compresión adicional para la página del libro — evitando por completo las consultas a la base de datos de WordPress, logrando una velocidad de carga móvil de <strong>5 estrellas</strong> sin depender de la carga del sitio principal.
+              </p>
+              <p data-lang="en">
+                We also mapped the native bicultural language toggle (EN/ES) directly to <code>https://loverlipsyachts.com/my-book/</code>, and cleanly integrated a new navigation menu button inside the live WordPress header — with zero structural drift to the existing menu, theme, or layout.
+              </p>
+              <p data-lang="es">
+                Además, conectamos el selector de idioma bicultural nativo (EN/ES) directamente con <code>https://loverlipsyachts.com/my-book/</code>, e integramos limpiamente un nuevo botón de navegación dentro del encabezado activo de WordPress — sin ninguna alteración estructural al menú, tema o diseño existente.
+              </p>
+            </div>
+            <p class="report-check">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span data-lang="en">Live in Production &amp; Verified</span>
+              <span data-lang="es">En Producción y Verificado</span>
+            </p>
+          </article>
+
+          <!-- Report G: Sunseeker 52 Retro Media Pipeline -->
+          <article class="report-card report-card--featured">
+            <div class="report-card-head">
+              <div class="report-number report-number--gold">G</div>
+              <div class="report-card-meta">
+                <p class="report-date">
+                  <span data-lang="en">June 27, 2026</span>
+                  <span data-lang="es">27 de Junio, 2026</span>
+                </p>
+                <span class="pill pill-green">
+                  <span data-lang="en">Account Settled</span>
+                  <span data-lang="es">Saldo Conciliado</span>
+                </span>
+              </div>
+            </div>
+            <p class="report-tag">
+              <span data-lang="en">Media Engineering · Sunseeker 52 Retro Rebrand</span>
+              <span data-lang="es">Ingeniería de Medios · Rebranding Sunseeker 52 Retro</span>
+            </p>
+            <h3 class="report-title">
+              <span data-lang="en">Sunseeker 52 Retro — Full Media Pipeline Optimization</span>
+              <span data-lang="es">Sunseeker 52 Retro — Optimización Completa del Pipeline de Medios</span>
+            </h3>
+            <div class="report-body">
+              <p data-lang="en">
+                We executed the full digital rebrand of the media library for the vessel formerly listed as <strong>"Host 50,"</strong> now relaunched as the <strong>Sunseeker 52 Retro</strong>. The original raw folder — roughly <strong>2 GB</strong> of unprocessed drone footage, photography, and video — was fully reprocessed into a lean, web-ready package of just <strong>45 MB</strong>, a <strong>97% size reduction</strong>, with zero perceptible loss in visual quality.
+              </p>
+              <p data-lang="es">
+                Ejecutamos el rebranding digital completo de la biblioteca de medios para la embarcación antes listada como <strong>"Host 50,"</strong> ahora relanzada como <strong>Sunseeker 52 Retro</strong>. La carpeta original sin procesar — aproximadamente <strong>2 GB</strong> de metraje de dron, fotografía y video en bruto — fue reprocesada por completo en un paquete liviano y listo para web de solo <strong>45 MB</strong>, una <strong>reducción del 97%</strong> en peso, sin pérdida perceptible de calidad visual.
+              </p>
+              <p data-lang="en">
+                All <strong>51 photographs</strong> were individually reviewed and sorted into <strong>Interior</strong> and <strong>Exterior</strong> categories, then converted to the next-generation <strong>WebP format</strong> (<em>the modern image standard used by Google, Amazon, and other top-tier sites to load photos significantly faster on mobile without sacrificing sharpness</em>). Every file was renamed under the new commercial identity for clean, professional organization on the live site.
+              </p>
+              <p data-lang="es">
+                Las <strong>51 fotografías</strong> fueron revisadas y clasificadas individualmente en categorías de <strong>Interior</strong> y <strong>Exterior</strong>, y luego convertidas al formato de nueva generación <strong>WebP</strong> (<em>el estándar moderno de imagen que usan Google, Amazon y otros sitios de primer nivel para cargar fotos mucho más rápido en móvil sin sacrificar nitidez</em>). Cada archivo fue renombrado bajo la nueva identidad comercial para una organización limpia y profesional en el sitio en vivo.
+              </p>
+              <p data-lang="en">
+                The two raw video files (<strong>47 MB</strong> and <strong>103 MB</strong>) were trimmed into aesthetic <strong>10-to-14 second loops</strong> and re-encoded using <strong>H.264 compression</strong> (<em>the most widely compatible video format for web and mobile browsers</em>), bringing both clips to a combined weight <strong>under 15 MB total</strong> — purpose-built for smooth, instant-loading autoplay headers on mobile devices.
+              </p>
+              <p data-lang="es">
+                Los dos archivos de video originales (<strong>47 MB</strong> y <strong>103 MB</strong>) fueron recortados en <strong>loops estéticos de 10 a 14 segundos</strong> y recodificados con <strong>compresión H.264</strong> (<em>el formato de video más compatible con navegadores web y móviles</em>), llevando ambos clips a un peso combinado <strong>menor a 15 MB en total</strong> — diseñados específicamente para encabezados de reproducción automática fluidos e instantáneos en dispositivos móviles.
+              </p>
+            </div>
+            <p class="report-check">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span data-lang="en">51 Images + 2 Videos Optimized &amp; Verified</span>
+              <span data-lang="es">51 Imágenes + 2 Videos Optimizados y Verificados</span>
+            </p>
+          </article>
+
           <!-- Report F: Public Book Landing Page (book.html) -->
           <article class="report-card">
             <div class="report-card-head">
@@ -255,9 +349,9 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
                   <span data-lang="en">June 20, 2026</span>
                   <span data-lang="es">20 de Junio, 2026</span>
                 </p>
-                <span class="pill pill-orange">
-                  <span data-lang="en">Awaiting Reconciliation</span>
-                  <span data-lang="es">Por Conciliar</span>
+                <span class="pill pill-green">
+                  <span data-lang="en">Account Settled</span>
+                  <span data-lang="es">Saldo Conciliado</span>
                 </span>
               </div>
             </div>
@@ -350,9 +444,9 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
                   <span data-lang="en">June 20, 2026</span>
                   <span data-lang="es">20 de Junio, 2026</span>
                 </p>
-                <span class="pill pill-orange">
-                  <span data-lang="en">Awaiting Reconciliation</span>
-                  <span data-lang="es">Por Conciliar</span>
+                <span class="pill pill-green">
+                  <span data-lang="en">Account Settled</span>
+                  <span data-lang="es">Saldo Conciliado</span>
                 </span>
               </div>
             </div>
@@ -1118,6 +1212,14 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
                   <td><span class="proposal-cash">$1,000 MXN</span></td>
                   <td><span class="proposal-trade">$1,000 MXN</span></td>
                 </tr>
+                <tr>
+                  <td>
+                    <strong><span data-lang="en">Batch Reconciliation — Reports D, F, G, H</span><span data-lang="es">Conciliación de Lote — Informes D, F, G, H</span></strong>
+                  </td>
+                  <td><span class="proposal-amount">$3,000 MXN</span></td>
+                  <td><span class="proposal-cash">$1,500 MXN</span></td>
+                  <td><span class="proposal-trade">$1,500 MXN</span></td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -1130,6 +1232,17 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
               <p class="proposal-winwin-label" data-lang="es">Nota Ganar-Ganar — Crédito Comercial</p>
               <p class="proposal-winwin-text" data-lang="en">The $1,000 MXN Trade Exchange allocation will accumulate as secured charter credit for future yacht experiences.</p>
               <p class="proposal-winwin-text" data-lang="es">Los $1,000 MXN de intercambio comercial se acumularán como crédito de charter para futuras experiencias náuticas.</p>
+            </div>
+          </div>
+
+          <!-- Win-Win note — Batch Reconciliation -->
+          <div class="proposal-winwin-note">
+            <span class="proposal-winwin-icon">📦</span>
+            <div>
+              <p class="proposal-winwin-label" data-lang="en">Win-Win Note — Batch Reconciliation (D, F, G, H)</p>
+              <p class="proposal-winwin-label" data-lang="es">Nota Ganar-Ganar — Conciliación de Lote (D, F, G, H)</p>
+              <p class="proposal-winwin-text" data-lang="en">SEO &amp; Performance Architecture, the Book Landing Page, the Sunseeker 52 Retro Media Pipeline, and the Navigation/Server Deployment are now fully settled: $1,500 MXN cash and $1,500 MXN logged to the internal development trade-exchange account.</p>
+              <p class="proposal-winwin-text" data-lang="es">La Arquitectura de SEO y Rendimiento, la Landing Page del Libro, el Pipeline de Medios de Sunseeker 52 Retro y el Despliegue de Navegación/Servidor quedan totalmente conciliados: $1,500 MXN en efectivo y $1,500 MXN registrados en la cuenta interna de intercambio comercial para desarrollo.</p>
             </div>
           </div>
 
@@ -1360,28 +1473,28 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
             <div class="proposal-total-item">
               <p class="proposal-total-label" data-lang="en">Total Project Strategic Value</p>
               <p class="proposal-total-label" data-lang="es">Valor Total Estratégico del Proyecto</p>
-              <p class="proposal-total-value proposal-total-value--gold">$32,000 MXN</p>
-              <p class="proposal-total-note" data-lang="en">All phases integrated</p>
-              <p class="proposal-total-note" data-lang="es">Todas las fases integradas</p>
+              <p class="proposal-total-value proposal-total-value--gold">$35,000 MXN</p>
+              <p class="proposal-total-note" data-lang="en">All phases + batch reconciliation integrated</p>
+              <p class="proposal-total-note" data-lang="es">Todas las fases + conciliación de lote integradas</p>
             </div>
 
             <div class="proposal-total-item proposal-total-item--mid">
               <p class="proposal-total-label" data-lang="en">Total Real Cash Investment</p>
               <p class="proposal-total-label" data-lang="es">Inversión Total en Efectivo</p>
-              <p class="proposal-total-value proposal-total-value--cash">$20,000 MXN</p>
+              <p class="proposal-total-value proposal-total-value--cash">$21,500 MXN</p>
               <p class="proposal-total-note proposal-total-note--pink">
-                <span data-lang="en">Only 62.5% in Milestone-Based Payments</span>
-                <span data-lang="es">Solo el 62.5% diferido en pagos conforme a entrega</span>
+                <span data-lang="en">Only 61.4% in Milestone-Based Payments</span>
+                <span data-lang="es">Solo el 61.4% diferido en pagos conforme a entrega</span>
               </p>
             </div>
 
             <div class="proposal-total-item">
               <p class="proposal-total-label" data-lang="en">Capitalized Fleet Trade Alliance</p>
               <p class="proposal-total-label" data-lang="es">Alianza por Intercambio Comercial</p>
-              <p class="proposal-total-value proposal-total-value--trade">$12,000 MXN</p>
+              <p class="proposal-total-value proposal-total-value--trade">$13,500 MXN</p>
               <p class="proposal-total-note proposal-total-note--gold">
-                <span data-lang="en">37.5% Funded via Shared Vessel Experiences</span>
-                <span data-lang="es">37.5% Financiado en uso de embarcaciones al concluir</span>
+                <span data-lang="en">38.6% Funded via Shared Vessel Experiences</span>
+                <span data-lang="es">38.6% Financiado en uso de embarcaciones al concluir</span>
               </p>
             </div>
 
