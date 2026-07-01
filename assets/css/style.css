@@ -2407,51 +2407,88 @@ body[data-active-lang="es"] ul[data-lang="es"] { display: flex; }
   flex-wrap: wrap;
 }
 
-/* ── Share Widget — canonical ARF-Grid parent + responsive children ──
-   Parent (.share-grid): display:flex, flex-wrap:wrap, justify-content:center.
-   Children (.share-btn): flexible flex-basis, capped max-width, atomic
-   hover (translateY + shadow/border only — never scale/rotate, so the
-   grid layout never shifts or distorts on hover). ── */
+/* ── Share Widget — ARF-Grid: flex parent + constrained icon-card children ──
+ *
+ * LAYOUT PATTERN
+ *   Parent  (.share-grid) : flex · wrap · center — canonical ARF container.
+ *   Children (.share-btn)  : column flex, max-width 80px — icon above label.
+ *
+ * SVG CONSTRAINT CHAIN (prevents intrinsic-size overflow):
+ *   1. aspect-ratio: 1/1  — locks square geometry before paint
+ *   2. width / height     — explicit px cap eliminates 300×150 browser default
+ *   3. flex-shrink: 0     — prevents compression inside flex row
+ *
+ * COLOR SYSTEM
+ *   Default state  : var(--pink) (#FF007F — Lover Pink brand token)
+ *   Hover state    : platform-specific accent (atomic transition, no layout shift)
+ *
+ * HOVER CONTRACT
+ *   Only translateY + box-shadow + border-color + background are animated.
+ *   No scale / rotate — surrounding columns never shift.
+ * ── */
+
+/* ─── Parent container ───────────────────────────────────────────── */
 .share-grid {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 1rem;
+  gap: 1.5rem;
   margin-top: 1.75rem;
 }
+
+/* ─── Icon card children ─────────────────────────────────────────── */
 .share-btn {
-  flex: 0 1 160px;
-  max-width: 200px;
+  flex: 0 1 72px;
+  max-width: 80px;
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: .6rem;
-  padding: .85rem 1.5rem;
-  border-radius: var(--r-full);
+  gap: .45rem;
+  padding: .85rem .5rem .75rem;
+  border-radius: var(--r-lg);
   background: var(--surface);
   border: 1.5px solid var(--ink-10);
   color: var(--ink);
-  font-size: .78rem;
+  font-size: .58rem;
   font-weight: 700;
-  letter-spacing: .05em;
+  letter-spacing: .06em;
   text-transform: uppercase;
   text-decoration: none;
   box-shadow: var(--sh-card);
-  transition: transform var(--ease), box-shadow var(--ease), border-color var(--ease), background var(--ease);
+  transition: transform var(--ease), box-shadow var(--ease),
+              border-color var(--ease), background var(--ease);
 }
-.share-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+/* ─── SVG — hard constraints, Lover Pink default fill ───────────── */
+.share-btn svg {
+  width: 48px;
+  height: 48px;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
+  display: block;
+  color: var(--pink);                /* #FF007F — Lover Pink brand token */
+  transition: color var(--ease);
+}
+
+/* ─── Hover — lift only, no layout distortion ───────────────────── */
 .share-btn:hover {
-  transform: translateY(-3px);
+  transform: translateY(-4px);
   box-shadow: var(--sh-hover);
 }
-.share-btn--whatsapp svg { color: #25D366; }
+
+/* ─── Platform accent colors on hover ───────────────────────────── */
 .share-btn--whatsapp:hover { border-color: #25D366; background: rgba(37,211,102,.08); }
-.share-btn--facebook svg { color: #1877F2; }
+.share-btn--whatsapp:hover svg { color: #25D366; }
+
 .share-btn--facebook:hover { border-color: #1877F2; background: rgba(24,119,242,.08); }
-.share-btn--x svg { color: var(--ink); }
+.share-btn--facebook:hover svg { color: #1877F2; }
+
 .share-btn--x:hover { border-color: var(--ink); background: var(--ink-10); }
-.share-btn--linkedin svg { color: #0A66C2; }
+.share-btn--x:hover svg { color: var(--ink); }
+
 .share-btn--linkedin:hover { border-color: #0A66C2; background: rgba(10,102,194,.08); }
+.share-btn--linkedin:hover svg { color: #0A66C2; }
 
 /* ── Curiosity Grid (children of the canonical .arf-grid parent) ── */
 .curiosity-card {
