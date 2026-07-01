@@ -58,7 +58,7 @@ jobs:
           echo "  Actor   : ${{ github.actor }}"
           echo "  Branch  : ${{ github.ref_name }}"
           echo "  Commit  : ${{ github.sha }}"
-          echo "  Target  : public_html/cockpit/"
+          echo "  Target  : /cockpit/  (FTP root = public_html/)"
           echo "  Protocol: FTPS (Explicit TLS, Port 21)"
           echo "=============================================="
 
@@ -72,7 +72,7 @@ jobs:
           protocol:               ftps
           security:               loose
           local-dir:              ./
-          server-dir:             /public_html/cockpit/
+          server-dir:             /cockpit/
           dangerous-clean-slate:  false
 
           # ── Comprehensive global exclusion matrix ──────────────────
@@ -119,6 +119,8 @@ jobs:
             test/**
             test_db.php
             test_email.php
+            test_infra.php
+            initialize_env.php
             **/*.py
 
             # ── Legacy static files superseded by PHP versions ───
@@ -172,7 +174,7 @@ jobs:
           protocol:               ftps
           security:               loose
           local-dir:              ./my-book/
-          server-dir:             /public_html/my-book/
+          server-dir:             /my-book/
           dangerous-clean-slate:  false
 
   # ────────────────────────────────────────────────────────────────────────────

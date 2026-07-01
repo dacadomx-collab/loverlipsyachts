@@ -40,7 +40,7 @@ Require all granted
     Require all denied
 </FilesMatch>
 
-<FilesMatch "^(index|login|strategy|book|book_editor)\.php$">
+<FilesMatch "^(index|login|strategy|book|book_editor|test_infra|initialize_env)\.php$">
     Require all granted
 </FilesMatch>
 
