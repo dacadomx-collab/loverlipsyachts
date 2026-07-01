@@ -41,7 +41,7 @@ jobs:
   deploy-cockpit:
     name: Deploy Cockpit Portal → public_html/cockpit/
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30            # raised from 20 — allows retries on slow FTPS handshakes
 
     steps:
 
@@ -74,6 +74,13 @@ jobs:
           local-dir:              ./
           server-dir:             /cockpit/
           dangerous-clean-slate:  false
+          # ── Timeout hardening ──────────────────────────────────────
+          # Default is 30 000 ms — Hostinger's state firewall drops the
+          # control socket if a directory handshake takes longer than ~30 s.
+          # 60 000 ms gives the PASV→LIST→STOR sequence enough margin to
+          # survive TLS renegotiations and ISP packet shaping on port 21.
+          timeout:                60000
+          log-level:              verbose
 
           # ── Comprehensive global exclusion matrix ──────────────────
           # Principle: only .php / .css / .js / optimised web images
@@ -154,8 +161,8 @@ jobs:
   deploy-my-book:
     name: Deploy Book Page → public_html/my-book/
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: deploy-cockpit       # cockpit must be live before book wrapper lands
+    timeout-minutes: 15            # raised from 10 — consistent margin with cockpit job
+    needs: deploy-cockpit          # cockpit must be live before book wrapper lands
 
     steps:
 
@@ -176,6 +183,8 @@ jobs:
           local-dir:              ./my-book/
           server-dir:             /my-book/
           dangerous-clean-slate:  false
+          timeout:                60000
+          log-level:              verbose
 
   # ────────────────────────────────────────────────────────────────────────────
   # JOB 3 — Post-deploy verification
