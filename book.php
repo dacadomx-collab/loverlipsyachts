@@ -9,6 +9,36 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/api/conexion.php';
 
+/* ── Asset base URL — environment-adaptive absolute path ────────────
+ * book.php is served from two URLs:
+ *   • /cockpit/book.php        (direct access inside the portal)
+ *   • /my-book/                (via my-book/index.php wrapper)
+ *
+ * Relative paths like 'assets/css/style.css' resolve against the
+ * browser's current URL, so from /my-book/ they resolve to the wrong
+ * directory.  We use an absolute path instead, derived from where
+ * PHP is running:
+ *
+ *   Local XAMPP  → /loverlipsyachts/assets/  (project root = cockpit)
+ *   Production   → /cockpit/assets/          (Hostinger public_html/)
+ *
+ * Temporary detection variables are prefixed $_lly_ and unset after
+ * use to keep the template namespace clean.
+ * ─────────────────────────────────────────────────────────────────── */
+$_llyHost   = (string) ($_SERVER['HTTP_HOST']   ?? '');
+$_llySrvAddr = (string) ($_SERVER['SERVER_ADDR'] ?? '');
+$_llyRemAddr = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+
+$_llyLocal =
+    in_array($_llyHost,    ['localhost', '127.0.0.1'], true) ||
+    str_starts_with($_llyHost, 'localhost:') ||
+    str_starts_with($_llyHost, '127.0.0.1:') ||
+    in_array($_llySrvAddr, ['127.0.0.1', '::1'], true) ||
+    in_array($_llyRemAddr, ['127.0.0.1', '::1'], true);
+
+$baseAssetsUrl = $_llyLocal ? '/loverlipsyachts/assets/' : '/cockpit/assets/';
+unset($_llyHost, $_llySrvAddr, $_llyRemAddr, $_llyLocal);
+
 /* ── Hardcoded defaults (shown until the editor overwrites them) ── */
 $book = [
     'hero_title'      => ['en' => 'The true story of a man who should have died nine times.',
@@ -68,7 +98,14 @@ function bk(string $key, string $lang, array $book): string
     return htmlspecialchars($book[$key][$lang] ?? '', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
-$coverSrc  = htmlspecialchars($book['book_cover_path']['en'], ENT_QUOTES, 'UTF-8');
+/* ── Cover image — convert relative 'assets/...' to absolute path ── */
+$_rawCover = $book['book_cover_path']['en'] ?: 'assets/img/nine_live.png';
+if (str_starts_with($_rawCover, 'assets/')) {
+    $_rawCover = $baseAssetsUrl . substr($_rawCover, strlen('assets/'));
+}
+$coverSrc  = htmlspecialchars($_rawCover, ENT_QUOTES, 'UTF-8');
+unset($_rawCover);
+
 $hasSample = ($book['sample_chapter']['en'] !== '' || $book['sample_chapter']['es'] !== '');
 ?><!DOCTYPE html>
 <html lang="en" data-theme="light">
@@ -78,9 +115,9 @@ $hasSample = ($book['sample_chapter']['en'] !== '' || $book['sample_chapter']['e
   <meta name="description" content="Nine Lives. One True Love — a memoir by Lester Keizer. The story of a jungle boy who should have died many times, and the one true love that taught him how to live." />
   <meta name="robots" content="index, follow" />
   <title>Nine Lives. One True Love — by Lester Keizer</title>
-  <link rel="stylesheet" href="assets/css/style.css" />
-  <link rel="icon" type="image/png" href="assets/img/logo.png" />
-  <script src="assets/js/theme-init.js"></script>
+  <link rel="stylesheet" href="<?= $baseAssetsUrl ?>css/style.css" />
+  <link rel="icon" type="image/png" href="<?= $baseAssetsUrl ?>img/logo.png" />
+  <script src="<?= $baseAssetsUrl ?>js/theme-init.js"></script>
 </head>
 
 <body data-active-lang="en">
@@ -89,8 +126,8 @@ $hasSample = ($book['sample_chapter']['en'] !== '' || $book['sample_chapter']['e
     <div class="container">
       <div class="topbar-inner">
         <a href="https://loverlipsyachts.com/" class="topbar-logo" aria-label="Lover Lips Yachts — Home">
-          <img class="logo-day"   src="assets/img/logo.png"  alt="Lover Lips Yachts" />
-          <img class="logo-night" src="assets/img/logo2.png" alt="Lover Lips Yachts" />
+          <img class="logo-day"   src="<?= $baseAssetsUrl ?>img/logo.png"  alt="Lover Lips Yachts" />
+          <img class="logo-night" src="<?= $baseAssetsUrl ?>img/logo2.png" alt="Lover Lips Yachts" />
           <div class="topbar-brand">
             Lover Lips Yachts
             <span>Author Spotlight</span>
@@ -328,7 +365,7 @@ $hasSample = ($book['sample_chapter']['en'] !== '' || $book['sample_chapter']['e
         </h2>
         <div class="arf-grid">
           <article class="arf-card">
-            <div class="arf-card-media"><img src="assets/img/news/article-summer-la-paz.jpg" alt="Summer in La Paz, Mexico" loading="lazy" /></div>
+            <div class="arf-card-media"><img src="<?= $baseAssetsUrl ?>img/news/article-summer-la-paz.jpg" alt="Summer in La Paz, Mexico" loading="lazy" /></div>
             <div class="arf-card-body">
               <p class="arf-card-tag"><span data-lang="en">Travel Tips</span><span data-lang="es">Consejos de Viaje</span></p>
               <h3 class="arf-card-title"><span data-lang="en">Is Summer a Good Time to Visit La Paz, Mexico?</span><span data-lang="es">¿Es el Verano un Buen Momento para Visitar La Paz, México?</span></h3>
@@ -336,7 +373,7 @@ $hasSample = ($book['sample_chapter']['en'] !== '' || $book['sample_chapter']['e
             </div>
           </article>
           <article class="arf-card">
-            <div class="arf-card-media"><img src="assets/img/news/article-espiritu-santo.jpg" alt="Isla Espíritu Santo yacht tour" loading="lazy" /></div>
+            <div class="arf-card-media"><img src="<?= $baseAssetsUrl ?>img/news/article-espiritu-santo.jpg" alt="Isla Espíritu Santo yacht tour" loading="lazy" /></div>
             <div class="arf-card-body">
               <p class="arf-card-tag"><span data-lang="en">Yacht Tours</span><span data-lang="es">Tours en Yate</span></p>
               <h3 class="arf-card-title"><span data-lang="en">Isla Espíritu Santo Yacht Tour: Everything You Need to Know</span><span data-lang="es">Tour en Yate a Isla Espíritu Santo: Todo lo que Necesitas Saber</span></h3>
@@ -344,7 +381,7 @@ $hasSample = ($book['sample_chapter']['en'] !== '' || $book['sample_chapter']['e
             </div>
           </article>
           <article class="arf-card">
-            <div class="arf-card-media"><img src="assets/img/news/article-balandra.jpg" alt="Balandra Beach" loading="lazy" /></div>
+            <div class="arf-card-media"><img src="<?= $baseAssetsUrl ?>img/news/article-balandra.jpg" alt="Balandra Beach" loading="lazy" /></div>
             <div class="arf-card-body">
               <p class="arf-card-tag"><span data-lang="en">Destinations</span><span data-lang="es">Destinos</span></p>
               <h3 class="arf-card-title"><span data-lang="en">Is Balandra Beach Worth the Visit?</span><span data-lang="es">¿Vale la Pena Visitar la Playa Balandra?</span></h3>
@@ -396,8 +433,8 @@ $hasSample = ($book['sample_chapter']['en'] !== '' || $book['sample_chapter']['e
   <footer class="footer" role="contentinfo">
     <div class="container">
       <div class="footer-logo">
-        <img class="logo-day"   src="assets/img/logo.png"  alt="Lover Lips Yachts" />
-        <img class="logo-night" src="assets/img/logo2.png" alt="Lover Lips Yachts" />
+        <img class="logo-day"   src="<?= $baseAssetsUrl ?>img/logo.png"  alt="Lover Lips Yachts" />
+        <img class="logo-night" src="<?= $baseAssetsUrl ?>img/logo2.png" alt="Lover Lips Yachts" />
       </div>
       <p>
         <strong>Lover Lips Yachts</strong> &nbsp;·&nbsp;
@@ -415,7 +452,7 @@ $hasSample = ($book['sample_chapter']['en'] !== '' || $book['sample_chapter']['e
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
   </button>
 
-  <script src="assets/js/main.js" defer></script>
+  <script src="<?= $baseAssetsUrl ?>js/main.js" defer></script>
 
 </body>
 </html>
