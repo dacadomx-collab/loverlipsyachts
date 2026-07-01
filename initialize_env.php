@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 /* ── Edit this before uploading ───────────────────────────────────
    Generate with: php -r "echo bin2hex(random_bytes(24));"          */
-define('INIT_TOKEN', 'REPLACE_WITH_A_STRONG_RANDOM_TOKEN_BEFORE_UPLOAD');
+define('INIT_TOKEN', 'LoverLipsInit2026!');
 
 /* ── Hostinger fixed parameters ───────────────────────────────────
    These are known — only DB_PASS is entered at runtime.             */
@@ -49,9 +49,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     /* ── 1. Token verification ──────────────────────────────────── */
     $submittedToken = (string) ($_POST['init_token'] ?? '');
-    if (INIT_TOKEN === 'REPLACE_WITH_A_STRONG_RANDOM_TOKEN_BEFORE_UPLOAD') {
+    if (strlen(INIT_TOKEN) < 8) {
         http_response_code(403);
-        die('[!!] INIT_TOKEN has not been set. Edit the script before uploading.');
+        die('[!!] INIT_TOKEN is too short or not set. Edit the constant before uploading.');
     }
     if ($submittedToken === '' || !hash_equals(INIT_TOKEN, $submittedToken)) {
         http_response_code(403);
@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     /* ── 3. Optional extras ─────────────────────────────────────── */
     $smtpPass  = trim((string) ($_POST['smtp_pass']  ?? ''));
-    $diagToken = trim((string) ($_POST['diag_token'] ?? 'lly_diag_2026'));
+    $diagToken = trim((string) ($_POST['diag_token'] ?? 'LlyDiagnosticPass2026!'));
 
     /* ── 4. Generate AI encryption key if not provided ──────────── */
     $aiKey = trim((string) ($_POST['ai_key'] ?? ''));
@@ -97,8 +97,11 @@ APP_URL_LOCAL="http://localhost/loverlipsyachts"
 APP_URL_PRODUCTION="https://loverlipsyachts.com"
 APP_COCKPIT_URL="https://loverlipsyachts.com/cockpit/"
 
-; ─── BASE DE DATOS MYSQL — Production (Hostinger / loverlipsyachts.com) ─────
+; ─── BASE DE DATOS MYSQL — Dual-Environment Config ───────────────────────────
+; DB_HOST      = localhost  (Hostinger socket — do NOT change on production)
+; DB_HOST_LOCAL = remote IP (leave blank on production — only for XAMPP dev)
 DB_HOST="localhost"
+DB_HOST_LOCAL=""
 DB_NAME="u713871298_lly_db"
 DB_USER="u713871298_lly_db_user"
 DB_PASS="{$dbPass}"
@@ -226,9 +229,9 @@ ENV;
           then deletes itself permanently. Enter your credentials below and submit once.
         </p>
 
-        <?php if (INIT_TOKEN === 'REPLACE_WITH_A_STRONG_RANDOM_TOKEN_BEFORE_UPLOAD'): ?>
+        <?php if (strlen(INIT_TOKEN) < 8): ?>
         <div class="editor-alert editor-alert--error" role="alert">
-          ⚠ INIT_TOKEN has not been set in this script. Edit the constant at the top of
+          ⚠ INIT_TOKEN is not set or too short. Edit the constant at the top of
           initialize_env.php before uploading to production.
         </div>
         <?php endif; ?>
@@ -288,8 +291,8 @@ ENV;
               <label class="editor-label" for="diag_token">Diagnostic Token for test_infra.php</label>
               <input type="text" id="diag_token" name="diag_token"
                      class="editor-input"
-                     value="lly_diag_2026"
-                     placeholder="lly_diag_2026" />
+                     value="LlyDiagnosticPass2026!"
+                     placeholder="LlyDiagnosticPass2026!" />
             </div>
           </fieldset>
 

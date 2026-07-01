@@ -28,7 +28,7 @@ $isLocalEnv  = in_array($remoteAddr, ['127.0.0.1', '::1'], true)
 
 /* ── Token gate (skipped on localhost, required on production) ──── */
 $diagToken = (string) ($_GET['token'] ?? '');
-$envToken  = (string) (getenv('DIAG_TOKEN') ?: 'lly_diag_2026');
+$envToken  = (string) (getenv('DIAG_TOKEN') ?: 'LlyDiagnosticPass2026!');
 
 if (!$isLocalEnv && ($diagToken === '' || !hash_equals($envToken, $diagToken))) {
     http_response_code(403);
@@ -125,80 +125,99 @@ if (!file_exists($envPath)) {
     $missing_keys  = array_diff($required_keys, array_keys($env));
     if (empty($missing_keys)) {
         echo $PASS . "All required DB_* keys are present.\n";
-        echo $INFO . "DB_HOST value : " . ($env['DB_HOST'] ?? '—') . "\n";
-        echo $INFO . "DB_NAME value : " . ($env['DB_NAME'] ?? '—') . "\n";
-        echo $INFO . "DB_USER value : " . ($env['DB_USER'] ?? '—') . "\n";
-        echo $INFO . "DB_PASS value : [REDACTED — " . strlen($env['DB_PASS'] ?? '') . " chars]\n";
+        echo $INFO . "APP_ENV       : " . ($env['APP_ENV'] ?? '(not set — defaults to production)') . "\n";
+        echo $INFO . "DB_HOST       : " . ($env['DB_HOST'] ?? '—') . " (production socket)\n";
+        if (isset($env['DB_HOST_LOCAL']) && $env['DB_HOST_LOCAL'] !== '') {
+            echo $INFO . "DB_HOST_LOCAL : " . $env['DB_HOST_LOCAL'] . " (XAMPP remote access)\n";
+        } else {
+            echo $INFO . "DB_HOST_LOCAL : (not set — add for local XAMPP dev access)\n";
+        }
+        echo $INFO . "DB_NAME       : " . ($env['DB_NAME'] ?? '—') . "\n";
+        echo $INFO . "DB_USER       : " . ($env['DB_USER'] ?? '—') . "\n";
+        echo $INFO . "DB_PASS       : [REDACTED — " . strlen($env['DB_PASS'] ?? '') . " chars]\n";
     } else {
         echo $FAIL . "Missing required keys: " . implode(', ', $missing_keys) . "\n";
     }
 }
 
 /* ════════════════════════════════════════════════════════════════
-   4. MYSQL CONNECTIVITY — PDO try/catch isolation
+   4. MYSQL CONNECTIVITY — mirrors api/conexion.php routing exactly
    ════════════════════════════════════════════════════════════════ */
 echo "\n4. MYSQL DATABASE CONNECTIVITY\n$SEP\n";
-echo $INFO . "Expected DB   : u713871298_lly_db\n";
-echo $INFO . "Expected user : u713871298_lly_db_user\n";
-echo $INFO . "Host          : localhost (Hostinger native socket)\n\n";
 
-if (empty($env) || empty($env['DB_NAME'] ?? '')) {
-    echo $FAIL . "Cannot test DB connection — core/.env unavailable or incomplete.\n";
+if (empty($env) || ($env['DB_NAME'] ?? '') === '') {
+    echo $FAIL . "Cannot test DB — core/.env unavailable or missing DB_NAME.\n";
     echo "       -> See section 3 above.\n";
 } else {
-    $dbHost = $env['DB_HOST'] ?? 'localhost';
+    /*
+     * Host selection replicates api/conexion.php::isLocalRequest() exactly.
+     * $isLocalEnv is set at the top of this script using the same signals:
+     *   REMOTE_ADDR, SERVER_ADDR, HTTP_HOST.
+     *
+     * LOCAL  → DB_HOST_LOCAL (e.g. 145.223.105.68), port=3306 forced (TCP)
+     * PROD   → DB_HOST       (localhost), socket binding (no port override)
+     */
     $dbName = $env['DB_NAME'] ?? '';
     $dbUser = $env['DB_USER'] ?? '';
     $dbPass = $env['DB_PASS'] ?? '';
-    $dsn    = "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4";
+
+    if ($isLocalEnv) {
+        $dbHost     = $env['DB_HOST_LOCAL'] ?? '145.223.105.68';
+        $hostSource = 'DB_HOST_LOCAL — XAMPP → Hostinger TCP:3306';
+        $dsn        = "mysql:host={$dbHost};port=3306;dbname={$dbName};charset=utf8mb4";
+    } else {
+        $dbHost     = $env['DB_HOST'] ?? 'localhost';
+        $hostSource = 'DB_HOST — Hostinger native socket';
+        $dsn        = "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4";
+    }
+
+    echo $INFO . "Context       : " . ($isLocalEnv ? 'LOCAL XAMPP' : 'PRODUCTION') . "\n";
+    echo $INFO . "Host selected : {$dbHost}  [{$hostSource}]\n";
+    echo $INFO . "DB_NAME       : {$dbName}\n";
+    echo $INFO . "DB_USER       : {$dbUser}\n";
+    echo $INFO . "DSN           : " . preg_replace('/:([^:@]+)@/', ':[REDACTED]@', $dsn) . "\n\n";
 
     try {
         $pdo = new PDO($dsn, $dbUser, $dbPass, [
             PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_EMULATE_PREPARES   => false,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_TIMEOUT            => 5,
+            PDO::ATTR_TIMEOUT            => 8,
             PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci'",
         ]);
 
-        /* ── Connection confirmed ── */
         $meta = $pdo->query("SELECT VERSION() AS ver, DATABASE() AS db, USER() AS usr")->fetch();
         echo $PASS . "PDO connection established successfully.\n";
         echo $INFO . "MySQL version : " . ($meta['ver'] ?? '—') . "\n";
         echo $INFO . "Active DB     : " . ($meta['db']  ?? '—') . "\n";
         echo $INFO . "Auth user     : " . ($meta['usr'] ?? '—') . "\n";
 
-        /* ── Table presence checks ── */
         echo "\nTable checks:\n";
-
-        $tables_to_check = ['lly_users', 'lly_book_content'];
-        foreach ($tables_to_check as $tbl) {
+        foreach (['lly_users', 'lly_book_content'] as $tbl) {
             $found = $pdo->query("SHOW TABLES LIKE " . $pdo->quote($tbl))->fetchAll();
             if (!empty($found)) {
-                $cnt = $pdo->query("SELECT COUNT(*) AS c FROM `{$tbl}`")->fetch()['c'];
-                echo $PASS . "`{$tbl}` exists — {$cnt} row(s).\n";
+                $cnt = (int) $pdo->query("SELECT COUNT(*) AS c FROM `{$tbl}`")->fetch()['c'];
+                echo $PASS . "`{$tbl}` — {$cnt} row(s).\n";
             } else {
-                echo $FAIL . "`{$tbl}` NOT FOUND.\n";
-                if ($tbl === 'lly_users') {
-                    echo "       -> Authentication will fail. Run schema SQL in Hostinger phpMyAdmin.\n";
-                }
-                if ($tbl === 'lly_book_content') {
-                    echo "       -> Book editor will fall back to defaults. Run schema SQL.\n";
-                }
+                echo $FAIL . "`{$tbl}` NOT FOUND — run schema SQL via Hostinger phpMyAdmin.\n";
             }
         }
 
     } catch (PDOException $e) {
         echo $FAIL . "PDO connection FAILED.\n";
-        // Sanitize message — redact any credential fragment
         $safe = preg_replace('/\b' . preg_quote($dbPass, '/') . '\b/', '[REDACTED]', $e->getMessage());
         echo "       Error : {$safe}\n";
         echo "       Code  : " . $e->getCode() . "\n\n";
-        echo "  Troubleshooting checklist:\n";
-        echo "  -> Verify DB_PASS in core/.env matches Hostinger hPanel password.\n";
-        echo "  -> Confirm user '{$dbUser}' is assigned to '{$dbName}' in hPanel.\n";
-        echo "  -> Hostinger socket: DB_HOST must be 'localhost' (not 127.0.0.1).\n";
-        echo "  -> hPanel path: Databases -> MySQL Databases -> Manage.\n";
+        echo "  Checklist:\n";
+        if ($isLocalEnv) {
+            echo "  [1] hPanel → Databases → Remote MySQL → confirm {$remoteAddr} is whitelisted.\n";
+            echo "  [2] DB_HOST_LOCAL in core/.env must be Hostinger's public MySQL IP (145.223.105.68).\n";
+            echo "  [3] Port 3306 must not be blocked by your local firewall or ISP.\n";
+        } else {
+            echo "  [1] DB_HOST in core/.env must be 'localhost' on the Hostinger server.\n";
+        }
+        echo "  [4] DB_PASS in core/.env must match the hPanel Databases → MySQL password.\n";
+        echo "  [5] User '{$dbUser}' must be assigned to '{$dbName}' in hPanel.\n";
     }
 }
 
