@@ -31,7 +31,12 @@ function lly_check_remember_me(): bool
     }
 
     $token = (string) $_COOKIE['lly_remember'];
-    $pdo   = Conexion::getConnection();
+
+    try {
+        $pdo = Conexion::getConnection();
+    } catch (RuntimeException) {
+        return false; // DB unavailable — treat as unauthenticated
+    }
 
     $stmt = $pdo->prepare(
         'SELECT id, email FROM lly_users WHERE remember_token = :token AND token_expiry > NOW() LIMIT 1'

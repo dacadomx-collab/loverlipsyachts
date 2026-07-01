@@ -1,16 +1,16 @@
 # ═══════════════════════════════════════════════════════════════
-# LOVER LIPS YACHTS — .htaccess CONSOLIDADO (ACCESIBLE + BLINDADO)
-# index.php es el gatekeeper server-side real — index.html quedó
-# retirado (ver index.html, ahora un stub inerte).
+# LOVER LIPS YACHTS — .htaccess (cockpit/)
+# This file governs public_html/cockpit/ on Hostinger production.
+# Sibling directories (my-book/, WordPress root) are NOT affected.
+# index.php is the server-side authentication gatekeeper.
 # ═══════════════════════════════════════════════════════════════
 
 DirectoryIndex index.php
 Options -Indexes
 
-# Línea base: el hosting de tourfindy.com deniega por defecto a nivel de
-# servidor si esta línea falta — sin ella, hasta los archivos públicos
-# (CSS, JS, imágenes, book.html) devuelven 403. Las reglas más específicas
-# abajo (.php, dotfiles, carpetas sensibles) siguen ganando sobre esta.
+# Línea base requerida por Hostinger: sin ella, los archivos estáticos
+# (CSS, JS, imágenes) devuelven 403. Las reglas específicas abajo (.php,
+# dotfiles, carpetas sensibles) tienen mayor especificidad y ganan siempre.
 Require all granted
 
 # ── Bloqueo de archivos ocultos y de configuración ──────────────
@@ -29,6 +29,8 @@ Require all granted
     RewriteRule ^sql(/.*)?$       - [F,L]
     RewriteRule ^\.git            - [F,L]
     RewriteRule ^\.github         - [F,L]
+    # Redirect legacy static page to dynamic PHP version
+    RewriteRule ^book\.html$      book.php [R=301,L]
 </IfModule>
 
 # ── PHP denegado por defecto. dashboard.php y api/conexion.php no
@@ -38,7 +40,7 @@ Require all granted
     Require all denied
 </FilesMatch>
 
-<FilesMatch "^(index|login|strategy)\.php$">
+<FilesMatch "^(index|login|strategy|book|book_editor)\.php$">
     Require all granted
 </FilesMatch>
 

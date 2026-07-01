@@ -3,20 +3,29 @@ declare(strict_types=1);
 
 /**
  * LOVER LIPS YACHTS — api/conexion.php
- * Centralized PDO connection. Reads DB_HOST/DB_NAME/DB_USER/DB_PASS from
- * core/.env (never committed, never web-accessible — blocked in .htaccess).
+ * Centralized PDO singleton. Reads credentials from core/.env — the
+ * only source of truth for database parameters.
  *
- * Forensic failure handling: a connection error is never echoed to the
- * client. The real exception goes to error_log() only; the client gets a
- * generic bilingual JSON message with HTTP 500.
+ * Production (Hostinger):
+ *   DB_HOST = localhost  (native socket — fastest, no TCP overhead)
+ *   DB_NAME = u713871298_lly_db
+ *   DB_USER = u713871298_lly_db_user
+ *
+ * Local XAMPP:
+ *   Set DB_HOST in core/.env to the Hostinger remote MySQL hostname
+ *   after whitelisting your IP under Databases → Remote MySQL.
+ *
+ * Security hardening:
+ *   • PDO::ATTR_EMULATE_PREPARES = false  → real prepared statements
+ *   • PDO::ERRMODE_EXCEPTION             → all errors throw, never echo
+ *   • PDO::ATTR_DEFAULT_FETCH_MODE       → assoc arrays only
+ *   • Connection errors logged, never exposed to the client
  */
 final class Conexion
 {
     private static ?PDO $instance = null;
 
-    private function __construct()
-    {
-    }
+    private function __construct() {}
 
     public static function getConnection(): PDO
     {
@@ -24,58 +33,50 @@ final class Conexion
             return self::$instance;
         }
 
-        // Conexión unificada: core/.env sigue siendo la única fuente de
-        // verdad para DB_NAME/DB_USER/DB_PASS — no se toca ni se duplica.
-        // En producción (lly.tourfindy.com), DB_HOST="localhost" es correcto
-        // porque Apache/PHP/MySQL viven en la misma máquina cPanel.
-        //
-        // Puente híbrido SOLO para XAMPP local: "localhost" ahí apunta a la
-        // MariaDB de XAMPP (sin la tabla lly_users), nunca a tourfindy.com.
-        // Se sobreescribe el host únicamente cuando la petición llega por
-        // localhost/127.0.0.1 — el flujo en vivo no entra a este bloque.
-        $env = self::loadEnv(__DIR__ . '/../core/.env');
+        $env  = self::loadEnv(__DIR__ . '/../core/.env');
 
-        $requestHost = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '';
-        $isLocalEnv  = in_array($requestHost, ['localhost', '127.0.0.1'], true)
-            || str_starts_with($requestHost, 'localhost:')
-            || str_starts_with($requestHost, '127.0.0.1:');
-
-        // Hostname externo real, validado en esta misma sesión (Remote
-        // MySQL debe seguir habilitado en cPanel para la IP de quien prueba
-        // en local — si vuelve a dar 500, eso es lo primero a revisar).
-        $host = $isLocalEnv ? 'chir205.websitehostserver.net' : ($env['DB_HOST'] ?? '');
+        $host = $env['DB_HOST'] ?? 'localhost';
         $name = $env['DB_NAME'] ?? '';
         $user = $env['DB_USER'] ?? '';
         $pass = $env['DB_PASS'] ?? '';
 
-        $dsn = sprintf('mysql:host=%s;dbname=%s;charset=utf8mb4', $host, $name);
+        if ($name === '' || $user === '') {
+            error_log('[LLY conexion] Missing DB_NAME or DB_USER in core/.env');
+            throw new RuntimeException('Database configuration incomplete.', 500);
+        }
+
+        $dsn = sprintf(
+            'mysql:host=%s;dbname=%s;charset=utf8mb4',
+            $host,
+            $name
+        );
 
         try {
             self::$instance = new PDO($dsn, $user, $pass, [
                 PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_EMULATE_PREPARES   => false,
+                PDO::ATTR_EMULATE_PREPARES   => false,   // real prepared statements
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci'",
             ]);
         } catch (PDOException $e) {
             error_log('[LLY conexion] DB connection failed: ' . $e->getMessage());
-
-            http_response_code(500);
-            header('Content-Type: application/json');
-            echo json_encode([
-                'success'    => false,
-                'message_en' => 'A server error occurred. Please try again later.',
-                'message_es' => 'Ocurrió un error del servidor. Inténtalo más tarde.',
-            ]);
-            exit;
+            // Callers decide: API endpoints respond with JSON 503,
+            // page-rendering files degrade gracefully to defaults.
+            throw new RuntimeException('Database connection failed.', 500, $e);
         }
 
         return self::$instance;
     }
 
+    /**
+     * Parse a simple KEY="value" / KEY=value .env file.
+     * Lines starting with # or ; and blank lines are ignored.
+     */
     private static function loadEnv(string $path): array
     {
         $vars = [];
         if (!is_readable($path)) {
+            error_log('[LLY conexion] core/.env not found or not readable at: ' . $path);
             return $vars;
         }
         foreach (file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {

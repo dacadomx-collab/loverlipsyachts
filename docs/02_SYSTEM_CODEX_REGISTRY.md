@@ -133,6 +133,29 @@ Decisión humana explícita: `lly.tourfindy.com` es el entorno oficial de **Stag
 - `core/.env` → `DB_HOST="localhost"` — válido porque Apache/PHP/MySQL viven en la misma máquina cPanel de tourfindy.com. **Consecuencia técnica, no opcional:** este valor solo resuelve correctamente cuando el código se ejecuta en ese servidor. Probar contra la base de datos desde XAMPP local ya no es posible — todo testing con BD ocurre desplegando a `lly.tourfindy.com`.
 - La base local `lly_local_db` (MariaDB de XAMPP) se dejó intacta en el motor local pero queda sin uso por este proyecto — no se borró automáticamente (es dato, no código residual).
 
+## ✅ Cierre de Hito — Book Editor Studio & MySQL Architecture (2026-07-01)
+
+### Nueva tabla: `lly_book_content`
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | INT PK AUTO_INCREMENT | Clave primaria |
+| `meta_key` | VARCHAR UNIQUE | Identificador semántico del campo (ej. `hero_title`, `synopsis`, `card_1`, `card_1_icon`, `book_cover_path`) |
+| `content_en` | TEXT | Contenido en inglés |
+| `content_es` | TEXT | Contenido en español |
+| `updated_at` | TIMESTAMP | Auto-actualizado en cada UPSERT |
+
+**Patrón de clave para tarjetas de curiosidad:** `card_N` (texto EN/ES) + `card_N_icon` (emoji, misma en ambas columnas), N = 1…7.
+**Cobertura de errores neutralizados:** Error 1054 (Column not found) y dependencias de parsing por regex en `preg_replace` — ambos eliminados al mover la capa de escritura a PDO puro con transacciones.
+
+### Endpoints registrados
+- **`api/book_editor.php`** (POST, requiere sesión + CSRF): Recibe campos del editor, ejecuta `INSERT … ON DUPLICATE KEY UPDATE` por cada `meta_key`, convierte imágenes a WebP/80 vía GD. Respuesta JSON: `{"status":"success","message":"Changes successfully saved to live database!"}`.
+- **`book.php`** (GET, público): Reemplaza `book.html` como página pública. Lee `lly_book_content` en una consulta `SELECT *`, construye array `$book[meta_key][lang]`, renderiza template PHP con `htmlspecialchars()`. Degrada gracefully a defaults embebidos si la BD no responde.
+- **`.htaccess`** actualizado: `book` y `book_editor` agregados a la whitelist de PHP (`<FilesMatch>`); redirect 301 `book.html` → `book.php` para continuidad SEO.
+- **`api/conexion.php`** refactorizado: catch de PDOException ahora lanza `RuntimeException` en lugar de `exit()`, permitiendo degradación graceful en páginas de renderizado (dashboard.php, book.php) sin crashear.
+
+### Infraestructura bilingual segura
+El par `content_en` / `content_es` en `lly_book_content` es la fuente única de verdad para todo texto bilingüe del Book Spotlight. No existe lógica de idioma en la BD — el cliente recibe ambas columnas y el toggle JS (`setLang`) / atributo `data-lang` del DOM resuelven la presentación.
+
 ## Backend — snake_case (Mandamiento 7)
 
 ### Base de datos

@@ -39,7 +39,11 @@ if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || $password ===
     ll_respond('error', 'Invalid email or password format. / Formato de correo o contraseña inválido.', 400);
 }
 
-$pdo = Conexion::getConnection();
+try {
+    $pdo = Conexion::getConnection();
+} catch (RuntimeException) {
+    ll_respond('error', 'Database unavailable. / Base de datos no disponible.', 503);
+}
 
 /* ── Layer 3: Prepared-statement lookup ────────────────────────────── */
 $stmt = $pdo->prepare('SELECT id, email, password_hash FROM lly_users WHERE email = :email LIMIT 1');

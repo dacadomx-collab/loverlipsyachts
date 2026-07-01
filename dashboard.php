@@ -6,6 +6,8 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
     echo 'Acceso denegado.';
     exit;
 }
+
+/* No book preload needed — editor lives in book_editor.php */
 ?><!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
@@ -44,22 +46,25 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
 
           <!-- SPA Navigation — 3 tabs: Reports, Timeline, Alliance -->
           <nav class="topbar-nav" role="navigation" aria-label="Dashboard Views">
-            <button class="topbar-nav-link active-nav" data-target="hub-reports" onclick="activateHubFromTopbar(this)">
+            <button type="button" class="topbar-nav-link active-nav" data-target="hub-reports">
               <span data-lang="en">Reports</span><span data-lang="es">Informes</span>
             </button>
-            <button class="topbar-nav-link" data-target="hub-timeline" onclick="activateHubFromTopbar(this)">
+            <button type="button" class="topbar-nav-link" data-target="hub-timeline">
               <span data-lang="en">Timeline</span><span data-lang="es">Línea de Tiempo</span>
             </button>
-            <button class="topbar-nav-link" data-target="hub-alliance" onclick="activateHubFromTopbar(this)">
+            <button type="button" class="topbar-nav-link" data-target="hub-alliance">
               <span data-lang="en">Alliance</span><span data-lang="es">Alianza</span>
             </button>
+            <a class="topbar-nav-link topbar-nav-link--editor" href="book_editor.php">
+              <span data-lang="en">✏️ Book Editor</span><span data-lang="es">✏️ Editor del Libro</span>
+            </a>
           </nav>
 
           <!-- Theme toggle -->
           <button
+            type="button"
             class="theme-toggle"
             id="theme-toggle"
-            onclick="toggleTheme()"
             aria-label="Switch to Night Mode"
             aria-pressed="false"
           >
@@ -75,8 +80,8 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
 
           <!-- Language toggle -->
           <div class="lang-toggle" role="group" aria-label="Language / Idioma">
-            <button class="lang-btn active" id="btn-en" onclick="setLang('en')" aria-pressed="true">EN</button>
-            <button class="lang-btn"        id="btn-es" onclick="setLang('es')" aria-pressed="false">ES</button>
+            <button type="button" class="lang-btn active" id="btn-en" aria-pressed="true">EN</button>
+            <button type="button" class="lang-btn"        id="btn-es" aria-pressed="false">ES</button>
           </div>
         </div>
 
@@ -180,7 +185,7 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
       <div class="container">
         <div class="hub-navigation">
 
-          <button class="hub-card active" data-target="hub-reports" onclick="activateHub(this)">
+          <button type="button" class="hub-card active" data-target="hub-reports">
             <div class="hub-card-icon">📊</div>
             <h3>
               <span data-lang="en">Progress Reports</span>
@@ -192,7 +197,7 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
             </p>
           </button>
 
-          <button class="hub-card" data-target="hub-timeline" onclick="activateHub(this)">
+          <button type="button" class="hub-card" data-target="hub-timeline">
             <div class="hub-card-icon">🗓️</div>
             <h3>
               <span data-lang="en">Project Timeline</span>
@@ -204,7 +209,7 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
             </p>
           </button>
 
-          <button class="hub-card" data-target="hub-alliance" onclick="activateHub(this)">
+          <button type="button" class="hub-card" data-target="hub-alliance">
             <div class="hub-card-icon">🤝</div>
             <h3>
               <span data-lang="en">Win-Win Alliance</span>
@@ -215,6 +220,18 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
               <span data-lang="es">Estructura de inversión y alianza estratégica.</span>
             </p>
           </button>
+
+          <a class="hub-card hub-card--editor" href="book_editor.php" role="button">
+            <div class="hub-card-icon">✏️</div>
+            <h3>
+              <span data-lang="en">Book Editor Studio</span>
+              <span data-lang="es">Estudio Editor del Libro</span>
+            </h3>
+            <p>
+              <span data-lang="en">Edit and publish your book spotlight page live.</span>
+              <span data-lang="es">Edita y publica tu página del libro en vivo.</span>
+            </p>
+          </a>
 
         </div>
       </div>
@@ -246,8 +263,69 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
 
         <div class="reports-grid">
 
+          <!-- Report I: Database Integration & Book Editor Studio -->
+          <article class="report-card report-card--featured" id="report-i">
+            <div class="report-card-head">
+              <div class="report-number report-number--gold">I</div>
+              <div class="report-card-meta">
+                <p class="report-date">
+                  <span data-lang="en">July 1, 2026</span>
+                  <span data-lang="es">1 de Julio, 2026</span>
+                </p>
+                <span class="pill pill-green">
+                  <span data-lang="en">Account Settled</span>
+                  <span data-lang="es">Saldo Conciliado</span>
+                </span>
+              </div>
+            </div>
+            <p class="report-tag">
+              <span data-lang="en">Report I · System Architecture · Database CMS &amp; Custom Studio Deployment</span>
+              <span data-lang="es">Informe I · Arquitectura de Sistema · CMS en Base de Datos y Despliegue de Estudio Personalizado</span>
+            </p>
+            <h3 class="report-title">
+              <span data-lang="en">Database Integration &amp; Visual Book Editor Studio Deployment</span>
+              <span data-lang="es">Integración de Base de Datos y Despliegue del Estudio Visual de Edición del Libro</span>
+            </h3>
+            <div class="report-body">
+              <p data-lang="en">
+                Successfully migrated the static placeholder landing page into a fully dynamic MySQL schema (<strong>lly_book_content</strong>). The bilingual content infrastructure is now stored across <strong>content_en</strong> and <strong>content_es</strong> columns, completely neutralizing column-not-found errors (Error 1054) and regex parsing dependencies.
+                <br><br>
+                Deployed the secure, custom-built <strong>Book Editor Studio</strong> as a dedicated standalone administrative page (<code>book_editor.php</code>) — fully pre-populated from the live database on every load. Lester can autonomously update text, blog articles, the Amazon link, sample chapter, and upload covers automatically transformed to <strong>WebP</strong> at 80% quality, eliminating all developer downtime for content changes.
+              </p>
+              <p data-lang="es">
+                Migración exitosa de la landing page estática a un esquema dinámico en MySQL (<strong>lly_book_content</strong>). La infraestructura de contenido bilingüe está ahora almacenada en las columnas <strong>content_en</strong> y <strong>content_es</strong>, neutralizando por completo los errores de columna no encontrada (Error 1054) y las dependencias de parsing por regex.
+                <br><br>
+                Se desplegó el panel seguro <strong>Book Editor Studio</strong> como página administrativa independiente (<code>book_editor.php</code>) — pre-cargada desde la base de datos activa en cada visita. Lester puede actualizar textos, artículos del blog, el enlace de Amazon, el capítulo de muestra y subir portadas optimizadas a <strong>WebP</strong> de forma completamente autónoma.
+              </p>
+
+              <!-- Book Editor Studio visual preview -->
+              <div class="report-score-frame">
+                <p class="report-score-frame-label">
+                  <span data-lang="en">Book Editor Studio — Admin Interface Preview</span>
+                  <span data-lang="es">Book Editor Studio — Vista Previa del Panel Administrativo</span>
+                </p>
+                <img
+                  src="assets/img/Book_Editor.png"
+                  alt="Book Editor Studio admin interface screenshot"
+                  class="report-score-img"
+                  loading="lazy"
+                />
+              </div>
+
+              <a href="book_editor.php" class="report-strategic-gold-btn">
+                <span data-lang="en">Open Book Editor Studio</span>
+                <span data-lang="es">Abrir Estudio Editor del Libro</span>
+              </a>
+            </div>
+            <p class="report-check">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span data-lang="en">DB Migrated · Standalone Studio Live &amp; Verified</span>
+              <span data-lang="es">BD Migrada · Estudio Independiente Activo y Verificado</span>
+            </p>
+          </article>
+
           <!-- Report H: Navigation Menu & Live Server Deployment -->
-          <article class="report-card report-card--featured">
+          <article class="report-card report-card--featured" id="report-h">
             <div class="report-card-head">
               <div class="report-number report-number--gold">H</div>
               <div class="report-card-meta">
@@ -291,7 +369,7 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
           </article>
 
           <!-- Report G: Sunseeker 52 Retro Media Pipeline -->
-          <article class="report-card report-card--featured">
+          <article class="report-card report-card--featured" id="report-g">
             <div class="report-card-head">
               <div class="report-number report-number--gold">G</div>
               <div class="report-card-meta">
@@ -341,7 +419,7 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
           </article>
 
           <!-- Report F: Public Book Landing Page (book.html) -->
-          <article class="report-card">
+          <article class="report-card" id="report-f">
             <div class="report-card-head">
               <div class="report-number">F</div>
               <div class="report-card-meta">
@@ -393,7 +471,7 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
           </article>
 
           <!-- Report E: Organic Marketing Strategy (business plan, not a dev report) -->
-          <article class="report-card report-card--strategic">
+          <article class="report-card report-card--strategic" id="report-e">
             <div class="report-card-head">
               <div class="report-number report-number--gold">E</div>
               <div class="report-card-meta">
@@ -436,7 +514,7 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
           </article>
 
           <!-- Report D: Global SEO & Performance Architecture -->
-          <article class="report-card report-card--featured">
+          <article class="report-card report-card--featured" id="report-d">
             <div class="report-card-head">
               <div class="report-number report-number--gold">D</div>
               <div class="report-card-meta">
@@ -501,7 +579,7 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
           </article>
 
           <!-- Report C: Gallery -->
-          <article class="report-card">
+          <article class="report-card" id="report-c">
             <div class="report-card-head">
               <div class="report-number">C</div>
               <div class="report-card-meta">
@@ -543,7 +621,7 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
           </article>
 
           <!-- Report B: Page Recovery -->
-          <article class="report-card">
+          <article class="report-card" id="report-b">
             <div class="report-card-head">
               <div class="report-number">B</div>
               <div class="report-card-meta">
@@ -591,7 +669,7 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
           </article>
 
           <!-- Report A: FOUC -->
-          <article class="report-card">
+          <article class="report-card" id="report-a">
             <div class="report-card-head">
               <div class="report-number">A</div>
               <div class="report-card-meta">
@@ -760,7 +838,7 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
 
           <!-- Accordion 1: Flagship Fleet -->
           <div class="accordion-item open" role="listitem">
-            <button class="accordion-trigger" onclick="toggleAccordion(this)" aria-expanded="true">
+            <button class="accordion-trigger" aria-expanded="true">
               <div class="accordion-trigger-left">
                 <div class="accordion-icon-wrap">⚓</div>
                 <div>
@@ -828,7 +906,7 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
 
           <!-- Accordion 2: Rates & Packages -->
           <div class="accordion-item" role="listitem">
-            <button class="accordion-trigger" onclick="toggleAccordion(this)" aria-expanded="false">
+            <button class="accordion-trigger" aria-expanded="false">
               <div class="accordion-trigger-left">
                 <div class="accordion-icon-wrap">💰</div>
                 <div>
@@ -894,7 +972,7 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
 
           <!-- Accordion 3: Navigation Policies -->
           <div class="accordion-item" role="listitem">
-            <button class="accordion-trigger" onclick="toggleAccordion(this)" aria-expanded="false">
+            <button class="accordion-trigger" aria-expanded="false">
               <div class="accordion-trigger-left">
                 <div class="accordion-icon-wrap">📋</div>
                 <div>
@@ -926,7 +1004,7 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
 
           <!-- Accordion 4: Brand Identity -->
           <div class="accordion-item" role="listitem">
-            <button class="accordion-trigger" onclick="toggleAccordion(this)" aria-expanded="false">
+            <button class="accordion-trigger" aria-expanded="false">
               <div class="accordion-trigger-left">
                 <div class="accordion-icon-wrap">🎨</div>
                 <div>
@@ -1128,14 +1206,45 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
           Una estrategia de re-ingeniería digital por fases, diseñada exclusivamente para Lover Lips Yachts. Cada fase entrega resultados medibles mientras protege el flujo de caja mediante un modelo híbrido de efectivo e intercambio comercial.
         </p>
 
+        <!-- ══ WIN-WIN YACHT CREDIT VAULT — pinned at section level ══════ -->
+        <aside class="proposal-vault proposal-vault--pinned" aria-label="Yacht Credit Vault">
+          <div class="proposal-vault-hero">
+            <div class="proposal-vault-icon">⚓</div>
+            <div>
+              <p class="proposal-vault-label">
+                <span data-lang="en">Win-Win Yacht Credit Vault</span>
+                <span data-lang="es">Bóveda de Crédito Náutico</span>
+              </p>
+              <p class="proposal-vault-total">$2,900 <span class="proposal-vault-currency">MXN</span></p>
+            </div>
+          </div>
+          <div class="proposal-vault-divider"></div>
+          <ul class="proposal-vault-breakdown">
+            <li>
+              <span data-lang="en"><strong>Batch 1</strong> Recovery</span>
+              <span data-lang="es"><strong>Lote 1</strong> Rescate</span>
+              <span>$1,000 MXN</span>
+            </li>
+            <li>
+              <span data-lang="en"><strong>Batch 2</strong> Optimization + CMS</span>
+              <span data-lang="es"><strong>Lote 2</strong> Optimización + CMS</span>
+              <span>$1,900 MXN</span>
+            </li>
+          </ul>
+          <p class="proposal-vault-note">
+            <span data-lang="en">This balance accumulates as secured credit redeemable toward future charter experiences on the Lover Lips Yachts fleet.</span>
+            <span data-lang="es">Este saldo se acumula como crédito garantizado canjeable en futuras experiencias de chárter en la flota de Lover Lips Yachts.</span>
+          </p>
+        </aside>
+
         <!-- ══ PHASE 0 ═════════════════════════════════════════════════════ -->
         <div class="proposal-phase">
 
           <div class="proposal-phase-header proposal-phase-header--done">
             <div class="proposal-phase-num">0</div>
             <div class="proposal-phase-meta">
-              <p class="proposal-phase-tag" data-lang="en">Phase 0 · Emergency Intervention &amp; Platform Recovery</p>
-              <p class="proposal-phase-tag" data-lang="es">Fase 0 · Intervención de Emergencia y Recuperación de la Plataforma</p>
+              <p class="proposal-phase-tag" data-lang="en">Batch 1 &amp; 2 · Account Settled · Emergency Recovery &amp; Book Launch Pipeline</p>
+              <p class="proposal-phase-tag" data-lang="es">Lotes 1 &amp; 2 · Saldo Conciliado · Rescate de Emergencia y Pipeline de Lanzamiento del Libro</p>
               <h3 class="proposal-phase-title" data-lang="en">Completed with Excellence</h3>
               <h3 class="proposal-phase-title" data-lang="es">Completado con Excelencia</h3>
             </div>
@@ -1149,102 +1258,238 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
           <p class="proposal-phase-desc" data-lang="en">We successfully restored operational stability and visual performance to the current WordPress ecosystem to prevent any loss of high-intent traffic while we engineer the future of the brand.</p>
           <p class="proposal-phase-desc" data-lang="es">Restauramos con éxito la estabilidad operativa y el rendimiento visual del ecosistema WordPress actual para evitar pérdidas de tráfico de alta intención mientras ingenierizamos el futuro de la marca.</p>
 
-          <!-- Module cards -->
+          <!-- ── Batch History ─────────────────────────────────────────── -->
           <p class="proposal-sub-label">
-            <span data-lang="en">Modules Executed with Excellence</span>
-            <span data-lang="es">Módulos Ejecutados con Excelencia</span>
+            <span data-lang="en">Batch History — Completed &amp; Settled Work</span>
+            <span data-lang="es">Historial de Lotes — Trabajo Completado y Conciliado</span>
           </p>
-          <div class="proposal-modules">
 
-            <div class="proposal-module-card">
-              <div class="proposal-module-icon">⚡</div>
-              <p class="proposal-module-tag" data-lang="en">Performance · FOUC Remediation</p>
-              <p class="proposal-module-tag" data-lang="es">Rendimiento · Corrección de FOUC</p>
-              <h4 class="proposal-module-title" data-lang="en">Zero-Delay Premium Layout Rendering</h4>
-              <h4 class="proposal-module-title" data-lang="es">Renderizado Premium Instantáneo Sin Parpadeos</h4>
-              <p class="proposal-module-desc" data-lang="en">Implemented Zero-Delay Premium Layout Rendering to eliminate layout shifts and code flickering upon load.</p>
-              <p class="proposal-module-desc" data-lang="es">Renderizado premium de carga instantánea sin parpadeos visuales ni retrasos de código.</p>
+          <!-- ── BATCH 1 — newest first (June 29, 2026) ───────────────── -->
+          <div class="proposal-batch-block proposal-batch-block--batch1">
+
+            <div class="proposal-batch-stamp">
+              <span class="proposal-batch-stamp-icon">✅</span>
+              <div>
+                <p class="proposal-batch-stamp-label">
+                  <span data-lang="en">Batch 2 · Account Settled</span>
+                  <span data-lang="es">Lote 2 · Saldo Conciliado</span>
+                </p>
+                <p class="proposal-batch-stamp-title">
+                  <span data-lang="en">Book Launch &amp; Fleet Pipeline Optimization</span>
+                  <span data-lang="es">Lanzamiento del Libro y Optimización del Pipeline de Flota</span>
+                </p>
+              </div>
+              <span class="proposal-batch-stamp-date">
+                <span data-lang="en">Settled: June 29, 2026</span>
+                <span data-lang="es">Liquidado: 29 de Junio, 2026</span>
+              </span>
             </div>
 
-            <div class="proposal-module-card">
-              <div class="proposal-module-icon">🔧</div>
-              <p class="proposal-module-tag" data-lang="en">Recovery · Database Route Restoration</p>
-              <p class="proposal-module-tag" data-lang="es">Recuperación · Restauración de Rutas de BD</p>
-              <h4 class="proposal-module-title" data-lang="en">Landing Page Recovery &amp; Route Rebuild</h4>
-              <h4 class="proposal-module-title" data-lang="es">Rescate de Páginas y Reconstrucción de Rutas</h4>
-              <p class="proposal-module-desc" data-lang="en">Recovered broken database pathways, fully restoring critical landing pages including CNR 120 and flagship fleet profiles.</p>
-              <p class="proposal-module-desc" data-lang="es">Recuperación de rutas de bases de datos y rescate completo de páginas de aterrizaje afectadas.</p>
+            <div class="proposal-modules proposal-modules--batch1">
+
+              <div class="proposal-module-card proposal-module-card--batch1">
+                <div class="proposal-module-icon">📈</div>
+                <p class="proposal-module-tag" data-lang="en">Report D · SEO &amp; Performance Architecture</p>
+                <p class="proposal-module-tag" data-lang="es">Informe D · SEO y Arquitectura de Rendimiento</p>
+                <h4 class="proposal-module-title" data-lang="en">Global SEO &amp; Performance Architecture Overhaul</h4>
+                <h4 class="proposal-module-title" data-lang="es">Reingeniería Global de SEO y Rendimiento</h4>
+                <p class="proposal-module-desc" data-lang="en">Raised the official AIOSEO audit score to a historic 91/100 — Excellent, by eliminating a duplicate H1 heading conflict and activating server-side Redis/Memcached object caching across the entire platform. Zero residual penalties affect commercial performance.</p>
+                <p class="proposal-module-desc" data-lang="es">Elevamos la puntuación oficial de AIOSEO a un histórico 91/100 — Excelente, eliminando conflictos de H1 duplicado y activando caché de objetos Redis/Memcached. Cero penalizaciones residuales afectan el rendimiento comercial.</p>
+                <a href="#report-d" class="proposal-module-log-link" aria-label="View Report D technical log">
+                  <span data-lang="en">Technical Log D →</span>
+                  <span data-lang="es">Registro Técnico D →</span>
+                </a>
+              </div>
+
+              <div class="proposal-module-card proposal-module-card--batch1">
+                <div class="proposal-module-icon">📖</div>
+                <p class="proposal-module-tag" data-lang="en">Report F · Frontend · Lead Magnet Landing Page</p>
+                <p class="proposal-module-tag" data-lang="es">Informe F · Frontend · Landing Page Imán de Leads</p>
+                <h4 class="proposal-module-title" data-lang="en">Lead Magnet Landing Page Design — Public Book Funnel</h4>
+                <h4 class="proposal-module-title" data-lang="es">Diseño de Landing Page Imán — Embudo Público del Libro</h4>
+                <p class="proposal-module-desc" data-lang="en">Designed and deployed a bilingual, ultra-luxury landing page for the "Nine Lives. One True Love" memoir acting as a zero-paid-media Bottom-of-Funnel lead magnet. Includes aesthetic storytelling, mobile-first design, social sharing, and direct WhatsApp integration.</p>
+                <p class="proposal-module-desc" data-lang="es">Diseñamos y desplegamos una landing page bilingüe ultra-premium para el libro "Nine Lives. One True Love" como imán BofU sin pauta pagada. Incluye storytelling, diseño mobile-first, botones de redes sociales e integración directa con WhatsApp.</p>
+                <a href="#report-f" class="proposal-module-log-link" aria-label="View Report F technical log">
+                  <span data-lang="en">Technical Log F →</span>
+                  <span data-lang="es">Registro Técnico F →</span>
+                </a>
+              </div>
+
+              <div class="proposal-module-card proposal-module-card--batch1">
+                <div class="proposal-module-icon">🛥️</div>
+                <p class="proposal-module-tag" data-lang="en">Report G · Media Engineering · Sunseeker 52 Retro</p>
+                <p class="proposal-module-tag" data-lang="es">Informe G · Ingeniería de Medios · Sunseeker 52 Retro</p>
+                <h4 class="proposal-module-title" data-lang="en">Sunseeker 52 Retro — Full Media Pipeline Optimization</h4>
+                <h4 class="proposal-module-title" data-lang="es">Sunseeker 52 Retro — Optimización Completa del Pipeline de Medios</h4>
+                <p class="proposal-module-desc" data-lang="en">Rebranded the former "Host 50" media library: 2 GB of raw files processed into 45 MB of web-ready assets — a 97% size reduction. Includes 51 AI-classified WebP photos (exterior/interior) and two H.264 video loops under 15 MB total for mobile autoplay headers.</p>
+                <p class="proposal-module-desc" data-lang="es">Rebranding completo del archivo de "Host 50": 2 GB de archivos brutos procesados a 45 MB listos para web — 97% de reducción. Incluye 51 fotos WebP clasificadas (exterior/interior) y dos loops de video H.264 de menos de 15 MB para encabezados móviles.</p>
+                <a href="#report-g" class="proposal-module-log-link" aria-label="View Report G technical log">
+                  <span data-lang="en">Technical Log G →</span>
+                  <span data-lang="es">Registro Técnico G →</span>
+                </a>
+              </div>
+
+              <div class="proposal-module-card proposal-module-card--batch1">
+                <div class="proposal-module-icon">🚀</div>
+                <p class="proposal-module-tag" data-lang="en">Report H · Infrastructure · Server Deployment</p>
+                <p class="proposal-module-tag" data-lang="es">Informe H · Infraestructura · Despliegue en Servidor</p>
+                <h4 class="proposal-module-title" data-lang="en">Standalone Server Deployment &amp; Public Menu Integration</h4>
+                <h4 class="proposal-module-title" data-lang="es">Despliegue Autónomo en Servidor e Integración del Menú Público</h4>
+                <p class="proposal-module-desc" data-lang="en">Generated a lightweight standalone HTML/CSS/JS framework for the book spotlight, bypassing all WordPress database queries to deliver 5-star mobile rendering speed. Mapped the bilingual language engine to loverlipsyachts.com/my-book/ and integrated a new nav menu button into the live WordPress header with zero structural drift.</p>
+                <p class="proposal-module-desc" data-lang="es">Generamos un framework HTML/CSS/JS autónomo para la página del libro que omite consultas a la base de datos de WordPress, logrando velocidad de carga 5 estrellas en móvil. Integramos el selector de idioma y un botón de navegación en el header de WordPress sin alterar la estructura.</p>
+                <a href="#report-h" class="proposal-module-log-link" aria-label="View Report H technical log">
+                  <span data-lang="en">Technical Log H →</span>
+                  <span data-lang="es">Registro Técnico H →</span>
+                </a>
+              </div>
+
+
+              <div class="proposal-module-card proposal-module-card--batch1">
+                <div class="proposal-module-icon">🗄️</div>
+                <p class="proposal-module-tag" data-lang="en">Report I · System Architecture · Database CMS</p>
+                <p class="proposal-module-tag" data-lang="es">Informe I · Arquitectura de Sistema · CMS en Base de Datos</p>
+                <h4 class="proposal-module-title" data-lang="en">Database Integration &amp; Visual Book Editor Studio Deployment</h4>
+                <h4 class="proposal-module-title" data-lang="es">Integración de Base de Datos y Despliegue del Estudio Visual de Edición del Libro</h4>
+                <p class="proposal-module-desc" data-lang="en">Migrated the static book spotlight into a fully dynamic MySQL schema (lly_book_content) eliminating regex parsing and Error 1054 failures. Deployed the standalone Book Editor Studio at book_editor.php — pre-populated from live DB, with WebP image compression, bilingual content management, and Amazon/blog field support.</p>
+                <p class="proposal-module-desc" data-lang="es">Migración de la landing estática del libro a un esquema dinámico MySQL (lly_book_content) eliminando parsing por regex y errores 1054. Desplegamos el Book Editor Studio en book_editor.php — precargado desde la BD activa, con compresión WebP, gestión bilingüe de contenido y soporte para campos de Amazon y blog.</p>
+                <a href="#report-i" class="proposal-module-log-link" aria-label="View Report I technical log">
+                  <span data-lang="en">Technical Log I →</span>
+                  <span data-lang="es">Registro Técnico I →</span>
+                </a>
+              </div>
+
+            </div><!-- /modules batch 1 -->
+
+            <p class="proposal-sub-label">
+              <span data-lang="en">Financial Breakdown — Batch 2</span>
+              <span data-lang="es">Desglose Financiero — Lote 2</span>
+            </p>
+            <div class="table-wrap">
+              <table class="data-table proposal-finance-table">
+                <thead>
+                  <tr>
+                    <th><span data-lang="en">Concept</span><span data-lang="es">Concepto</span></th>
+                    <th><span data-lang="en">Investment</span><span data-lang="es">Inversión</span></th>
+                    <th><span data-lang="en">Cash Payment (50%)</span><span data-lang="es">Pago en Efectivo (50%)</span></th>
+                    <th><span data-lang="en">Trade Exchange (50%)</span><span data-lang="es">Intercambio Comercial (50%)</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      <strong>
+                        <span data-lang="en">Batch 2 — Book Launch, Fleet Pipeline &amp; CMS (Reports D, F, G, H, I)</span>
+                        <span data-lang="es">Lote 2 — Libro, Pipeline de Flota &amp; CMS (Informes D, F, G, H, I)</span>
+                      </strong>
+                    </td>
+                    <td><span class="proposal-amount">$3,800 MXN</span></td>
+                    <td><span class="proposal-cash">$1,900 MXN</span></td>
+                    <td><span class="proposal-trade">$1,900 MXN</span></td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
-            <div class="proposal-module-card">
-              <div class="proposal-module-icon">🖼️</div>
-              <p class="proposal-module-tag" data-lang="en">UI/UX · Gallery Polish</p>
-              <p class="proposal-module-tag" data-lang="es">UI/UX · Pulido de Galerías</p>
-              <h4 class="proposal-module-title" data-lang="en">Gallery Asset &amp; Container Modernization</h4>
-              <h4 class="proposal-module-title" data-lang="es">Modernización de Activos y Contenedores</h4>
-              <p class="proposal-module-desc" data-lang="en">Refined individual image assets and modernized container layouts to ensure smooth, high-end browsing of the vessels.</p>
-              <p class="proposal-module-desc" data-lang="es">Optimización estética de galerías de fotos y refinamiento visual de la flota.</p>
+          </div><!-- /batch 1 -->
+
+          <!-- ── BATCH 0 — older (June 20, 2026) ──────────────────────── -->
+          <div class="proposal-batch-block">
+
+            <div class="proposal-batch-stamp">
+              <span class="proposal-batch-stamp-icon">✅</span>
+              <div>
+                <p class="proposal-batch-stamp-label">
+                  <span data-lang="en">Batch 1 · Account Settled</span>
+                  <span data-lang="es">Lote 1 · Saldo Conciliado</span>
+                </p>
+                <p class="proposal-batch-stamp-title">
+                  <span data-lang="en">Emergency Intervention &amp; Platform Recovery</span>
+                  <span data-lang="es">Intervención de Emergencia y Recuperación de la Plataforma</span>
+                </p>
+              </div>
+              <span class="proposal-batch-stamp-date">
+                <span data-lang="en">Settled: June 20, 2026</span>
+                <span data-lang="es">Liquidado: 20 de Junio, 2026</span>
+              </span>
             </div>
 
-          </div><!-- /proposal-modules -->
+            <div class="proposal-modules">
 
-          <!-- Financial breakdown -->
-          <p class="proposal-sub-label">
-            <span data-lang="en">Financial Breakdown</span>
-            <span data-lang="es">Desglose Financiero</span>
-          </p>
-          <div class="table-wrap">
-            <table class="data-table proposal-finance-table">
-              <thead>
-                <tr>
-                  <th><span data-lang="en">Concept</span><span data-lang="es">Concepto</span></th>
-                  <th><span data-lang="en">Investment</span><span data-lang="es">Inversión</span></th>
-                  <th><span data-lang="en">Cash Payment (50%)</span><span data-lang="es">Pago en Efectivo (50%)</span></th>
-                  <th><span data-lang="en">Trade Exchange (50%)</span><span data-lang="es">Intercambio Comercial (50%)</span></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>
-                    <strong><span data-lang="en">Phase 0 Recovery</span><span data-lang="es">Fase 0 Rescate</span></strong>
-                  </td>
-                  <td><span class="proposal-amount">$2,000 MXN</span></td>
-                  <td><span class="proposal-cash">$1,000 MXN</span></td>
-                  <td><span class="proposal-trade">$1,000 MXN</span></td>
-                </tr>
-                <tr>
-                  <td>
-                    <strong><span data-lang="en">Batch Reconciliation — Reports D, F, G, H</span><span data-lang="es">Conciliación de Lote — Informes D, F, G, H</span></strong>
-                  </td>
-                  <td><span class="proposal-amount">$3,000 MXN</span></td>
-                  <td><span class="proposal-cash">$1,500 MXN</span></td>
-                  <td><span class="proposal-trade">$1,500 MXN</span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+              <div class="proposal-module-card">
+                <div class="proposal-module-icon">⚡</div>
+                <p class="proposal-module-tag" data-lang="en">Report A · Performance · FOUC Remediation</p>
+                <p class="proposal-module-tag" data-lang="es">Informe A · Rendimiento · Corrección de FOUC</p>
+                <h4 class="proposal-module-title" data-lang="en">Zero-Delay Premium Layout Rendering</h4>
+                <h4 class="proposal-module-title" data-lang="es">Renderizado Premium Instantáneo Sin Parpadeos</h4>
+                <p class="proposal-module-desc" data-lang="en">Eliminated the visual flash on every page load by disabling stale cache loops and flushing the QUIC.cloud CDN layer. Elementor now renders in a single, instant pass — fully clean on every device.</p>
+                <p class="proposal-module-desc" data-lang="es">Eliminamos el parpadeo visual de carga purgando bucles de caché obsoletos y el CDN QUIC.cloud. Elementor ahora renderiza en un solo paso instantáneo en todos los dispositivos.</p>
+                <a href="#report-a" class="proposal-module-log-link" aria-label="View Report A technical log">
+                  <span data-lang="en">Technical Log A →</span>
+                  <span data-lang="es">Registro Técnico A →</span>
+                </a>
+              </div>
 
-          <!-- Win-Win note -->
-          <div class="proposal-winwin-note">
-            <span class="proposal-winwin-icon">🤝</span>
-            <div>
-              <p class="proposal-winwin-label" data-lang="en">Win-Win Note — Trade Credit</p>
-              <p class="proposal-winwin-label" data-lang="es">Nota Ganar-Ganar — Crédito Comercial</p>
-              <p class="proposal-winwin-text" data-lang="en">The $1,000 MXN Trade Exchange allocation will accumulate as secured charter credit for future yacht experiences.</p>
-              <p class="proposal-winwin-text" data-lang="es">Los $1,000 MXN de intercambio comercial se acumularán como crédito de charter para futuras experiencias náuticas.</p>
+              <div class="proposal-module-card">
+                <div class="proposal-module-icon">🔧</div>
+                <p class="proposal-module-tag" data-lang="en">Report B · Recovery · Database Route Restoration</p>
+                <p class="proposal-module-tag" data-lang="es">Informe B · Recuperación · Restauración de Rutas de BD</p>
+                <h4 class="proposal-module-title" data-lang="en">Landing Page Recovery &amp; Route Rebuild</h4>
+                <h4 class="proposal-module-title" data-lang="es">Rescate de Páginas y Reconstrucción de Rutas</h4>
+                <p class="proposal-module-desc" data-lang="en">Rescued two flagship booking pages (Pink Lips and CNR Maranatha 120) that had gone completely offline due to broken database permalink routes. Both pages are live, indexed, and verified.</p>
+                <p class="proposal-module-desc" data-lang="es">Rescatamos dos páginas clave (Pink Lips y CNR Maranatha 120) que estaban fuera de línea por rutas de base de datos rotas. Ambas están activas, indexadas y verificadas.</p>
+                <a href="#report-b" class="proposal-module-log-link" aria-label="View Report B technical log">
+                  <span data-lang="en">Technical Log B →</span>
+                  <span data-lang="es">Registro Técnico B →</span>
+                </a>
+              </div>
+
+              <div class="proposal-module-card">
+                <div class="proposal-module-icon">🖼️</div>
+                <p class="proposal-module-tag" data-lang="en">Report C · UI/UX · Gallery Polish</p>
+                <p class="proposal-module-tag" data-lang="es">Informe C · UI/UX · Pulido de Galerías</p>
+                <h4 class="proposal-module-title" data-lang="en">Gallery Asset &amp; Container Modernization</h4>
+                <h4 class="proposal-module-title" data-lang="es">Modernización de Activos y Contenedores</h4>
+                <p class="proposal-module-desc" data-lang="en">Removed the grey metadata text overlays appearing on photo hover across all fleet gallery albums via programmatic database cleanup. Every album now delivers a clean, premium browsing experience.</p>
+                <p class="proposal-module-desc" data-lang="es">Eliminamos los textos de metadatos grises al hacer hover en los álbumes de fotos mediante limpieza automatizada de la base de datos. Todos los álbumes ofrecen ahora una experiencia visual limpia y premium.</p>
+                <a href="#report-c" class="proposal-module-log-link" aria-label="View Report C technical log">
+                  <span data-lang="en">Technical Log C →</span>
+                  <span data-lang="es">Registro Técnico C →</span>
+                </a>
+              </div>
+
+            </div><!-- /modules batch 0 -->
+
+            <p class="proposal-sub-label">
+              <span data-lang="en">Financial Breakdown — Batch 1</span>
+              <span data-lang="es">Desglose Financiero — Lote 1</span>
+            </p>
+            <div class="table-wrap">
+              <table class="data-table proposal-finance-table">
+                <thead>
+                  <tr>
+                    <th><span data-lang="en">Concept</span><span data-lang="es">Concepto</span></th>
+                    <th><span data-lang="en">Investment</span><span data-lang="es">Inversión</span></th>
+                    <th><span data-lang="en">Cash Payment (50%)</span><span data-lang="es">Pago en Efectivo (50%)</span></th>
+                    <th><span data-lang="en">Trade Exchange (50%)</span><span data-lang="es">Intercambio Comercial (50%)</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      <strong>
+                        <span data-lang="en">Batch 1 — Emergency Recovery (Reports A, B, C)</span>
+                        <span data-lang="es">Lote 1 — Rescate de Emergencia (Informes A, B, C)</span>
+                      </strong>
+                    </td>
+                    <td><span class="proposal-amount">$2,000 MXN</span></td>
+                    <td><span class="proposal-cash">$1,000 MXN</span></td>
+                    <td><span class="proposal-trade">$1,000 MXN</span></td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-          </div>
 
-          <!-- Win-Win note — Batch Reconciliation -->
-          <div class="proposal-winwin-note">
-            <span class="proposal-winwin-icon">📦</span>
-            <div>
-              <p class="proposal-winwin-label" data-lang="en">Win-Win Note — Batch Reconciliation (D, F, G, H)</p>
-              <p class="proposal-winwin-label" data-lang="es">Nota Ganar-Ganar — Conciliación de Lote (D, F, G, H)</p>
-              <p class="proposal-winwin-text" data-lang="en">SEO &amp; Performance Architecture, the Book Landing Page, the Sunseeker 52 Retro Media Pipeline, and the Navigation/Server Deployment are now fully settled: $1,500 MXN cash and $1,500 MXN logged to the internal development trade-exchange account.</p>
-              <p class="proposal-winwin-text" data-lang="es">La Arquitectura de SEO y Rendimiento, la Landing Page del Libro, el Pipeline de Medios de Sunseeker 52 Retro y el Despliegue de Navegación/Servidor quedan totalmente conciliados: $1,500 MXN en efectivo y $1,500 MXN registrados en la cuenta interna de intercambio comercial para desarrollo.</p>
-            </div>
-          </div>
+          </div><!-- /batch 0 -->
 
         </div><!-- /Phase 0 -->
 
@@ -1473,28 +1718,28 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
             <div class="proposal-total-item">
               <p class="proposal-total-label" data-lang="en">Total Project Strategic Value</p>
               <p class="proposal-total-label" data-lang="es">Valor Total Estratégico del Proyecto</p>
-              <p class="proposal-total-value proposal-total-value--gold">$35,000 MXN</p>
-              <p class="proposal-total-note" data-lang="en">All phases + batch reconciliation integrated</p>
-              <p class="proposal-total-note" data-lang="es">Todas las fases + conciliación de lote integradas</p>
+              <p class="proposal-total-value proposal-total-value--gold">$35,800 MXN</p>
+              <p class="proposal-total-note" data-lang="en">All phases + Batch 1, Batch 2 (×5 reports) integrated</p>
+              <p class="proposal-total-note" data-lang="es">Todas las fases + Lote 1, Lote 2 (×5 informes) integradas</p>
             </div>
 
             <div class="proposal-total-item proposal-total-item--mid">
               <p class="proposal-total-label" data-lang="en">Total Real Cash Investment</p>
               <p class="proposal-total-label" data-lang="es">Inversión Total en Efectivo</p>
-              <p class="proposal-total-value proposal-total-value--cash">$21,500 MXN</p>
+              <p class="proposal-total-value proposal-total-value--cash">$21,900 MXN</p>
               <p class="proposal-total-note proposal-total-note--pink">
-                <span data-lang="en">Only 61.4% in Milestone-Based Payments</span>
-                <span data-lang="es">Solo el 61.4% diferido en pagos conforme a entrega</span>
+                <span data-lang="en">Only 61.2% in Milestone-Based Payments</span>
+                <span data-lang="es">Solo el 61.2% diferido en pagos conforme a entrega</span>
               </p>
             </div>
 
             <div class="proposal-total-item">
               <p class="proposal-total-label" data-lang="en">Capitalized Fleet Trade Alliance</p>
               <p class="proposal-total-label" data-lang="es">Alianza por Intercambio Comercial</p>
-              <p class="proposal-total-value proposal-total-value--trade">$13,500 MXN</p>
+              <p class="proposal-total-value proposal-total-value--trade">$13,900 MXN</p>
               <p class="proposal-total-note proposal-total-note--gold">
-                <span data-lang="en">38.6% Funded via Shared Vessel Experiences</span>
-                <span data-lang="es">38.6% Financiado en uso de embarcaciones al concluir</span>
+                <span data-lang="en">38.8% Funded via Shared Vessel Experiences</span>
+                <span data-lang="es">38.8% Financiado en uso de embarcaciones al concluir</span>
               </p>
             </div>
 
@@ -1512,6 +1757,9 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
 
       </div>
     </section>
+
+    <!-- Book Editor lives at book_editor.php — panel left empty, hidden by CSS -->
+    <div id="hub-editor" class="hub-panel"></div>
 
   </main>
 

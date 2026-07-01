@@ -1,0 +1,26 @@
+# ═══════════════════════════════════════════════════════════════
+# LOVER LIPS YACHTS — my-book/.htaccess
+# Governs public_html/my-book/ on Hostinger production.
+# Allows index.php to serve as the book spotlight entry point.
+# ═══════════════════════════════════════════════════════════════
+
+DirectoryIndex index.php
+Options -Indexes
+
+# Allow index.php — all other PHP execution is denied
+<FilesMatch "\.php$">
+    Require all denied
+</FilesMatch>
+<FilesMatch "^index\.php$">
+    Require all granted
+</FilesMatch>
+
+# Security headers
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    Header always unset X-Powered-By
+    Header always unset Server
+</IfModule>

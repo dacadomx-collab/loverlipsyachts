@@ -1,24 +1,26 @@
-# Deploy Core v3.0 — Absolute Root True | 2026-05-30
 # =============================================================================
 # LOVER LIPS YACHTS — .github/workflows/deploy.yml
-# CI/CD: Auto-Deploy to Staging via FTPS on push to main
-# Target: https://lly.tourfindy.com (Document Root: /public_html/lly)
+# CI/CD: Continuous Delivery to Hostinger Production via FTPS
+# Target: https://loverlipsyachts.com
+#   cockpit portal → public_html/cockpit/
+#   public book    → public_html/my-book/
 # =============================================================================
 #
-# SETUP INSTRUCTIONS (one-time):
-#   1. Go to: GitHub Repo → Settings → Secrets and Variables → Actions
-#   2. Add these Repository Secrets (New Repository Secret):
-#      ┌──────────────────┬──────────────────────────────────┐
-#      │ Secret Name      │ Value                            │
-#      ├──────────────────┼──────────────────────────────────┤
-#      │ FTP_SERVER       │ ftp.tourfindy.com                │
-#      │ FTP_USERNAME     │ lly@tourfindy.com                │
-#      │ FTP_PASSWORD     │ (your cPanel FTP password)       │
-#      └──────────────────┴──────────────────────────────────┘
-#   3. Push to `main` branch — deploy triggers automatically.
+# ONE-TIME SETUP — GitHub Repo → Settings → Secrets and Variables → Actions:
+#
+#   ┌────────────────┬──────────────────────────────────────────────────────┐
+#   │ Secret Name    │ Value (from Hostinger → Hosting → FTP Accounts)      │
+#   ├────────────────┼──────────────────────────────────────────────────────┤
+#   │ FTP_SERVER     │ files.loverlipsyachts.com  (Hostinger FTP hostname)  │
+#   │ FTP_USERNAME   │ u713871298                 (Hostinger FTP user)      │
+#   │ FTP_PASSWORD   │ <your Hostinger FTP password>                        │
+#   └────────────────┴──────────────────────────────────────────────────────┘
+#
+#   ⚠️  core/.env is EXCLUDED from deployment — set DB credentials
+#       manually on the server via Hostinger File Manager or SSH.
 # =============================================================================
 
-name: 🚀 Deploy — Staging lly.tourfindy.com
+name: 🚀 Deploy — Hostinger Production (loverlipsyachts.com)
 
 on:
   push:
@@ -32,57 +34,63 @@ on:
         default: "Manual trigger"
 
 jobs:
-  deploy:
-    name: FTP Deploy to Staging
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # JOB 1 — Deploy management portal to /public_html/cockpit/
+  # ────────────────────────────────────────────────────────────────────────────
+  deploy-cockpit:
+    name: Deploy Cockpit Portal → public_html/cockpit/
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
 
-      # ── 1. Checkout code ─────────────────────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
-      # ── 2. Show deploy summary ────────────────────────────────────────
       - name: Deploy summary
         run: |
-          echo "=========================================="
-          echo "  LOVER LIPS YACHTS — Staging Deploy"
-          echo "=========================================="
-          echo "  Triggered by : ${{ github.actor }}"
-          echo "  Branch       : ${{ github.ref_name }}"
-          echo "  Commit       : ${{ github.sha }}"
-          echo "  Target       : ftp.tourfindy.com → /public_html/lly"
-          echo "  Protocol     : FTPS (Explicit TLS, Port 21)"
-          echo "=========================================="
+          echo "=============================================="
+          echo "  LOVER LIPS YACHTS — Production Deploy"
+          echo "=============================================="
+          echo "  Actor   : ${{ github.actor }}"
+          echo "  Branch  : ${{ github.ref_name }}"
+          echo "  Commit  : ${{ github.sha }}"
+          echo "  Target  : public_html/cockpit/"
+          echo "  Protocol: FTPS (Explicit TLS, Port 21)"
+          echo "=============================================="
 
-      # ── 3. Deploy via FTPS ───────────────────────────────────────────
-      - name: Deploy via FTPS Explicit
+      - name: Deploy cockpit portal via FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server:           ${{ secrets.FTP_SERVER }}
-          username:         ${{ secrets.FTP_USERNAME }}
-          password:         ${{ secrets.FTP_PASSWORD }}
-          port:             21
-          protocol:         ftps
-          security:         loose
-          server-dir:       ./
-          local-dir:        ./
-          dangerous-clean-slate: false
+          server:                 ${{ secrets.FTP_SERVER }}
+          username:               ${{ secrets.FTP_USERNAME }}
+          password:               ${{ secrets.FTP_PASSWORD }}
+          port:                   21
+          protocol:               ftps
+          security:               loose
+          local-dir:              ./
+          server-dir:             /public_html/cockpit/
+          dangerous-clean-slate:  false
 
-          # ── Files excluded from deployment ──
+          # ── Files excluded from deployment ─────────────────────────────
           exclude: |
             **/.git*
             **/.git*/**
             **/.github/**
             **/node_modules/**
             core/.env
-            core/.env.staging
-            core/.env.production
+            core/.env.*
             info.txt
-            knowledge/info.txt
+            knowledge/
+            knowledge/**
+            docs/
+            Reportes/
+            BackUp/
+            **/BackUp/**
+            my-book/**
             **/*.log
             **/*.tmp
             **/*.bak
@@ -90,28 +98,75 @@ jobs:
             **/*.rar
             **/*.mp4
             **/*.mov
-            BackUp/**
-            **/BackUp/**
-            # Diagnostic scripts — manual FTP upload/delete only, never auto-deployed.
-            # Remove these two lines temporarily if you ever want them pushed via CI.
             test_db.php
             test_email.php
 
-      # ── 4. Post-deploy verification ───────────────────────────────────
-      - name: Verify staging URL
+  # ────────────────────────────────────────────────────────────────────────────
+  # JOB 2 — Deploy public book page to /public_html/my-book/
+  # ────────────────────────────────────────────────────────────────────────────
+  deploy-my-book:
+    name: Deploy Book Page → public_html/my-book/
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: deploy-cockpit       # cockpit must be live before book wrapper lands
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Deploy my-book wrapper via FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server:                 ${{ secrets.FTP_SERVER }}
+          username:               ${{ secrets.FTP_USERNAME }}
+          password:               ${{ secrets.FTP_PASSWORD }}
+          port:                   21
+          protocol:               ftps
+          security:               loose
+          local-dir:              ./my-book/
+          server-dir:             /public_html/my-book/
+          dangerous-clean-slate:  false
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # JOB 3 — Post-deploy verification
+  # ────────────────────────────────────────────────────────────────────────────
+  verify:
+    name: Verify Production URLs
+    runs-on: ubuntu-latest
+    needs: [deploy-cockpit, deploy-my-book]
+    if: success()
+    timeout-minutes: 5
+
+    steps:
+
+      - name: Check cockpit endpoint
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://lly.tourfindy.com/ --max-time 10 || echo "000")
-          echo "HTTP Status: $STATUS"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            https://loverlipsyachts.com/cockpit/ --max-time 15 || echo "000")
+          echo "Cockpit HTTP: $STATUS"
           if [ "$STATUS" = "200" ] || [ "$STATUS" = "301" ] || [ "$STATUS" = "302" ]; then
-            echo "✅ Staging site is responding (HTTP $STATUS)"
+            echo "✅ Cockpit portal responding (HTTP $STATUS)"
           else
-            echo "⚠️  Staging site returned HTTP $STATUS — check server config"
+            echo "⚠️  Cockpit returned HTTP $STATUS — check Hostinger config"
           fi
 
-      # ── 5. Success notification ───────────────────────────────────────
-      - name: Deploy complete
-        if: success()
+      - name: Check book page endpoint
         run: |
-          echo "✅ Deploy completed successfully"
-          echo "🌐 Preview: https://lly.tourfindy.com"
-          echo "📋 Commit : ${{ github.sha }}"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            https://loverlipsyachts.com/my-book/ --max-time 15 || echo "000")
+          echo "Book page HTTP: $STATUS"
+          if [ "$STATUS" = "200" ] || [ "$STATUS" = "301" ] || [ "$STATUS" = "302" ]; then
+            echo "✅ Book page responding (HTTP $STATUS)"
+          else
+            echo "⚠️  Book page returned HTTP $STATUS — check Hostinger config"
+          fi
+
+      - name: Deploy complete
+        run: |
+          echo "✅ All deployment jobs completed successfully"
+          echo "🌐 Cockpit : https://loverlipsyachts.com/cockpit/"
+          echo "📖 Book    : https://loverlipsyachts.com/my-book/"
+          echo "📋 Commit  : ${{ github.sha }}"

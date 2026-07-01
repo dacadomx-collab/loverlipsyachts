@@ -1,0 +1,421 @@
+<?php
+declare(strict_types=1);
+
+/**
+ * LOVER LIPS YACHTS — book.php
+ * Public book spotlight page. Reads live content from lly_book_content.
+ * Degrades gracefully to embedded defaults if the DB is unavailable.
+ */
+
+require_once __DIR__ . '/api/conexion.php';
+
+/* ── Hardcoded defaults (shown until the editor overwrites them) ── */
+$book = [
+    'hero_title'      => ['en' => 'The true story of a man who should have died nine times.',
+                          'es' => 'La historia real de un hombre que debería haber muerto nueve veces.'],
+    'hero_subtitle'   => ['en' => 'I Died Nine Times. Love Brought Me Back.',
+                          'es' => 'Morí Nueve Veces. El Amor Me Trajo de Vuelta.'],
+    'synopsis'        => ['en' => 'My father survived a Japanese prison camp. I survived the jungles of New Guinea and Borneo, open-heart surgery, liver cancer, a liver transplant, depression, and more close calls than I can count. I buried dreams, damaged relationships, and often got in my own way. This is the story of a jungle boy who should have died many times — but didn\'t. More importantly, it is the story of how faith, forgiveness, and one remarkable woman taught me that surviving is not the same as living — and that one true love can arrive even after a lifetime of wrong turns.',
+                          'es' => 'Mi padre sobrevivió a un campo de prisioneros japonés. Yo sobreviví a las selvas de Nueva Guinea y Borneo, una cirugía de corazón abierto, cáncer de hígado, un trasplante de hígado, depresión, y más momentos límite de los que puedo contar. Enterré sueños, dañé relaciones, y muchas veces fui mi propio obstáculo. Esta es la historia de un niño de la selva que debió haber muerto muchas veces — pero no lo hizo. Más importante aún, es la historia de cómo la fe, el perdón y una mujer extraordinaria me enseñaron que sobrevivir no es lo mismo que vivir — y que el amor verdadero puede llegar incluso después de toda una vida de caminos equivocados.'],
+    'testimonial'     => ['en' => '"What a gift you\'ve given me — and I mean that in every sense of the word. I\'ve been reading your memoir with the kind of attention I rarely give anything anymore. You haven\'t just told your story; you\'ve drawn the reader into it. The writing is masterful — unhurried where it needs to breathe, gripping where the stakes are highest. That\'s not an easy balance, but you found it. What moved me most was the full honesty of it — the mountaintop moments and the deep valley seasons both. So many memoirs flatten a life into a highlight reel. Yours doesn\'t flinch. And that\'s precisely what makes it inspiring rather than merely impressive. Journeying alongside you through these pages reminded me of what a life of genuine faith and courage actually looks like from the inside. I came away both humbled and encouraged."',
+                          'es' => '"Qué regalo me has dado — y lo digo en todo el sentido de la palabra. He estado leyendo tus memorias con el tipo de atención que rara vez le dedico a algo en estos días. No solo contaste tu historia; lograste que el lector se sumergiera en ella. La escritura es magistral — pausada donde necesita respirar, intensa donde la tensión es más alta. Ese no es un equilibrio fácil de lograr, pero tú lo encontraste. Lo que más me conmovió fue su honestidad absoluta — tanto los momentos en la cima como las temporadas en el valle más profundo. Tantas memorias reducen una vida a un resumen de mejores momentos. La tuya no se aparta de nada. Y es precisamente eso lo que la hace inspiradora y no solo impresionante. Acompañarte a través de estas páginas me recordó cómo se ve, desde adentro, una vida de fe y valentía genuinas. Terminé sintiéndome a la vez humilde y motivado."'],
+    'sample_chapter'  => ['en' => '', 'es' => ''],
+    'book_cover_path' => ['en' => 'assets/img/nine_live.png', 'es' => 'assets/img/nine_live.png'],
+];
+
+$cards = [
+    1 => ['icon' => '🌴', 'en' => 'A childhood survival in the jungles of Borneo',           'es' => 'Una infancia de supervivencia en las selvas de Borneo'],
+    2 => ['icon' => '🏹', 'en' => 'Poisoned arrows and tribal warfare',                       'es' => 'Flechas envenenadas y guerras tribales'],
+    3 => ['icon' => '🎸', 'en' => 'An unexpected friendship with Eric Clapton',               'es' => 'Una amistad inesperada con Eric Clapton'],
+    4 => ['icon' => '🏛️', 'en' => 'Boardrooms connected to Donald Trump',                   'es' => 'Salas de juntas conectadas con Donald Trump'],
+    5 => ['icon' => '🫀', 'en' => 'Open-heart surgery that should have ended it all',         'es' => 'Una cirugía de corazón abierto que debió terminarlo todo'],
+    6 => ['icon' => '🔬', 'en' => 'Liver cancer and a life-saving transplant',                'es' => 'Cáncer de hígado y un trasplante que salvó su vida'],
+    7 => ['icon' => '🌑', 'en' => 'A private battle with depression that nearly won',         'es' => 'Una batalla privada contra la depresión que casi ganó'],
+];
+
+/* ── Load from DB; override defaults with stored values ──────────── */
+try {
+    $pdo  = Conexion::getConnection();
+    $rows = $pdo->query('SELECT meta_key, content_en, content_es FROM lly_book_content')->fetchAll();
+
+    foreach ($rows as $row) {
+        $k  = $row['meta_key'];
+        $en = (string) ($row['content_en'] ?? '');
+        $es = (string) ($row['content_es'] ?? '');
+
+        if (isset($book[$k])) {
+            if ($en !== '') { $book[$k]['en'] = $en; }
+            if ($es !== '') { $book[$k]['es'] = $es; }
+        } elseif (preg_match('/^card_(\d+)$/', $k, $m)) {
+            $i = (int) $m[1];
+            if (isset($cards[$i])) {
+                if ($en !== '') { $cards[$i]['en'] = $en; }
+                if ($es !== '') { $cards[$i]['es'] = $es; }
+            }
+        } elseif (preg_match('/^card_(\d+)_icon$/', $k, $m)) {
+            $i = (int) $m[1];
+            if (isset($cards[$i]) && $en !== '') { $cards[$i]['icon'] = $en; }
+        }
+    }
+} catch (Throwable $e) {
+    error_log('[LLY book.php] DB load failed: ' . $e->getMessage());
+    /* Silently use $defaults — page still renders fully */
+}
+
+/* ── Output helpers ──────────────────────────────────────────────── */
+function bk(string $key, string $lang, array $book): string
+{
+    return htmlspecialchars($book[$key][$lang] ?? '', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
+$coverSrc  = htmlspecialchars($book['book_cover_path']['en'], ENT_QUOTES, 'UTF-8');
+$hasSample = ($book['sample_chapter']['en'] !== '' || $book['sample_chapter']['es'] !== '');
+?><!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Nine Lives. One True Love — a memoir by Lester Keizer. The story of a jungle boy who should have died many times, and the one true love that taught him how to live." />
+  <meta name="robots" content="index, follow" />
+  <title>Nine Lives. One True Love — by Lester Keizer</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="icon" type="image/png" href="assets/img/logo.png" />
+  <script src="assets/js/theme-init.js"></script>
+</head>
+
+<body data-active-lang="en">
+
+  <header class="topbar" role="banner">
+    <div class="container">
+      <div class="topbar-inner">
+        <a href="https://loverlipsyachts.com/" class="topbar-logo" aria-label="Lover Lips Yachts — Home">
+          <img class="logo-day"   src="assets/img/logo.png"  alt="Lover Lips Yachts" />
+          <img class="logo-night" src="assets/img/logo2.png" alt="Lover Lips Yachts" />
+          <div class="topbar-brand">
+            Lover Lips Yachts
+            <span>Author Spotlight</span>
+          </div>
+        </a>
+        <div class="topbar-actions">
+          <button class="theme-toggle" id="theme-toggle" aria-label="Switch to Night Mode" aria-pressed="false">
+            <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+            <svg class="icon-sun"  xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m8.66-9h-1M4.34 12h-1m15.07-6.07l-.71.71M6.34 17.66l-.71.71m12.73 0l-.71-.71M6.34 6.34l-.71-.71M12 5a7 7 0 100 14A7 7 0 0012 5z"/></svg>
+          </button>
+          <div class="lang-toggle" role="group" aria-label="Language / Idioma">
+            <button class="lang-btn active" id="btn-en" aria-pressed="true">EN</button>
+            <button class="lang-btn"        id="btn-es" aria-pressed="false">ES</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ══ BOOK HERO ══════════════════════════════════════════════════ -->
+    <section class="section section-white book-hero" aria-labelledby="book-hero-title">
+      <div class="container">
+        <div class="book-hero-inner">
+
+          <div class="book-hero-copy">
+            <h1 class="book-hero-title" id="book-hero-title">
+              <span data-lang="en"><?= bk('hero_title', 'en', $book) ?></span>
+              <span data-lang="es"><?= bk('hero_title', 'es', $book) ?></span>
+            </h1>
+            <h2 class="book-hero-subtitle">
+              <span data-lang="en"><?= bk('hero_subtitle', 'en', $book) ?></span>
+              <span data-lang="es"><?= bk('hero_subtitle', 'es', $book) ?></span>
+            </h2>
+
+            <div class="book-authority-ribbon">
+              <span class="book-authority-badge">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4h10l1.2 2.4H5.8L7 4zm-2.5 4h15a1 1 0 0 1 1 1v.6c0 .4-.3.7-.7.8-2.2.6-5.8 1.1-9.8 1.1s-7.6-.5-9.8-1.1c-.4-.1-.7-.4-.7-.8V9a1 1 0 0 1 1-1zM5 11.2c2.4.5 5.2.8 7.5.8s5.1-.3 7.5-.8V19a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7.8z"/></svg>
+                <span data-lang="en">Amazon #1 New Release</span>
+                <span data-lang="es">#1 Nuevo Lanzamiento en Amazon</span>
+              </span>
+              <div class="book-authority-logos" aria-hidden="true"></div>
+            </div>
+
+            <div class="book-feature-cta">
+              <a href="https://www.amazon.com/dp/ASIN_PLACEHOLDER" class="book-btn book-btn--primary" target="_blank" rel="noopener noreferrer" aria-label="Buy Nine Lives. One True Love on Amazon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4h10l1.2 2.4H5.8L7 4zm-2.5 4h15a1 1 0 0 1 1 1v.6c0 .4-.3.7-.7.8-2.2.6-5.8 1.1-9.8 1.1s-7.6-.5-9.8-1.1c-.4-.1-.7-.4-.7-.8V9a1 1 0 0 1 1-1zM5 11.2c2.4.5 5.2.8 7.5.8s5.1-.3 7.5-.8V19a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7.8z"/></svg>
+                <span data-lang="en">Buy on Amazon</span>
+                <span data-lang="es">Comprar en Amazon</span>
+              </a>
+              <?php if ($hasSample): ?>
+              <button type="button" class="book-btn book-btn--secondary" onclick="document.getElementById('lly-chapter-dialog').showModal()">
+                <span data-lang="en">Read Sample</span>
+                <span data-lang="es">Leer Muestra</span>
+              </button>
+              <?php endif; ?>
+            </div>
+          </div>
+
+          <div class="book-hero-visual">
+            <div class="book-feature-frame">
+              <img src="<?= $coverSrc ?>" alt="Nine Lives. One True Love — book cover by Lester Keizer" class="book-feature-cover" loading="lazy" />
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ SHARE WIDGET ═══════════════════════════════════════════════ -->
+    <section class="section section-white" aria-labelledby="share-title">
+      <div class="container">
+        <p class="section-label">
+          <span data-lang="en">Spread the Story</span>
+          <span data-lang="es">Comparte la Historia</span>
+        </p>
+        <h2 class="section-title" id="share-title">
+          <span data-lang="en">Share This <em>Journey</em></span>
+          <span data-lang="es">Comparte Este <em>Viaje</em></span>
+        </h2>
+        <div class="share-grid">
+          <a class="share-btn share-btn--whatsapp" href="https://api.whatsapp.com/send?text=Nine%20Lives.%20One%20True%20Love%20%E2%80%94%20a%20memoir%20by%20Lester%20Keizer%3A%20https%3A%2F%2Floverlipsyachts.com%2Fmy-book%2F" target="_blank" rel="noopener noreferrer" aria-label="Share on WhatsApp">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-1.746-.872-2.888-1.556-4.035-3.528-.305-.526.305-.489.873-1.627.099-.198.05-.371-.05-.52-.099-.149-.668-1.61-.916-2.207-.242-.579-.487-.5-.668-.51-.173-.01-.371-.012-.57-.012-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.064 2.875 1.213 3.074.148.198 2.04 3.112 4.94 4.236 2.901 1.124 2.901.749 3.422.701.52-.05 1.758-.718 2.005-1.413.247-.694.247-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12.05 2C6.498 2 2 6.498 2 12.05c0 1.949.546 3.766 1.49 5.32L2 22l4.738-1.453a9.96 9.96 0 0 0 5.312 1.503h.004c5.552 0 10.05-4.498 10.05-10.05C22.104 6.498 17.606 2 12.05 2zm0 18.18a8.12 8.12 0 0 1-4.13-1.13l-.296-.176-3.07.941.951-3.083-.193-.317a8.12 8.12 0 0 1-1.222-4.365c0-4.502 3.658-8.16 8.16-8.16 4.502 0 8.16 3.658 8.16 8.16 0 4.502-3.658 8.13-8.36 8.13z"/></svg>
+            <span data-lang="en">WhatsApp</span><span data-lang="es">WhatsApp</span>
+          </a>
+          <a class="share-btn share-btn--facebook" href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Floverlipsyachts.com%2Fmy-book%2F" target="_blank" rel="noopener noreferrer" aria-label="Share on Facebook">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M22 12.06C22 6.504 17.523 2 12 2S2 6.504 2 12.06c0 5.022 3.657 9.184 8.438 9.94v-7.03H7.898v-2.91h2.54V9.845c0-2.507 1.493-3.89 3.776-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.773-1.63 1.563v1.877h2.773l-.443 2.91h-2.33V22c4.78-.756 8.438-4.918 8.438-9.94z"/></svg>
+            <span data-lang="en">Facebook</span><span data-lang="es">Facebook</span>
+          </a>
+          <a class="share-btn share-btn--x" href="https://twitter.com/intent/tweet?url=https%3A%2F%2Floverlipsyachts.com%2Fmy-book%2F&amp;text=Nine%20Lives.%20One%20True%20Love%20%E2%80%94%20a%20memoir%20by%20Lester%20Keizer" target="_blank" rel="noopener noreferrer" aria-label="Share on X">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            <span data-lang="en">X</span><span data-lang="es">X</span>
+          </a>
+          <a class="share-btn share-btn--linkedin" href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Floverlipsyachts.com%2Fmy-book%2F" target="_blank" rel="noopener noreferrer" aria-label="Share on LinkedIn">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 1 1 0-4.124 2.062 2.062 0 0 1 0 4.124zM7.114 20.452H3.558V9h3.556v11.452z"/></svg>
+            <span data-lang="en">LinkedIn</span><span data-lang="es">LinkedIn</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ CURIOSITY GRID ════════════════════════════════════════════ -->
+    <section class="section section-truth" aria-labelledby="curiosity-title">
+      <div class="container">
+        <p class="section-label">
+          <span data-lang="en">Inside the Story</span>
+          <span data-lang="es">Dentro de la Historia</span>
+        </p>
+        <h2 class="section-title" id="curiosity-title">
+          <span data-lang="en">Seven Moments That <em>Shouldn't Exist</em></span>
+          <span data-lang="es">Siete Momentos Que <em>No Deberían Existir</em></span>
+        </h2>
+
+        <div class="arf-grid">
+          <?php foreach ($cards as $card): ?>
+          <div class="curiosity-card">
+            <div class="curiosity-icon"><?= htmlspecialchars($card['icon'], ENT_QUOTES, 'UTF-8') ?></div>
+            <p class="curiosity-text">
+              <span data-lang="en"><?= htmlspecialchars($card['en'], ENT_QUOTES, 'UTF-8') ?></span>
+              <span data-lang="es"><?= htmlspecialchars($card['es'], ENT_QUOTES, 'UTF-8') ?></span>
+            </p>
+          </div>
+          <?php endforeach; ?>
+        </div>
+
+        <blockquote class="pull-quote-vip">
+          <p data-lang="en">"So many memoirs flatten a life into a highlight reel. Yours doesn't flinch."</p>
+          <p data-lang="es">"Tantas memorias reducen una vida a un resumen de mejores momentos. La tuya no se aparta de nada."</p>
+          <footer class="pull-quote-vip-author">
+            <span data-lang="en">Duane Hallock, Chief Communications &amp; Marketing Officer, Red Cross</span>
+            <span data-lang="es">Duane Hallock, Director de Comunicación y Marketing, Cruz Roja</span>
+          </footer>
+        </blockquote>
+
+      </div>
+    </section>
+
+    <!-- ══ FEATURED BOOK ═════════════════════════════════════════════ -->
+    <section class="section section-white" aria-labelledby="book-feature-title">
+      <div class="container">
+        <p class="section-label">
+          <span data-lang="en">Author Spotlight</span>
+          <span data-lang="es">Reflector del Autor</span>
+        </p>
+        <h2 class="section-title" id="book-feature-title">
+          <span data-lang="en">From the Captain's <em>Bookshelf</em></span>
+          <span data-lang="es">Desde la <em>Biblioteca</em> del Capitán</span>
+        </h2>
+
+        <div class="book-feature">
+          <div class="book-feature-copy">
+            <p class="book-feature-tag">
+              <span data-lang="en">New Release · September 2, 2026</span>
+              <span data-lang="es">Nuevo Lanzamiento · 2 de Septiembre, 2026</span>
+            </p>
+            <h3 class="book-feature-title">Nine Lives. One True Love.</h3>
+            <p class="book-feature-subtitle">
+              <span data-lang="en"><?= bk('hero_subtitle', 'en', $book) ?></span>
+              <span data-lang="es"><?= bk('hero_subtitle', 'es', $book) ?></span>
+            </p>
+
+            <div class="book-feature-synopsis">
+              <p data-lang="en"><?= bk('synopsis', 'en', $book) ?></p>
+              <p data-lang="es"><?= bk('synopsis', 'es', $book) ?></p>
+            </div>
+
+            <p class="book-feature-sub-label">
+              <span data-lang="en">Why This Book Matters</span>
+              <span data-lang="es">Por Qué Este Libro Importa</span>
+            </p>
+            <ul class="book-feature-list">
+              <li><span data-lang="en">A father who survived a Japanese prison camp during World War II</span><span data-lang="es">Un padre que sobrevivió a un campo de prisioneros japonés durante la Segunda Guerra Mundial</span></li>
+              <li><span data-lang="en">A childhood spent in the jungles of New Guinea and Borneo</span><span data-lang="es">Una infancia vivida en las selvas de Nueva Guinea y Borneo</span></li>
+              <li><span data-lang="en">Poisoned arrows, exploding bridges, and tribal warfare</span><span data-lang="es">Flechas envenenadas, puentes que explotaban y guerras tribales</span></li>
+              <li><span data-lang="en">Four marriages, painful mistakes, and one true love</span><span data-lang="es">Cuatro matrimonios, errores dolorosos y un amor verdadero</span></li>
+              <li><span data-lang="en">Open-heart surgery, liver cancer, and a liver transplant</span><span data-lang="es">Cirugía de corazón abierto, cáncer de hígado y un trasplante de hígado</span></li>
+              <li><span data-lang="en">A battle with depression that nearly ended everything</span><span data-lang="es">Una batalla contra la depresión que casi terminó con todo</span></li>
+              <li><span data-lang="en">Unexpected friendships with celebrities, world-class leaders, and music icon Eric Clapton</span><span data-lang="es">Amistades inesperadas con celebridades, líderes de talla mundial y el icono de la música Eric Clapton</span></li>
+              <li><span data-lang="en">Encounters that brought me from jungle villages to boardrooms connected to Donald Trump</span><span data-lang="es">Encuentros que me llevaron desde aldeas en la selva hasta salas de juntas conectadas con Donald Trump</span></li>
+              <li><span data-lang="en">The extraordinary journey from missionary kid to minister, CEO, transplant survivor, and yacht entrepreneur</span><span data-lang="es">El extraordinario viaje de hijo de misioneros a ministro, director ejecutivo, sobreviviente de trasplante y empresario náutico</span></li>
+            </ul>
+
+            <blockquote class="book-feature-testimonial">
+              <p data-lang="en"><?= bk('testimonial', 'en', $book) ?></p>
+              <p data-lang="es"><?= bk('testimonial', 'es', $book) ?></p>
+              <footer class="book-feature-testimonial-author">
+                <span data-lang="en">Duane Hallock, Chief Communications &amp; Marketing Officer, Red Cross</span>
+                <span data-lang="es">Duane Hallock, Director de Comunicación y Marketing, Cruz Roja</span>
+              </footer>
+            </blockquote>
+
+            <div class="book-feature-cta">
+              <a href="https://www.amazon.com/dp/ASIN_PLACEHOLDER" class="book-btn book-btn--primary" target="_blank" rel="noopener noreferrer" aria-label="Buy Nine Lives. One True Love on Amazon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4h10l1.2 2.4H5.8L7 4zm-2.5 4h15a1 1 0 0 1 1 1v.6c0 .4-.3.7-.7.8-2.2.6-5.8 1.1-9.8 1.1s-7.6-.5-9.8-1.1c-.4-.1-.7-.4-.7-.8V9a1 1 0 0 1 1-1zM5 11.2c2.4.5 5.2.8 7.5.8s5.1-.3 7.5-.8V19a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7.8z"/></svg>
+                <span data-lang="en">Buy on Amazon</span>
+                <span data-lang="es">Comprar en Amazon</span>
+              </a>
+              <?php if ($hasSample): ?>
+              <button type="button" class="book-btn book-btn--secondary" onclick="document.getElementById('lly-chapter-dialog').showModal()">
+                <span data-lang="en">Read Sample Chapter</span>
+                <span data-lang="es">Leer Capítulo de Muestra</span>
+              </button>
+              <?php endif; ?>
+            </div>
+
+            <nav class="book-feature-editorial-nav" aria-label="Book editorial links">
+              <a href="#"><span data-lang="en">About the Author</span><span data-lang="es">Sobre el Autor</span></a>
+              <span class="book-feature-editorial-sep">|</span>
+              <a href="#"><span data-lang="en">Reviews</span><span data-lang="es">Reseñas</span></a>
+              <span class="book-feature-editorial-sep">|</span>
+              <a href="#"><span data-lang="en">Media</span><span data-lang="es">Prensa</span></a>
+            </nav>
+          </div>
+
+          <div class="book-feature-visual">
+            <div class="book-feature-frame">
+              <img src="<?= $coverSrc ?>" alt="Nine Lives. One True Love — book cover by Lester Keizer" class="book-feature-cover" loading="lazy" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ LATEST ARTICLES ═══════════════════════════════════════════ -->
+    <section class="section section-truth" aria-labelledby="news-articles-title">
+      <div class="container">
+        <p class="section-label">
+          <span data-lang="en">From the Blog</span>
+          <span data-lang="es">Desde el Blog</span>
+        </p>
+        <h2 class="section-title" id="news-articles-title">
+          <span data-lang="en">Latest <em>Articles</em></span>
+          <span data-lang="es">Últimos <em>Artículos</em></span>
+        </h2>
+        <div class="arf-grid">
+          <article class="arf-card">
+            <div class="arf-card-media"><img src="assets/img/news/article-summer-la-paz.jpg" alt="Summer in La Paz, Mexico" loading="lazy" /></div>
+            <div class="arf-card-body">
+              <p class="arf-card-tag"><span data-lang="en">Travel Tips</span><span data-lang="es">Consejos de Viaje</span></p>
+              <h3 class="arf-card-title"><span data-lang="en">Is Summer a Good Time to Visit La Paz, Mexico?</span><span data-lang="es">¿Es el Verano un Buen Momento para Visitar La Paz, México?</span></h3>
+              <a href="#" class="arf-card-link"><span data-lang="en">Read Article</span><span data-lang="es">Leer Artículo</span> →</a>
+            </div>
+          </article>
+          <article class="arf-card">
+            <div class="arf-card-media"><img src="assets/img/news/article-espiritu-santo.jpg" alt="Isla Espíritu Santo yacht tour" loading="lazy" /></div>
+            <div class="arf-card-body">
+              <p class="arf-card-tag"><span data-lang="en">Yacht Tours</span><span data-lang="es">Tours en Yate</span></p>
+              <h3 class="arf-card-title"><span data-lang="en">Isla Espíritu Santo Yacht Tour: Everything You Need to Know</span><span data-lang="es">Tour en Yate a Isla Espíritu Santo: Todo lo que Necesitas Saber</span></h3>
+              <a href="#" class="arf-card-link"><span data-lang="en">Read Article</span><span data-lang="es">Leer Artículo</span> →</a>
+            </div>
+          </article>
+          <article class="arf-card">
+            <div class="arf-card-media"><img src="assets/img/news/article-balandra.jpg" alt="Balandra Beach" loading="lazy" /></div>
+            <div class="arf-card-body">
+              <p class="arf-card-tag"><span data-lang="en">Destinations</span><span data-lang="es">Destinos</span></p>
+              <h3 class="arf-card-title"><span data-lang="en">Is Balandra Beach Worth the Visit?</span><span data-lang="es">¿Vale la Pena Visitar la Playa Balandra?</span></h3>
+              <a href="#" class="arf-card-link"><span data-lang="en">Read Article</span><span data-lang="es">Leer Artículo</span> →</a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ BRIDGE BANNER ═════════════════════════════════════════════ -->
+    <section class="book-bridge-banner" aria-labelledby="bridge-title">
+      <div class="container">
+        <h2 class="book-bridge-title" id="bridge-title">
+          <span data-lang="en">Meet the man behind Lover Lips Yachts.</span>
+          <span data-lang="es">Conoce al hombre detrás de Lover Lips Yachts.</span>
+        </h2>
+        <p class="book-bridge-text">
+          <span data-lang="en">Discover the 5-star charter experience in La Paz.</span>
+          <span data-lang="es">Descubre la experiencia de charter 5 estrellas en La Paz.</span>
+        </p>
+        <a href="https://loverlipsyachts.com/" class="book-btn book-btn--primary" target="_blank" rel="noopener noreferrer">
+          <span data-lang="en">Explore the Fleet</span>
+          <span data-lang="es">Explorar la Flota</span>
+        </a>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ══ SAMPLE CHAPTER DIALOG ════════════════════════════════════ -->
+  <?php if ($hasSample): ?>
+  <dialog class="chapter-dialog" id="lly-chapter-dialog" aria-labelledby="chapter-dialog-title">
+    <div class="chapter-dialog-inner">
+      <button class="chapter-dialog-close" type="button" onclick="document.getElementById('lly-chapter-dialog').close()" aria-label="Close">✕</button>
+      <p class="chapter-dialog-eyebrow">
+        <span data-lang="en">Sample Chapter Preview</span>
+        <span data-lang="es">Vista Previa del Capítulo de Muestra</span>
+      </p>
+      <h2 class="chapter-dialog-title" id="chapter-dialog-title">Nine Lives. One True Love.</h2>
+      <div class="chapter-dialog-body">
+        <p data-lang="en"><?= bk('sample_chapter', 'en', $book) ?></p>
+        <p data-lang="es"><?= bk('sample_chapter', 'es', $book) ?></p>
+      </div>
+    </div>
+  </dialog>
+  <?php endif; ?>
+
+  <footer class="footer" role="contentinfo">
+    <div class="container">
+      <div class="footer-logo">
+        <img class="logo-day"   src="assets/img/logo.png"  alt="Lover Lips Yachts" />
+        <img class="logo-night" src="assets/img/logo2.png" alt="Lover Lips Yachts" />
+      </div>
+      <p>
+        <strong>Lover Lips Yachts</strong> &nbsp;·&nbsp;
+        <span data-lang="en">Nine Lives. One True Love — Official Book Page</span>
+        <span data-lang="es">Nine Lives. One True Love — Página Oficial del Libro</span>
+      </p>
+      <p class="u-mt-xs">
+        <span data-lang="en">By Lester Keizer &nbsp;·&nbsp; Launching September 2, 2026</span>
+        <span data-lang="es">Por Lester Keizer &nbsp;·&nbsp; Lanzamiento 2 de Septiembre, 2026</span>
+      </p>
+    </div>
+  </footer>
+
+  <button id="back-to-top" class="back-to-top" aria-label="Back to top" type="button">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
+  </button>
+
+  <script src="assets/js/main.js" defer></script>
+
+</body>
+</html>
