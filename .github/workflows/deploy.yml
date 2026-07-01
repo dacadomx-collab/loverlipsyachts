@@ -87,6 +87,8 @@ jobs:
             knowledge/
             knowledge/**
             docs/
+            docs/**
+            **/*.md
             Reportes/
             BackUp/
             **/BackUp/**
