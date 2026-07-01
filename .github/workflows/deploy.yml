@@ -75,33 +75,76 @@ jobs:
           server-dir:             /public_html/cockpit/
           dangerous-clean-slate:  false
 
-          # ── Files excluded from deployment ─────────────────────────────
+          # ── Comprehensive global exclusion matrix ──────────────────
+          # Principle: only .php / .css / .js / optimised web images
+          # and .htaccess reach public_html/cockpit/. Every other
+          # category is blocked here so no reactive 550 can re-appear.
           exclude: |
+            # ── Version control & CI/CD metadata ─────────────────
             **/.git*
             **/.git*/**
             **/.github/**
+
+            # ── Package managers ─────────────────────────────────
             **/node_modules/**
+
+            # ── Environment & secrets ─────────────────────────────
             core/.env
             core/.env.*
-            info.txt
-            knowledge/
-            knowledge/**
-            docs/
+            .env.example
+            **/.env*
+
+            # ── Internal architecture docs & knowledge base ───────
             docs/**
+            knowledge/**
+
+            # ── Markdown & plain-text files (anywhere in tree) ───
+            *.md
             **/*.md
-            Reportes/
-            BackUp/
+            *.txt
+            **/*.txt
+
+            # ── Local staging presentations & reports ─────────────
+            Reportes/**
+
+            # ── Raw media backups & XAMPP-only assets ────────────
+            BackUp/**
             **/BackUp/**
-            my-book/**
-            **/*.log
-            **/*.tmp
-            **/*.bak
-            **/*.zip
-            **/*.rar
-            **/*.mp4
-            **/*.mov
+
+            # ── Database migration & SQL scripts ─────────────────
+            sql/**
+            **/*.sql
+
+            # ── Test, diagnostic & automation helpers ─────────────
+            test/**
             test_db.php
             test_email.php
+            **/*.py
+
+            # ── Legacy static files superseded by PHP versions ───
+            book.html
+            index.html
+
+            # ── my-book/ deploys via its own dedicated job ───────
+            my-book/**
+
+            # ── Raw / unoptimised media (never on production) ────
+            **/*.mp4
+            **/*.mov
+            **/*.avi
+            **/*.mkv
+            **/*.zip
+            **/*.rar
+            **/*.7z
+            **/*.gz
+            **/*.tar
+            **/*.heic
+            **/*.HEIC
+            **/*.JPG
+            **/*.bak
+            **/*.log
+            **/*.tmp
+            **/*.cache
 
   # ────────────────────────────────────────────────────────────────────────────
   # JOB 2 — Deploy public book page to /public_html/my-book/
