@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Lover Lips Yachts | Reporte Técnico — Book Editor Studio (Julio 2026)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --pink-primary: #ff007f;
+      --navy-deep: #0a1128;
+      --gold-accent: #d4af37;
+    }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: linear-gradient(135deg, #fdf2f8 0%, #ffffff 100%);
+      color: var(--navy-deep);
+    }
+    .card { background:#fff; border:1px solid rgba(255,0,127,.12); border-radius:1.25rem; }
+    .pill-done   { background: rgba(16,185,129,.12); color:#059669; }
+    .pill-active { background: rgba(212,175,55,.15); color:#a37c1a; }
+    code { background: #f4f4f6; padding: .1rem .4rem; border-radius: .35rem; font-size: .85em; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <header class="border-b border-pink-100 bg-white/70 backdrop-blur">
+    <div class="max-w-4xl mx-auto px-6 py-8">
+      <a href="index.html" class="text-xs font-bold uppercase tracking-widest text-[#ff007f]">← Hub de Reportes</a>
+      <p class="text-xs font-bold uppercase tracking-widest text-slate-400 mt-3">Reporte Técnico · Julio 2026</p>
+      <h1 class="text-3xl md:text-4xl font-black text-[#0a1128] mt-1">Book Editor Studio — Estabilización & Motor de Traducción Inteligente</h1>
+      <p class="text-slate-500 mt-2 max-w-2xl">Cierre de hito: recuperación de datos perdidos, corrección de arquitectura y lanzamiento del sistema de auto-traducción con Dirty-Checking.</p>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-6 py-10 space-y-8">
+
+    <section class="card p-6">
+      <h2 class="text-xl font-extrabold mb-3">1 · Resumen Ejecutivo</h2>
+      <p class="text-slate-600 leading-relaxed">
+        El módulo <strong>Book Editor Studio</strong> (<code>book_editor.php</code>) presentaba dos secciones renderizando vacías: las <em>Seven Curiosity Cards</em> y el <em>Duane Hallock Master Testimonial</em>. La causa raíz no era una base de datos vacía, sino un desajuste de nomenclatura entre el editor y los datos reales ya almacenados en producción. Se corrigió el mapeo, se recuperó el contenido con datos de respaldo oficiales, y se construyó un botón de auto-traducción EN→ES que respeta las ediciones manuales existentes.
+      </p>
+    </section>
+
+    <section class="card p-6">
+      <h2 class="text-xl font-extrabold mb-3">2 · Causa Raíz y Recuperación de Datos</h2>
+      <ul class="text-slate-600 space-y-2 list-disc list-inside">
+        <li><code>book_editor.php</code> y <code>api/book_editor.php</code> leían/escribían el <code>meta_key</code> <code>testimonial</code>, pero la tabla real <code>lly_book_content</code> ya contenía datos vivos bajo <code>testimonial_quote</code> y <code>testimonial_author</code> — este último sin ningún input en el formulario para editarlo.</li>
+        <li>Las 7 Curiosity Cards solo tenían fila real para <code>card_6</code> (placeholder de prueba: <em>"Test" / "Prueba"</em>); las cards 1–5 y 7 nunca se guardaron.</li>
+        <li>Se agregó un sistema de <strong>fallback bilingüe oficial</strong> en el editor: si el DB no tiene fila o viene vacía para un idioma, el input se pre-llena con el texto oficial (nunca queda un layout vacío), respetando siempre los valores reales de BD cuando existen.</li>
+        <li>Se conectó por primera vez el campo <code>testimonial_author</code> al formulario del editor y a la página pública <code>book.php</code> (antes hardcodeado en el HTML, ahora editable en vivo).</li>
+      </ul>
+    </section>
+
+    <section class="card p-6">
+      <h2 class="text-xl font-extrabold mb-3">3 · Motor de Traducción Inteligente Multilingüe (Dirty-Checking)</h2>
+      <p class="text-slate-600 leading-relaxed mb-3">
+        Nuevo botón <strong>"🌐 Translate Missing Fields"</strong> en <code>book_editor.php</code>, respaldado por el endpoint <code>api/translate.php</code>. Sigue tres reglas de control de cambios para nunca corromper una traducción manual:
+      </p>
+      <ol class="text-slate-600 space-y-1 list-decimal list-inside">
+        <li>Español vacío → se traduce el inglés correspondiente.</li>
+        <li>Inglés cambió respecto al valor cargado originalmente de la BD → se re-traduce y sobreescribe el español.</li>
+        <li>Español ya tiene texto y el inglés no cambió → se deja intacto (protege traducciones manuales).</li>
+      </ol>
+      <p class="text-slate-600 leading-relaxed mt-3">
+        Proveedor: <strong>Google Translate</strong> (endpoint público <code>client=gtx</code>), migrado desde DeepL el mismo día por bloqueo regional de registro de cuenta — sin necesidad de API key ni configuración en <code>.env</code>. Toda la llamada ocurre en el backend; el navegador nunca contacta al proveedor directamente.
+      </p>
+    </section>
+
+    <section class="card p-6">
+      <h2 class="text-xl font-extrabold mb-3">4 · Estatus de Plataforma</h2>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div class="p-4 rounded-xl bg-slate-50">
+          <span class="pill-done text-xs font-bold px-2.5 py-1 rounded-full">Validado</span>
+          <p class="text-sm text-slate-600 mt-2">Dashboard privado (<code>dashboard.php</code>) — guard de sesión + remember-me confirmado, Reports A–F operativos.</p>
+        </div>
+        <div class="p-4 rounded-xl bg-slate-50">
+          <span class="pill-done text-xs font-bold px-2.5 py-1 rounded-full">Validado</span>
+          <p class="text-sm text-slate-600 mt-2">Book Editor Studio — Curiosity Cards, Testimonial y Auto-Traducción probados end-to-end (auth, CSRF, y llamada real al proveedor).</p>
+        </div>
+        <div class="p-4 rounded-xl bg-slate-50">
+          <span class="pill-active text-xs font-bold px-2.5 py-1 rounded-full">Vigente</span>
+          <p class="text-sm text-slate-600 mt-2">Estructura B2B "Win-Win Alliance" (50% Cash / 50% Trade Credits) — modelo aplicado a la relación de desarrollo entre LLY y la agencia, visible en <code>dashboard.php</code> → Alliance.</p>
+        </div>
+        <div class="p-4 rounded-xl bg-slate-50">
+          <span class="pill-active text-xs font-bold px-2.5 py-1 rounded-full">Vigente</span>
+          <p class="text-sm text-slate-600 mt-2">Book Spotlight público (<code>book.php</code>) sincronizado con los mismos datos que edita Lester — sin duplicación de contenido.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card p-6">
+      <h2 class="text-xl font-extrabold mb-3">5 · Archivos Afectados</h2>
+      <p class="text-sm text-slate-500 mb-2">Detalle completo, verificación y decisiones técnicas en <code>docs/02_SYSTEM_CODEX_REGISTRY.md</code>.</p>
+      <div class="flex flex-wrap gap-2 text-xs font-mono">
+        <span class="px-2 py-1 bg-slate-100 rounded">book_editor.php</span>
+        <span class="px-2 py-1 bg-slate-100 rounded">api/book_editor.php</span>
+        <span class="px-2 py-1 bg-slate-100 rounded">api/translate.php</span>
+        <span class="px-2 py-1 bg-slate-100 rounded">book.php</span>
+        <span class="px-2 py-1 bg-slate-100 rounded">assets/css/style.css</span>
+        <span class="px-2 py-1 bg-slate-100 rounded">.htaccess</span>
+        <span class="px-2 py-1 bg-slate-100 rounded">Manual_Administrador.html</span>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="max-w-4xl mx-auto px-6 py-10 text-xs text-slate-400">
+    Lover Lips Yachts · Generado por la IA Ejecutora conforme al Mandamiento 17 (Documentación Viva) — 2026-07-01.
+  </footer>
+
+</body>
+</html>

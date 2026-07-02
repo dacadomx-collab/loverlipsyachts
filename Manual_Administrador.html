@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Lover Lips Yachts — Manual del Administrador" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Lover Lips Yachts · Manual del Administrador</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="icon" type="image/png" href="assets/img/logo.png" />
+  <script src="assets/js/theme-init.js"></script>
+</head>
+
+<body data-active-lang="en">
+
+  <!-- ══ TOPBAR ═══════════════════════════════════════════════════════ -->
+  <header class="topbar" role="banner">
+    <div class="container">
+      <div class="topbar-inner">
+
+        <a href="index.php" class="topbar-logo" aria-label="Back to Owner Dashboard">
+          <img class="logo-day"   src="assets/img/logo.png"  alt="Lover Lips Yachts" />
+          <img class="logo-night" src="assets/img/logo2.png" alt="Lover Lips Yachts" />
+          <div class="topbar-brand">
+            Lover Lips Yachts
+            <span>Admin Manual</span>
+          </div>
+        </a>
+
+        <div class="topbar-actions">
+          <nav class="topbar-nav" role="navigation" aria-label="Dashboard Views">
+            <a class="topbar-nav-link" href="index.php">
+              <span data-lang="en">← Dashboard</span>
+              <span data-lang="es">← Panel</span>
+            </a>
+            <a class="topbar-nav-link" href="book_editor.php">
+              <span data-lang="en">✏️ Book Editor</span>
+              <span data-lang="es">✏️ Editor del Libro</span>
+            </a>
+          </nav>
+
+          <button class="theme-toggle" id="theme-toggle" aria-label="Switch to Night Mode" aria-pressed="false">
+            <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+            <svg class="icon-sun"  xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m8.66-9h-1M4.34 12h-1m15.07-6.07l-.71.71M6.34 17.66l-.71.71m12.73 0l-.71-.71M6.34 6.34l-.71-.71M12 5a7 7 0 100 14A7 7 0 0012 5z"/></svg>
+          </button>
+
+          <div class="lang-toggle" role="group" aria-label="Language / Idioma">
+            <button class="lang-btn active" id="btn-en" aria-pressed="true">EN</button>
+            <button class="lang-btn"        id="btn-es" aria-pressed="false">ES</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+  <section class="section section-white" aria-labelledby="manual-title">
+    <div class="container">
+
+      <p class="section-label">
+        <span data-lang="en">Owner Dashboard</span>
+        <span data-lang="es">Panel del Propietario</span>
+      </p>
+      <h1 class="section-title" id="manual-title">
+        <span data-lang="en">Administrator <em>Manual</em></span>
+        <span data-lang="es">Manual del <em>Administrador</em></span>
+      </h1>
+      <p class="section-subtitle" data-lang="en">
+        A plain-language guide for Lester to operate the Book Editor Studio — including the new auto-translate button.
+      </p>
+      <p class="section-subtitle" data-lang="es">
+        Una guía en lenguaje sencillo para que Lester opere el Estudio de Edición del Libro — incluyendo el nuevo botón de auto-traducción.
+      </p>
+
+      <!-- ══ 1. LOGIN ═══════════════════════════════════════════════════ -->
+      <fieldset class="editor-fieldset">
+        <legend class="editor-legend">
+          <span class="editor-legend-icon">🔐</span>
+          <span data-lang="en">1. Logging In</span>
+          <span data-lang="es">1. Iniciar Sesión</span>
+        </legend>
+        <p class="editor-hint" data-lang="en">Go to your dashboard URL and sign in with your email and password. Check "Remember Me" so you don't have to log in every time on your own computer.</p>
+        <p class="editor-hint" data-lang="es">Entra a la URL de tu panel e inicia sesión con tu correo y contraseña. Marca "Recuérdame" para no tener que iniciar sesión cada vez en tu propia computadora.</p>
+      </fieldset>
+
+      <!-- ══ 2. BOOK EDITOR STUDIO ═══════════════════════════════════════ -->
+      <fieldset class="editor-fieldset">
+        <legend class="editor-legend">
+          <span class="editor-legend-icon">📖</span>
+          <span data-lang="en">2. Book Editor Studio</span>
+          <span data-lang="es">2. Estudio de Edición del Libro</span>
+        </legend>
+        <p class="editor-hint" data-lang="en">Click "✏️ Book Editor" in the top navigation. Here you can edit everything shown on the public book page: the title, synopsis, the seven curiosity cards, the Duane Hallock testimonial, sample chapter, blog articles, and the book cover. Every field has an English box and a Spanish box.</p>
+        <p class="editor-hint" data-lang="es">Haz clic en "✏️ Editor del Libro" en la barra de navegación superior. Aquí puedes editar todo lo que aparece en la página pública del libro: el título, la sinopsis, las siete tarjetas de curiosidad, el testimonio de Duane Hallock, el capítulo de muestra, los artículos del blog y la portada. Cada campo tiene una caja en inglés y una en español.</p>
+      </fieldset>
+
+      <!-- ══ 3. TRANSLATE MISSING FIELDS ══════════════════════════════════ -->
+      <fieldset class="editor-fieldset editor-fieldset--highlight">
+        <legend class="editor-legend">
+          <span class="editor-legend-icon">🌐</span>
+          <span data-lang="en">3. The "Translate Missing Fields" Button</span>
+          <span data-lang="es">3. El Botón "Translate Missing Fields"</span>
+        </legend>
+
+        <p class="editor-hint" data-lang="en">Since you write mostly in English, you don't need to translate the Curiosity Cards or the Testimonial by hand. Just fill in the English boxes, then click the gold "🌐 Translate Missing Fields" button near the top of the page. The system will automatically fill in the matching Spanish boxes for you.</p>
+        <p class="editor-hint" data-lang="es">Como escribes principalmente en inglés, no necesitas traducir a mano las Tarjetas de Curiosidad ni el Testimonio. Solo llena las cajas en inglés y haz clic en el botón dorado "🌐 Traducir Campos Faltantes" cerca de la parte superior de la página. El sistema llenará automáticamente las cajas en español correspondientes.</p>
+
+        <p class="editor-hint" data-lang="en"><strong>The button is smart — it follows 3 simple rules:</strong></p>
+        <p class="editor-hint" data-lang="es"><strong>El botón es inteligente — sigue 3 reglas simples:</strong></p>
+        <ul class="editor-hint editor-hint-list editor-hint-list--bullet" data-lang="en">
+          <li>If a Spanish box is <strong>empty</strong>, it gets translated from English.</li>
+          <li>If you <strong>changed</strong> the English text since it was last loaded, the Spanish box is re-translated and updated.</li>
+          <li>If the Spanish box <strong>already has text</strong> and the English text hasn't changed, it is left alone — your manual edits are never overwritten by accident.</li>
+        </ul>
+        <ul class="editor-hint editor-hint-list editor-hint-list--bullet" data-lang="es">
+          <li>Si una caja en español está <strong>vacía</strong>, se traduce desde el inglés.</li>
+          <li>Si <strong>cambiaste</strong> el texto en inglés desde la última vez que se cargó, la caja en español se vuelve a traducir y se actualiza.</li>
+          <li>Si la caja en español <strong>ya tiene texto</strong> y el inglés no cambió, se deja intacta — tus ediciones manuales nunca se sobrescriben por accidente.</li>
+        </ul>
+      </fieldset>
+
+      <!-- ══ 4. UNDO FEATURE EMULADO ══════════════════════════════════════ -->
+      <fieldset class="editor-fieldset editor-fieldset--highlight">
+        <legend class="editor-legend">
+          <span class="editor-legend-icon">↩️</span>
+          <span data-lang="en">4. "Undo" a Bad Translation</span>
+          <span data-lang="es">4. "Deshacer" una Traducción Dañada</span>
+        </legend>
+
+        <p class="editor-hint" data-lang="en">There is no traditional "Undo" button — but you don't need one. If a Spanish text ever looks wrong, corrupted, or you just want it regenerated cleanly, do this:</p>
+        <p class="editor-hint" data-lang="es">No existe un botón tradicional de "Deshacer" — pero no lo necesitas. Si alguna vez un texto en español se ve mal, dañado, o simplemente quieres regenerarlo desde cero, haz esto:</p>
+
+        <ol class="editor-hint editor-hint-list editor-hint-list--number" data-lang="en">
+          <li>Click inside the damaged Spanish box.</li>
+          <li>Select all the text and delete it — leave the box completely empty.</li>
+          <li>Click "🌐 Translate Missing Fields" again.</li>
+        </ol>
+        <ol class="editor-hint editor-hint-list editor-hint-list--number" data-lang="es">
+          <li>Haz clic dentro de la caja en español dañada.</li>
+          <li>Selecciona todo el texto y bórralo — deja la caja completamente vacía.</li>
+          <li>Haz clic de nuevo en "🌐 Traducir Campos Faltantes".</li>
+        </ol>
+
+        <p class="editor-hint" data-lang="en">Because the box is now empty, Rule 1 kicks in: the system reads your original English text and generates a fresh, clean translation — as if starting over. This is the safest way to fix any Spanish field, at any time.</p>
+        <p class="editor-hint" data-lang="es">Como la caja ahora está vacía, se activa la Regla 1: el sistema lee tu texto original en inglés y genera una traducción nueva y limpia — como si empezara de cero. Esta es la forma más segura de corregir cualquier campo en español, en cualquier momento.</p>
+      </fieldset>
+
+      <!-- ══ 5. SAVING ═══════════════════════════════════════════════════ -->
+      <fieldset class="editor-fieldset">
+        <legend class="editor-legend">
+          <span class="editor-legend-icon">💾</span>
+          <span data-lang="en">5. Saving Your Changes</span>
+          <span data-lang="es">5. Guardar tus Cambios</span>
+        </legend>
+        <p class="editor-hint" data-lang="en">Translating does not save automatically. Once you're happy with the English and Spanish text, scroll to the bottom and click "💾 Save to Database." Your changes go live on the public book page immediately.</p>
+        <p class="editor-hint" data-lang="es">Traducir no guarda automáticamente. Una vez que estés conforme con el texto en inglés y español, baja hasta el final y haz clic en "💾 Guardar en Base de Datos." Tus cambios se reflejan de inmediato en la página pública del libro.</p>
+      </fieldset>
+
+    </div>
+  </section>
+  </main>
+
+  <footer class="footer" role="contentinfo">
+    <div class="container">
+      <div class="footer-logo">
+        <img class="logo-day"   src="assets/img/logo.png"  alt="Lover Lips Yachts" />
+        <img class="logo-night" src="assets/img/logo2.png" alt="Lover Lips Yachts" />
+      </div>
+      <p>
+        <strong>Lover Lips Yachts</strong> &nbsp;·&nbsp;
+        <span data-lang="en">Administrator Manual · Confidential</span>
+        <span data-lang="es">Manual del Administrador · Confidencial</span>
+      </p>
+    </div>
+  </footer>
+
+  <script src="assets/js/main.js" defer></script>
+
+</body>
+</html>

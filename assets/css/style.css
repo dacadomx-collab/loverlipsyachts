@@ -2807,6 +2807,9 @@ body[data-active-lang="es"] ul[data-lang="es"] { display: flex; }
 }
 
 .editor-hint { font-size: .78rem; color: var(--ink-60); line-height: 1.55; margin-top: .5rem; }
+.editor-hint-list { margin-left: 1.25rem; }
+.editor-hint-list--bullet  { list-style: disc; }
+.editor-hint-list--number  { list-style: decimal; }
 
 .editor-publish-bar {
   display: flex;
@@ -2850,6 +2853,48 @@ body[data-active-lang="es"] ul[data-lang="es"] { display: flex; }
 .editor-publish-btn-loading       { display: none; }
 .editor-publish-btn--loading .editor-publish-btn-idle    { display: none; }
 .editor-publish-btn--loading .editor-publish-btn-loading { display: inline; }
+
+/* ── Auto-translate bar (Book Editor Studio) ─────────────────────── */
+.editor-translate-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-2);
+  border: 1.5px dashed var(--gold-20);
+  border-radius: var(--r-lg);
+  margin-bottom: 1.25rem;
+}
+.editor-translate-copy { font-size: .8rem; color: var(--ink-60); max-width: 46ch; }
+
+.editor-translate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .7rem 1.5rem;
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--gold);
+  background: var(--surface);
+  border: 1.5px solid var(--gold-20);
+  border-radius: var(--r-full);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform var(--ease), background var(--ease), border-color var(--ease);
+}
+.editor-translate-btn:hover {
+  transform: translateY(-2px);
+  background: var(--gold-10);
+  border-color: var(--gold);
+}
+.editor-translate-btn--loading      { opacity: .7; pointer-events: none; cursor: wait; }
+.editor-translate-btn-loading       { display: none; }
+.editor-translate-btn--loading .editor-translate-btn-idle    { display: none; }
+.editor-translate-btn--loading .editor-translate-btn-loading { display: inline; }
 
 /* ─────────────────────────────────────────────────────────────────────
    28. BOOK EDITOR STANDALONE PAGE — card images + blog article blocks

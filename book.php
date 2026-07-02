@@ -49,6 +49,8 @@ $book = [
                           'es' => 'Mi padre sobrevivió a un campo de prisioneros japonés. Yo sobreviví a las selvas de Nueva Guinea y Borneo, una cirugía de corazón abierto, cáncer de hígado, un trasplante de hígado, depresión, y más momentos límite de los que puedo contar. Enterré sueños, dañé relaciones, y muchas veces fui mi propio obstáculo. Esta es la historia de un niño de la selva que debió haber muerto muchas veces — pero no lo hizo. Más importante aún, es la historia de cómo la fe, el perdón y una mujer extraordinaria me enseñaron que sobrevivir no es lo mismo que vivir — y que el amor verdadero puede llegar incluso después de toda una vida de caminos equivocados.'],
     'testimonial'     => ['en' => '"What a gift you\'ve given me — and I mean that in every sense of the word. I\'ve been reading your memoir with the kind of attention I rarely give anything anymore. You haven\'t just told your story; you\'ve drawn the reader into it. The writing is masterful — unhurried where it needs to breathe, gripping where the stakes are highest. That\'s not an easy balance, but you found it. What moved me most was the full honesty of it — the mountaintop moments and the deep valley seasons both. So many memoirs flatten a life into a highlight reel. Yours doesn\'t flinch. And that\'s precisely what makes it inspiring rather than merely impressive. Journeying alongside you through these pages reminded me of what a life of genuine faith and courage actually looks like from the inside. I came away both humbled and encouraged."',
                           'es' => '"Qué regalo me has dado — y lo digo en todo el sentido de la palabra. He estado leyendo tus memorias con el tipo de atención que rara vez le dedico a algo en estos días. No solo contaste tu historia; lograste que el lector se sumergiera en ella. La escritura es magistral — pausada donde necesita respirar, intensa donde la tensión es más alta. Ese no es un equilibrio fácil de lograr, pero tú lo encontraste. Lo que más me conmovió fue su honestidad absoluta — tanto los momentos en la cima como las temporadas en el valle más profundo. Tantas memorias reducen una vida a un resumen de mejores momentos. La tuya no se aparta de nada. Y es precisamente eso lo que la hace inspiradora y no solo impresionante. Acompañarte a través de estas páginas me recordó cómo se ve, desde adentro, una vida de fe y valentía genuinas. Terminé sintiéndome a la vez humilde y motivado."'],
+    'testimonial_author' => ['en' => 'Duane Hallock, Chief Communications and Marketing Officer, Red Cross',
+                             'es' => 'Duane Hallock, Director de Comunicación y Marketing, Cruz Roja'],
     'sample_chapter'  => ['en' => '', 'es' => ''],
     'book_cover_path' => ['en' => 'assets/img/nine_live.png', 'es' => 'assets/img/nine_live.png'],
 ];
@@ -73,7 +75,10 @@ try {
         $en = (string) ($row['content_en'] ?? '');
         $es = (string) ($row['content_es'] ?? '');
 
-        if (isset($book[$k])) {
+        if ($k === 'testimonial_quote') {
+            if ($en !== '') { $book['testimonial']['en'] = $en; }
+            if ($es !== '') { $book['testimonial']['es'] = $es; }
+        } elseif (isset($book[$k])) {
             if ($en !== '') { $book[$k]['en'] = $en; }
             if ($es !== '') { $book[$k]['es'] = $es; }
         } elseif (preg_match('/^card_(\d+)$/', $k, $m)) {
@@ -315,8 +320,8 @@ $hasSample = ($book['sample_chapter']['en'] !== '' || $book['sample_chapter']['e
               <p data-lang="en"><?= bk('testimonial', 'en', $book) ?></p>
               <p data-lang="es"><?= bk('testimonial', 'es', $book) ?></p>
               <footer class="book-feature-testimonial-author">
-                <span data-lang="en">Duane Hallock, Chief Communications &amp; Marketing Officer, Red Cross</span>
-                <span data-lang="es">Duane Hallock, Director de Comunicación y Marketing, Cruz Roja</span>
+                <span data-lang="en"><?= bk('testimonial_author', 'en', $book) ?></span>
+                <span data-lang="es"><?= bk('testimonial_author', 'es', $book) ?></span>
               </footer>
             </blockquote>
 

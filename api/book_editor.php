@@ -130,7 +130,8 @@ $fields = [
     'hero_title'      => ['en' => lly_text($_POST['hero_title_en']   ?? ''), 'es' => lly_text($_POST['hero_title_es']   ?? '')],
     'hero_subtitle'   => ['en' => lly_text($_POST['hero_sub_en']     ?? ''), 'es' => lly_text($_POST['hero_sub_es']     ?? '')],
     'synopsis'        => ['en' => lly_html($_POST['synopsis_en']     ?? ''), 'es' => lly_html($_POST['synopsis_es']     ?? '')],
-    'testimonial'     => ['en' => lly_html($_POST['testimonial_en']  ?? ''), 'es' => lly_html($_POST['testimonial_es']  ?? '')],
+    'testimonial_quote'  => ['en' => lly_html($_POST['testimonial_en']  ?? ''), 'es' => lly_html($_POST['testimonial_es']  ?? '')],
+    'testimonial_author' => ['en' => lly_text($_POST['testimonial_author_en'] ?? ''), 'es' => lly_text($_POST['testimonial_author_es'] ?? '')],
     'sample_chapter'  => ['en' => lly_html($_POST['sample_chapter_en'] ?? ''), 'es' => lly_html($_POST['sample_chapter_es'] ?? '')],
 ];
 

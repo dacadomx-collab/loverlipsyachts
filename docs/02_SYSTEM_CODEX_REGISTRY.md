@@ -1,6 +1,48 @@
 # 🗂️ 02_SYSTEM_CODEX_REGISTRY.md
 Fuente única de verdad de nomenclatura (Mandamiento 18). Este archivo no existía antes de hoy — se crea ahora con el inventario real encontrado en el sistema de archivos, no con nombres inventados.
 
+## 📌 REGISTRO FORMAL DE ESQUEMA — `lly_book_content` (vigente, 2026-07-01)
+Consulta obligatoria antes de leer/escribir cualquier `meta_key` nuevo (Mandamiento 4 — Anti-Alucinación). Historial de cómo se descubrió/corrigió cada campo: ver "Cierre de Hito — Book Editor Studio" y "Corrección — meta_key mismatch" más abajo.
+
+**Tabla:** `lly_book_content` — patrón EAV (Entity-Attribute-Value), **no** una fila por campo con columnas fijas.
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | INT PK AUTO_INCREMENT | Clave primaria |
+| `meta_key` | VARCHAR UNIQUE | Identificador semántico del campo — ver catálogo abajo |
+| `content_en` | TEXT | Contenido en inglés |
+| `content_es` | TEXT | Contenido en español |
+| `updated_at` | TIMESTAMP | Auto-actualizado en cada UPSERT |
+
+**Catálogo de `meta_key` válidos** (único vocabulario permitido — Mandamiento 10, cero sinónimos):
+
+| `meta_key` | Consumidores | Notas |
+|---|---|---|
+| `hero_title` | `book_editor.php`, `book.php` | Título principal |
+| `hero_subtitle` | `book_editor.php`, `book.php` | Subtítulo |
+| `synopsis` | `book_editor.php`, `book.php` | Sinopsis del libro |
+| `sample_chapter` | `book_editor.php`, `book.php` | Capítulo de muestra (lightbox) |
+| `book_cover_path` | `book_editor.php`, `book.php` | Ruta relativa a la portada (mismo valor en `en`/`es`) |
+| `amazon_link_url` | `book_editor.php`, `book.php` | URL de compra (mismo valor en `en`/`es`) |
+| `card_N` (N=1…7) | `book_editor.php`, `book.php` | Texto de la Curiosity Card N |
+| `card_N_icon` (N=1…7) | `book_editor.php`, `book.php` | Emoji (mismo valor en `en`/`es`) |
+| `card_N_img` (N=1…7) | `book_editor.php` | Ruta a imagen custom de la card (WebP) |
+| `testimonial_quote` | `book_editor.php`, `book.php` | Texto del testimonio maestro de Duane Hallock — **no** usar `testimonial` a secas (huérfano, ver corrección abajo) |
+| `testimonial_author` | `book_editor.php`, `book.php` | Firma/byline del testimonio (nombre + cargo) |
+| `article_N_tag` / `article_N_title` / `article_N_link` (N=1…3) | `book_editor.php`, `book.php` | Blog Synergy Cluster |
+
+**Patrón de card:** `card_N` (texto) + `card_N_icon` (emoji) + `card_N_img` (opcional), N = 1…7.
+**Fallback bilingüe:** `book_editor.php` y `book.php` inyectan texto oficial cuando una fila no existe o viene vacía para un idioma — nunca renderizan un layout vacío (ver detalle en la sección de corrección más abajo).
+
+## 📌 REGISTRO FORMAL DE ENDPOINT — `api/translate.php` (vigente, 2026-07-01)
+- **Auth:** `lly_is_authenticated()` (sesión + remember-me, mismo contrato que el resto de `api/`).
+- **Método:** `POST` — body JSON.
+- **Payload:** `{ "text": "string EN", "source_lang": "en", "target_lang": "es", "csrf_token": "string" }`
+- **Respuesta éxito:** `{"status":"success","data":{"translated_text":"..."}}`
+- **Respuesta error:** `{"status":"error","message":"..."}` — 401 (sin sesión), 403 (CSRF inválido), 400 (payload vacío/malformado/>8000 chars), 405 (método incorrecto), 502 (proveedor falló o devolvió forma inesperada).
+- **Proveedor:** Google Translate, endpoint público `gtx` — sin API key, sin variables en `.env`.
+- **CSRF:** validado pero **no rotado** en cada llamada (llamadas múltiples por clic desde `book_editor.php`); el token de sesión sigue rotando normalmente al hacer el Save real del formulario vía `api/book_editor.php`.
+
 ## 🏁 CIERRE DE HITO — 2026-06-22
 
 ### Estado verificado del sistema
@@ -156,6 +198,62 @@ Decisión humana explícita: `lly.tourfindy.com` es el entorno oficial de **Stag
 ### Infraestructura bilingual segura
 El par `content_en` / `content_es` en `lly_book_content` es la fuente única de verdad para todo texto bilingüe del Book Spotlight. No existe lógica de idioma en la BD — el cliente recibe ambas columnas y el toggle JS (`setLang`) / atributo `data-lang` del DOM resuelven la presentación.
 
+## ✅ Corrección — meta_key mismatch en Book Editor Studio (2026-07-01)
+
+### Causa raíz de "Seven Curiosity Cards" y "Duane Hallock Testimonial" vacíos
+`book_editor.php` y `api/book_editor.php` leían/escribían el `meta_key` `testimonial`, pero la tabla real `lly_book_content` ya contenía datos vivos bajo `testimonial_quote` (texto, con placeholder truncado "What a gift you've given me...") y `testimonial_author` (`Duane Hallock, Red Cross`, poblado pero **nunca conectado al formulario** — no existía input alguno para editarlo). Las 7 tarjetas de curiosidad solo tenían fila real para `card_6` (`en`="Test", `es` vacío) — cards 1–5 y 7 nunca se guardaron, de ahí el layout vacío.
+
+### Fix aplicado
+- `book_editor.php`: se estandarizó la lectura al par real `testimonial_quote` / `testimonial_author` (el genérico `$c[$meta_key]` ya capturaba `testimonial_author` sin cambios). Se agregaron los inputs `testimonial_author_en` / `testimonial_author_es` (antes inexistentes) al fieldset "Duane Hallock Master Testimonial".
+- `api/book_editor.php`: el UPSERT ahora escribe `testimonial_quote` (antes `testimonial`, huérfano) y el nuevo `testimonial_author`.
+- `book.php` (público): se agregó `testimonial_author` al array de defaults, se mapeó el `meta_key` `testimonial_quote` → `$book['testimonial']`, y el footer `.book-feature-testimonial-author` (antes texto fijo en HTML) ahora renderiza vía `bk('testimonial_author', ...)` — editable desde el Studio por primera vez. El pull-quote corto de `#story-hooks` (`.pull-quote-vip-author`) se dejó estático a propósito: es una cita distinta, no el testimonio maestro.
+- Fallback bilingüe agregado en `book_editor.php` (`$cardFallback`, `$testimonialFallback` + helper `edFallback()`): si el DB no tiene fila o viene vacía para un idioma, el input se pre-llena con el texto oficial en vez de quedar en blanco — mismo patrón defensivo que ya usaba `book.php`.
+- La fila huérfana `testimonial` (vacía, `en`/`es` = '') queda sin uso en la tabla — no se borró (no destructivo), pero ya no la lee ningún endpoint.
+
+### Verificación
+- `php -l` limpio en `book_editor.php`, `api/book_editor.php`, `book.php`.
+- Simulación headless del merge DB+fallback confirmó: cards 1–5 y 7 pre-cargan el texto oficial completo, card 6 respeta el valor real de BD (`Test`/`Prueba`), testimonial quote/author resuelven desde `testimonial_quote`/`testimonial_author` en vez de la clave vacía `testimonial`.
+- Cero instanciación directa de PDO — toda lectura/escritura pasa por `Conexion::getConnection()`, prepared statements sin excepción (`api/book_editor.php` UPSERT ya usaba `:key`/`:en`/`:es`).
+
+## ✅ Nuevo feature — Auto-Traducción "Translate Missing Fields" (2026-07-01)
+
+### Objetivo
+Lester escribe principalmente en inglés en `book_editor.php`. Un botón sobre el formulario ("🌐 Translate Missing Fields" / "🌐 Traducir Campos Faltantes") completa los campos en español de las Seven Curiosity Cards y el Duane Hallock Testimonial (incluyendo la firma del autor) llamando al backend — nunca directamente a un servicio externo desde el navegador.
+
+### Endpoint nuevo — `api/translate.php`
+- Auth: `lly_is_authenticated()` (mismo contrato de sesión que el resto de `api/`).
+- Método: `POST` únicamente, body JSON (`{text, source_lang, target_lang, csrf_token}`).
+- CSRF: valida `hash_equals` contra `$_SESSION['csrf_token']` — **no lo rota** en cada llamada (a diferencia de `api/book_editor.php`) porque el botón dispara múltiples fetches por clic; el token sigue rotando normalmente al hacer el Save real del formulario.
+- Proveedor: **Google Translate, endpoint público `gtx`** (`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=es&dt=t&q=...`) vía `cURL`, sin API key.
+- Respuesta estándar: `{"status":"success","data":{"translated_text":"..."}}` · errores con `status":"error"` y `message` descriptivo (401/403/400/502 según la capa que falle).
+- Prepared statements no aplica aquí (no toca `lly_book_content`) — el endpoint es un proxy de traducción puro, sin escritura a BD.
+
+### ⚠️ Migración de proveedor — DeepL → Google Translate (2026-07-01, mismo día)
+DeepL bloqueó el registro de cuenta por restricción regional del cliente. Se aplicó "Fricción Cero Operativa": se reemplazó la llamada `cURL` a la API de DeepL (`Authorization: DeepL-Auth-Key`) por el endpoint público no-oficial de Google Translate (`client=gtx`). Éste no requiere API key, así que:
+- `core/.env` / `core/.env.staging.example`: se **eliminaron** `TRANSLATION_API_URL`/`TRANSLATION_API_KEY` (dead config — Mandamiento 8, nada las lee ya).
+- `api/conexion.php`: se **eliminó** el método público `Conexion::env()` agregado horas antes para leer esas llaves — quedó sin ningún consumidor tras la migración, así que se retiró en vez de dejarlo como código muerto.
+- Parseo de la respuesta de Google (array JSON anidado y no documentado, ej. `[[["Hola","Hello",null,null,1]]],null,"en",...]`): se concatenan los fragmentos de `$decoded[0][*][0]` en orden para reconstruir el texto completo, ya que Google puede partir textos largos en varias oraciones.
+- Riesgo aceptado y documentado: `gtx` es un endpoint no oficial (usado por la extensión de Chrome de Google Translate) — puede cambiar de forma sin previo aviso o imponer rate-limiting silencioso. Si eso ocurre, `api/translate.php` devuelve `502` con mensaje claro; no hay fallback automático a un segundo proveedor (no solicitado).
+
+### `book_editor.php` — Dirty Checking (cliente)
+Cada input/textarea en inglés de Curiosity Cards y Testimonial (`.js-translate-source`) lleva `data-original-val` (valor cargado desde BD al render) y `data-target` (id del campo en español). Al hacer clic:
+1. **ES vacío** → se traduce el EN correspondiente.
+2. **EN cambió** vs. `data-original-val` → se re-traduce y se sobreescribe ES (y `data-original-val` se actualiza al nuevo baseline).
+3. **ES ya tiene texto y EN no cambió** → se omite, protegiendo traducciones manuales previas.
+El bucle es secuencial (`await`-style vía cadena de promesas), no paralelo, para respetar límites de rate-limit del proveedor. Estados de carga reutilizan el patrón visual ya existente de `.editor-publish-btn--loading`.
+
+### `.htaccess`
+Se agregó `translate` a la whitelist de `<FilesMatch>` (coincide por nombre de archivo, mismo patrón que ya usa `book_editor` para `api/book_editor.php`) — sin esto, `api/translate.php` habría devuelto 403 en producción.
+
+### Estilos nuevos
+`.editor-translate-bar`, `.editor-translate-copy`, `.editor-translate-btn` (+ estado `--loading`) — outline gold sobre `--surface-2`, reutilizando variables ya definidas (`--gold`, `--gold-10/20`, `--r-full`, `--ease`). Cero estilos inline, cero `!important`.
+
+### Verificación
+- `php -l` limpio en `api/translate.php`, `api/conexion.php`, `book_editor.php`.
+- Render headless de `book_editor.php` con sesión simulada confirmó: `data-original-val`/`data-target` presentes en cards y testimonial, botón de traducción renderizado.
+- Prueba real end-to-end contra `translate.googleapis.com` (fuera del navegador, vía `php -r`) confirmó HTTP 200 y traducción correcta ("What a gift you have given me." → "Que regalo me has hecho.").
+- Prueba real end-to-end del endpoint completo levantando `php -S` local + sesión/CSRF simulados: llamada válida → `200` con `translated_text` correcto; CSRF inválido → `403`; sin sesión → `401`. Servidor de prueba y sesión falsa destruidos al terminar.
+
 ## Backend — snake_case (Mandamiento 7)
 
 ### Base de datos
@@ -171,6 +269,8 @@ El par `content_en` / `content_es` en `lly_book_content` es la fuente única de 
 - `dashboard.php` — markup privado, requiere `LLY_DASHBOARD_GATEKEEPER` definido
 - `api/conexion.php` → clase `Conexion::getConnection(): PDO`
 - `api/login.php` — POST únicamente
+- `api/book_editor.php` — POST, sesión + CSRF, UPSERT a `lly_book_content`
+- `api/translate.php` — POST, sesión + CSRF, proxy a Google Translate (`translate.googleapis.com`, `client=gtx`) — sin API key
 - `setup_admin.php` — temporal, token-gated, autobloqueo vía `core/.setup_admin.lock`
 
 ### Sesión / Cookies

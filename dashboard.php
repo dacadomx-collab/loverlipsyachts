@@ -8,6 +8,12 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
 }
 
 /* No book preload needed — editor lives in book_editor.php */
+
+$lly_host = strtolower($_SERVER['HTTP_HOST'] ?? '');
+$lly_is_local = ($lly_host === 'localhost' || str_starts_with($lly_host, 'localhost:') || str_starts_with($lly_host, '127.0.0.1'));
+$lly_public_book_url = $lly_is_local
+    ? 'http://localhost/loverlipsyachts/my-book/'
+    : 'https://loverlipsyachts.com/my-book/index.html';
 ?><!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
@@ -463,7 +469,7 @@ if (!defined('LLY_DASHBOARD_GATEKEEPER')) {
                 />
               </div>
 
-              <a href="book.html" class="report-strategic-gold-btn" target="_blank" rel="noopener noreferrer">
+              <a href="<?= htmlspecialchars($lly_public_book_url, ENT_QUOTES) ?>" class="report-strategic-gold-btn" target="_blank" rel="noopener noreferrer">
                 <span data-lang="en">View Public Book Page</span>
                 <span data-lang="es">Ver Página Pública del Libro</span>
               </a>
