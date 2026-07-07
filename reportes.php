@@ -12,8 +12,7 @@ require_once __DIR__ . '/core/auth_check.php';
 require_once __DIR__ . '/core/dev_bypass.php';
 
 if (!lly_is_authenticated()) {
-    http_response_code(403);
-    echo 'Acceso denegado.';
+    header('Location: index.php');
     exit;
 }
 
