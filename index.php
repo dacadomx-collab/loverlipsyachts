@@ -11,12 +11,12 @@ declare(strict_types=1);
  * simply isn't in the response.
  */
 
-require __DIR__ . '/api/conexion.php';
-require __DIR__ . '/core/auth_check.php';
+require_once __DIR__ . '/api/conexion.php';
+require_once __DIR__ . '/core/auth_check.php';
 
 if (lly_is_authenticated()) {
     define('LLY_DASHBOARD_GATEKEEPER', true);
-    require __DIR__ . '/dashboard.php';
+    require_once __DIR__ . '/dashboard.php';
     exit;
 }
 ?><!DOCTYPE html>

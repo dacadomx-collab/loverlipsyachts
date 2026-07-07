@@ -33,6 +33,7 @@ declare(strict_types=1);
  *   • MYSQL_ATTR_INIT_COMMAND             — utf8mb4 enforced per connection
  *   • Credentials never logged or exposed to the response stream
  */
+if (!class_exists('Conexion')) {
 final class Conexion
 {
     /** Fallback remote host when DB_HOST_LOCAL is absent from .env */
@@ -158,4 +159,5 @@ final class Conexion
         }
         return $vars;
     }
+}
 }

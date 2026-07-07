@@ -411,6 +411,9 @@ body[data-active-lang="es"] ul[data-lang="es"] { display: flex; }
   align-items: start;
 }
 
+.hero--minimal { padding-block: 2.5rem 2rem; }
+.hero--minimal .hero-desc { margin-bottom: 0; }
+
 .hero-eyebrow {
   font-size: .7rem;
   font-weight: 700;
@@ -3040,4 +3043,192 @@ body[data-active-lang="es"] ul[data-lang="es"] { display: flex; }
 
 @media (min-width: 640px) {
   .editor-row--2col { flex-direction: row; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   19. ARF-GRID — QUICK ACCESS CARDS (dashboard.php)
+   Golden Rule: flex + flex-wrap + justify-content:center parent, zero
+   fixed pixel widths on children, responsive col-xs-12 + max-width.
+───────────────────────────────────────────────────────────────────── */
+.access-grid-section { padding-block: 1.5rem 3.5rem; }
+
+.access-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.access-card {
+  flex: 1 1 100%;
+  max-width: 100%;
+  position: relative;
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--ink-10);
+  border-radius: var(--r-lg);
+  padding: 2rem 1.75rem;
+  box-shadow: var(--sh-card);
+  text-decoration: none;
+  overflow: hidden;
+  transition: transform var(--ease), box-shadow var(--ease), border-color var(--ease);
+}
+
+.access-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: var(--ink-10);
+  transition: background var(--ease);
+}
+
+.access-card--pink::before { background: linear-gradient(90deg, var(--pink), var(--gold)); }
+.access-card--gold::before { background: linear-gradient(90deg, var(--gold), var(--pink)); }
+.access-card--navy::before { background: linear-gradient(90deg, var(--navy), var(--gold)); }
+
+.access-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--sh-hover);
+}
+.access-card--pink:hover { border-color: var(--pink-20); }
+.access-card--gold:hover { border-color: var(--gold-20); }
+.access-card--navy:hover { border-color: var(--navy-20); }
+
+.access-card-icon {
+  font-size: 2.25rem;
+  line-height: 1;
+  margin-bottom: 1rem;
+}
+
+.access-card h3 {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: .5rem;
+}
+
+.access-card p {
+  font-size: .88rem;
+  color: var(--ink-60);
+  line-height: 1.55;
+  margin-right: 2rem;
+}
+
+.access-card-arrow {
+  position: absolute;
+  right: 1.75rem;
+  bottom: 2rem;
+  font-size: 1.25rem;
+  color: var(--ink-30);
+  transition: transform var(--ease), color var(--ease);
+}
+.access-card:hover .access-card-arrow {
+  transform: translateX(4px);
+  color: var(--pink);
+}
+
+@media (min-width: 768px) {
+  .access-card { flex: 1 1 calc(50% - 1.5rem); max-width: calc(50% - 1.5rem); }
+}
+@media (min-width: 960px) {
+  .access-card { flex: 1 1 calc(33.333% - 1.5rem); max-width: calc(33.333% - 1.5rem); aspect-ratio: 4 / 3; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   20. ARF-GRID — REPORT STATUS LEGEND (reportes.php)
+───────────────────────────────────────────────────────────────────── */
+.status-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.status-legend-item {
+  flex: 1 1 100%;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  background: var(--surface-2);
+  border: 1px solid var(--ink-10);
+  border-radius: var(--r-md);
+  padding: .9rem 1.1rem;
+}
+.status-legend-item p {
+  font-size: .82rem;
+  color: var(--ink-60);
+  line-height: 1.4;
+  margin: 0;
+}
+.status-legend-item .pill { flex-shrink: 0; }
+
+.status-legend-note {
+  font-size: .78rem;
+  color: var(--ink-60);
+  font-style: italic;
+  margin-top: .85rem;
+}
+
+@media (min-width: 768px) {
+  .status-legend-item { flex: 1 1 calc(50% - 1rem); max-width: calc(50% - 1rem); }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   21. ARF-GRID — WHATSAPP MASTER DOC CALLOUT (propuestas.php)
+───────────────────────────────────────────────────────────────────── */
+.whatsapp-callout-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.whatsapp-callout {
+  flex: 1 1 100%;
+  max-width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  align-items: flex-start;
+  background: linear-gradient(145deg, var(--surface) 0%, rgba(255,0,127,.05) 100%);
+  border: 1.5px solid var(--pink-20);
+  border-radius: var(--r-lg);
+  padding: 1.75rem;
+  box-shadow: var(--sh-card);
+}
+
+.whatsapp-callout-icon {
+  font-size: 2rem;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.whatsapp-callout-body { flex: 1 1 240px; max-width: 100%; }
+
+.whatsapp-callout-eyebrow {
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--pink);
+  margin-bottom: .4rem;
+}
+
+.whatsapp-callout-title {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: .6rem;
+}
+
+.whatsapp-callout-desc {
+  font-size: .88rem;
+  color: var(--ink-60);
+  line-height: 1.6;
+  margin-bottom: 1.1rem;
 }

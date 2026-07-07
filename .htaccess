@@ -33,14 +33,16 @@ Require all granted
     RewriteRule ^book\.html$      book.php [R=301,L]
 </IfModule>
 
-# ── PHP denegado por defecto. dashboard.php y api/conexion.php no
-#    aparecen en las excepciones a propósito: solo deben ejecutarse
-#    vía require()/include(), nunca por URL directa. ───────────────
+# ── PHP denegado por defecto. api/conexion.php no aparece en las
+#    excepciones a propósito: solo debe ejecutarse vía require()/
+#    include(), nunca por URL directa. dashboard.php, reportes.php,
+#    alianzas.php y propuestas.php SÍ se visitan por URL directa
+#    (cada una valida su propia sesión — ver core/auth_check.php). ──
 <FilesMatch "\.php$">
     Require all denied
 </FilesMatch>
 
-<FilesMatch "^(index|login|strategy|book|book_editor|translate|test_infra|initialize_env)\.php$">
+<FilesMatch "^(index|login|strategy|book|book_editor|translate|test_infra|initialize_env|dashboard|reportes|alianzas|propuestas)\.php$">
     Require all granted
 </FilesMatch>
 
