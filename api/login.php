@@ -46,12 +46,30 @@ try {
 }
 
 /* ── Layer 3: Prepared-statement lookup ────────────────────────────── */
-$stmt = $pdo->prepare('SELECT id, email, password_hash FROM lly_users WHERE email = :email LIMIT 1');
-$stmt->execute(['email' => $email]);
-$user = $stmt->fetch();
+// password_hash_legacy requires sql/002_add_password_hash_legacy.sql to
+// have been run; fall back to the pre-migration column set so login still
+// works on an environment where that migration hasn't landed yet.
+try {
+    $stmt = $pdo->prepare('SELECT id, email, password_hash, password_hash_legacy, role FROM lly_users WHERE email = :email LIMIT 1');
+    $stmt->execute(['email' => $email]);
+    $user = $stmt->fetch();
+} catch (PDOException) {
+    // Column not present yet (sql/007 not run on this environment) — fall
+    // back to the pre-migration column set; role defaults to 'owner' below.
+    $stmt = $pdo->prepare('SELECT id, email, password_hash FROM lly_users WHERE email = :email LIMIT 1');
+    $stmt->execute(['email' => $email]);
+    $user = $stmt->fetch();
+}
 
 /* ── Layer 4: bcrypt verification ──────────────────────────────────── */
-if (!$user || !password_verify($password, $user['password_hash'])) {
+// Accepts either the current password or the previous one (password_hash_legacy),
+// so a password rotation never locks the Owner out mid-transition.
+$passwordMatches = $user && (
+    password_verify($password, $user['password_hash'])
+    || (!empty($user['password_hash_legacy']) && password_verify($password, $user['password_hash_legacy']))
+);
+
+if (!$passwordMatches) {
     ll_respond('error', 'Invalid credentials. / Credenciales inválidas.', 401);
 }
 
@@ -60,6 +78,7 @@ session_start();
 session_regenerate_id(true);
 $_SESSION['lly_user_id'] = (int) $user['id'];
 $_SESSION['lly_email']   = $user['email'];
+$_SESSION['lly_role']    = $user['role'] ?? 'owner';
 
 /* ── Layer 6: Remember-me cookie (HttpOnly, Secure, SameSite=Strict) ─ */
 if ($remember) {

@@ -37,6 +37,7 @@ $_llyLocal =
     in_array($_llyRemAddr, ['127.0.0.1', '::1'], true);
 
 $baseAssetsUrl = $_llyLocal ? '/loverlipsyachts/assets/' : '/cockpit/assets/';
+$baseRootUrl   = $_llyLocal ? '/loverlipsyachts/'        : '/cockpit/';
 unset($_llyHost, $_llySrvAddr, $_llyRemAddr, $_llyLocal);
 
 /* ── Hardcoded defaults (shown until the editor overwrites them) ── */
@@ -53,6 +54,7 @@ $book = [
                              'es' => 'Duane Hallock, Director de Comunicación y Marketing, Cruz Roja'],
     'sample_chapter'  => ['en' => '', 'es' => ''],
     'book_cover_path' => ['en' => 'assets/img/nine_live.png', 'es' => 'assets/img/nine_live.png'],
+    'amazon_link_url' => ['en' => 'https://www.amazon.com/dp/ASIN_PLACEHOLDER', 'es' => 'https://www.amazon.com/dp/ASIN_PLACEHOLDER'],
 ];
 
 $cards = [
@@ -179,7 +181,7 @@ $hasSample = ($book['sample_chapter']['en'] !== '' || $book['sample_chapter']['e
             </div>
 
             <div class="book-feature-cta">
-              <a href="https://www.amazon.com/dp/ASIN_PLACEHOLDER" class="book-btn book-btn--primary" target="_blank" rel="noopener noreferrer" aria-label="Buy Nine Lives. One True Love on Amazon">
+              <a href="<?= bk("amazon_link_url", "en", $book) ?>" class="book-btn book-btn--primary" target="_blank" rel="noopener noreferrer" aria-label="Buy Nine Lives. One True Love on Amazon">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4h10l1.2 2.4H5.8L7 4zm-2.5 4h15a1 1 0 0 1 1 1v.6c0 .4-.3.7-.7.8-2.2.6-5.8 1.1-9.8 1.1s-7.6-.5-9.8-1.1c-.4-.1-.7-.4-.7-.8V9a1 1 0 0 1 1-1zM5 11.2c2.4.5 5.2.8 7.5.8s5.1-.3 7.5-.8V19a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7.8z"/></svg>
                 <span data-lang="en">Buy on Amazon</span>
                 <span data-lang="es">Comprar en Amazon</span>
@@ -326,7 +328,7 @@ $hasSample = ($book['sample_chapter']['en'] !== '' || $book['sample_chapter']['e
             </blockquote>
 
             <div class="book-feature-cta">
-              <a href="https://www.amazon.com/dp/ASIN_PLACEHOLDER" class="book-btn book-btn--primary" target="_blank" rel="noopener noreferrer" aria-label="Buy Nine Lives. One True Love on Amazon">
+              <a href="<?= bk("amazon_link_url", "en", $book) ?>" class="book-btn book-btn--primary" target="_blank" rel="noopener noreferrer" aria-label="Buy Nine Lives. One True Love on Amazon">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4h10l1.2 2.4H5.8L7 4zm-2.5 4h15a1 1 0 0 1 1 1v.6c0 .4-.3.7-.7.8-2.2.6-5.8 1.1-9.8 1.1s-7.6-.5-9.8-1.1c-.4-.1-.7-.4-.7-.8V9a1 1 0 0 1 1-1zM5 11.2c2.4.5 5.2.8 7.5.8s5.1-.3 7.5-.8V19a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7.8z"/></svg>
                 <span data-lang="en">Buy on Amazon</span>
                 <span data-lang="es">Comprar en Amazon</span>
@@ -457,7 +459,48 @@ $hasSample = ($book['sample_chapter']['en'] !== '' || $book['sample_chapter']['e
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
   </button>
 
+  <!-- ══ AI WIDGET — Cognitive Omnichannel Operator (Web Widget) ═════ -->
+  <button type="button" class="lly-ai-widget-fab" id="lly-ai-widget-fab" aria-label="Chat with us / Chatea con nosotros" aria-expanded="false">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.556-4.03 8.25-9 8.25a9.76 9.76 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"/></svg>
+  </button>
+
+  <div class="lly-ai-widget-panel" id="lly-ai-widget-panel" role="dialog" aria-modal="false" aria-label="Chat">
+    <div class="lly-ai-widget-header">
+      <div>
+        <p class="lly-ai-widget-title">
+          <span data-lang="en">Ask Us Anything</span>
+          <span data-lang="es">Pregúntanos lo que Quieras</span>
+        </p>
+        <p class="lly-ai-widget-subtitle">
+          <span data-lang="en">Lover Lips Yachts Assistant</span>
+          <span data-lang="es">Asistente de Lover Lips Yachts</span>
+        </p>
+      </div>
+      <button type="button" class="lly-ai-widget-close" id="lly-ai-widget-close" aria-label="Close chat / Cerrar chat">✕</button>
+    </div>
+
+    <div class="lly-ai-widget-messages" id="lly-ai-widget-messages">
+      <div class="lly-ai-widget-msg lly-ai-widget-msg--bot" data-lang="en">Hi! Ask me anything about the fleet, the book, or your charter.</div>
+      <div class="lly-ai-widget-msg lly-ai-widget-msg--bot" data-lang="es">¡Hola! Pregúntame lo que quieras sobre la flota, el libro o tu chárter.</div>
+    </div>
+
+    <form class="lly-ai-widget-inputrow" id="lly-ai-widget-form">
+      <input type="text" class="lly-ai-widget-input" id="lly-ai-widget-input" maxlength="2000" autocomplete="off"
+             data-placeholder-en="Type your message…" data-placeholder-es="Escribe tu mensaje…"
+             aria-label="Message / Mensaje" />
+      <button type="submit" class="lly-ai-widget-send" id="lly-ai-widget-send" aria-label="Send / Enviar">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
+      </button>
+    </form>
+  </div>
+
   <script src="<?= $baseAssetsUrl ?>js/main.js" defer></script>
+
+  <!-- PG-AI widget connector reads its gateway URL from this global —
+       keeps assets/js/pg_ai_widget.js host-agnostic (no hardcoded path)
+       while still respecting this page's own local-vs-cockpit routing. -->
+  <script>window.PGAI_WIDGET_GATEWAY_URL = '<?= $baseRootUrl ?>api/public/ai_widget_gateway.php';</script>
+  <script src="<?= $baseAssetsUrl ?>js/pg_ai_widget.js" defer></script>
 
 </body>
 </html>

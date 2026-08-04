@@ -11,11 +11,34 @@ declare(strict_types=1);
 require_once __DIR__ . '/api/conexion.php';
 require_once __DIR__ . '/core/auth_check.php';
 require_once __DIR__ . '/core/dev_bypass.php';
+require_once __DIR__ . '/core/FleetCatalogRepository.php';
 
 if (!lly_is_authenticated()) {
     header('Location: index.php');
     exit;
 }
+
+/**
+ * Fleet Catalog rows (ll_fleet_catalog — sql/005_create_ll_fleet_catalog.sql),
+ * same table core/ProxyBridge.php reads for the AI's system prompt §2.
+ * Degrades to the last-known-good static rows (never a blank accordion) if
+ * the table isn't provisioned yet on this environment.
+ */
+$lly_fleet_rows = [];
+try {
+    $lly_fleet_rows = FleetCatalogRepository::listVerified(Conexion::getConnection());
+} catch (\Throwable $e) {
+    error_log('[PG-AI · propuestas] Fleet catalog unavailable: ' . $e->getMessage());
+}
+
+if ($lly_fleet_rows === []) {
+    $lly_fleet_rows = [
+        ['vessel_name' => 'CNR Maranatha 120', 'vessel_slug' => '/maranatha-120/', 'role_label_en' => 'Flagship', 'role_label_es' => 'Insignia', 'max_pax' => 50, 'rate_note_en' => '$TBC — Pending Review', 'rate_note_es' => '$POR DEFINIR — En revisión', 'status_pill' => 'pill-pink'],
+        ['vessel_name' => 'Pink Lips', 'vessel_slug' => '/pink-lips/', 'role_label_en' => 'Signature', 'role_label_es' => 'Estrella', 'max_pax' => 20, 'rate_note_en' => '$TBC — Pending Review', 'rate_note_es' => '$POR DEFINIR — En revisión', 'status_pill' => 'pill-gold'],
+        ['vessel_name' => 'Most Affordable Luxury', 'vessel_slug' => '/most-affordable-luxury-yacht-5/', 'role_label_en' => 'Available', 'role_label_es' => 'Disponible', 'max_pax' => 13, 'rate_note_en' => '$TBC — Pending Review', 'rate_note_es' => '$POR DEFINIR — En revisión', 'status_pill' => 'pill-green'],
+    ];
+}
+$lly_fleet_pending = FleetCatalogRepository::TOTAL_FLEET_SIZE - count($lly_fleet_rows);
 ?><!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
@@ -48,6 +71,10 @@ if (!lly_is_authenticated()) {
         </a>
 
         <div class="topbar-actions">
+          <a href="index.php" class="topbar-back-btn">
+            <span data-lang="en">⬅️ Back to Main Dashboard</span>
+            <span data-lang="es">⬅️ Regresar al Dashboard Principal</span>
+          </a>
           <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch to Night Mode" aria-pressed="false">
             <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
@@ -73,13 +100,6 @@ if (!lly_is_authenticated()) {
     ═══════════════════════════════════════════════════════════════ -->
     <section class="section section-truth" aria-labelledby="truth-title">
       <div class="container">
-
-        <nav class="book-feature-editorial-nav strategy-back-nav" aria-label="Back to dashboard">
-          <a href="index.php">
-            <span data-lang="en">← Back to Dashboard</span>
-            <span data-lang="es">← Volver al Panel</span>
-          </a>
-        </nav>
 
         <p class="section-label">
           <span data-lang="en">Content Validation</span>
@@ -278,8 +298,8 @@ if (!lly_is_authenticated()) {
                 <div>
                   <p class="accordion-trigger-title" data-lang="en">Flagship Fleet — Key Vessels</p>
                   <p class="accordion-trigger-title" data-lang="es">Flota Insignia — Embarcaciones Clave</p>
-                  <p class="accordion-trigger-sub" data-lang="en">3 of 42 vessels · Rate structure · Capacity</p>
-                  <p class="accordion-trigger-sub" data-lang="es">3 de 42 embarcaciones · Estructura de tarifas · Capacidad</p>
+                  <p class="accordion-trigger-sub" data-lang="en"><?= count($lly_fleet_rows) ?> of <?= FleetCatalogRepository::TOTAL_FLEET_SIZE ?> vessels · Rate structure · Capacity</p>
+                  <p class="accordion-trigger-sub" data-lang="es"><?= count($lly_fleet_rows) ?> de <?= FleetCatalogRepository::TOTAL_FLEET_SIZE ?> embarcaciones · Estructura de tarifas · Capacidad</p>
                 </div>
               </div>
               <svg class="accordion-chevron" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
@@ -300,38 +320,24 @@ if (!lly_is_authenticated()) {
                     </tr>
                   </thead>
                   <tbody>
+                    <?php foreach ($lly_fleet_rows as $lly_vessel): ?>
                     <tr>
-                      <td><strong>CNR Maranatha 120</strong><br><small>/maranatha-120/</small></td>
-                      <td data-lang="en">Up to 50 guests</td>
-                      <td data-lang="es">Hasta 50 personas</td>
-                      <td data-lang="en">$TBC — Pending Review</td>
-                      <td data-lang="es">$POR DEFINIR — En revisión</td>
-                      <td data-lang="en"><span class="pill pill-pink">Flagship</span></td>
-                      <td data-lang="es"><span class="pill pill-pink">Insignia</span></td>
+                      <td><strong><?= htmlspecialchars((string) $lly_vessel['vessel_name'], ENT_QUOTES, 'UTF-8') ?></strong><?php if (!empty($lly_vessel['vessel_slug'])): ?><br><small><?= htmlspecialchars((string) $lly_vessel['vessel_slug'], ENT_QUOTES, 'UTF-8') ?></small><?php endif; ?></td>
+                      <td data-lang="en"><?= $lly_vessel['max_pax'] !== null ? 'Up to ' . (int) $lly_vessel['max_pax'] . ' guests' : 'Capacity TBC' ?></td>
+                      <td data-lang="es"><?= $lly_vessel['max_pax'] !== null ? 'Hasta ' . (int) $lly_vessel['max_pax'] . ' personas' : 'Capacidad por definir' ?></td>
+                      <td data-lang="en"><?= htmlspecialchars((string) $lly_vessel['rate_note_en'], ENT_QUOTES, 'UTF-8') ?></td>
+                      <td data-lang="es"><?= htmlspecialchars((string) $lly_vessel['rate_note_es'], ENT_QUOTES, 'UTF-8') ?></td>
+                      <td data-lang="en"><span class="pill <?= htmlspecialchars((string) $lly_vessel['status_pill'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars((string) $lly_vessel['role_label_en'], ENT_QUOTES, 'UTF-8') ?></span></td>
+                      <td data-lang="es"><span class="pill <?= htmlspecialchars((string) $lly_vessel['status_pill'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars((string) $lly_vessel['role_label_es'], ENT_QUOTES, 'UTF-8') ?></span></td>
                     </tr>
+                    <?php endforeach; ?>
+                    <?php if ($lly_fleet_pending > 0): ?>
                     <tr>
-                      <td><strong>Pink Lips</strong><br><small>/pink-lips/</small></td>
-                      <td data-lang="en">Up to 20 guests</td>
-                      <td data-lang="es">Hasta 20 personas</td>
-                      <td data-lang="en">$TBC — Pending Review</td>
-                      <td data-lang="es">$POR DEFINIR — En revisión</td>
-                      <td data-lang="en"><span class="pill pill-gold">Signature</span></td>
-                      <td data-lang="es"><span class="pill pill-gold">Estrella</span></td>
-                    </tr>
-                    <tr>
-                      <td><strong>Most Affordable Luxury</strong><br><small>/most-affordable-luxury-yacht-5/</small></td>
-                      <td data-lang="en">Up to 13 guests</td>
-                      <td data-lang="es">Hasta 13 personas</td>
-                      <td data-lang="en">$TBC — Pending Review</td>
-                      <td data-lang="es">$POR DEFINIR — En revisión</td>
-                      <td data-lang="en"><span class="pill pill-green">Available</span></td>
-                      <td data-lang="es"><span class="pill pill-green">Disponible</span></td>
-                    </tr>
-                    <tr>
-                      <td colspan="2" data-lang="en" class="u-italic">+ 39 additional vessels pending data lift from WordPress (Phase 2 deliverable)</td>
-                      <td colspan="2" data-lang="es" class="u-italic">+ 39 embarcaciones adicionales pendientes de extracción de WordPress (entregable Fase 2)</td>
+                      <td colspan="2" data-lang="en" class="u-italic">+ <?= $lly_fleet_pending ?> additional vessels pending data lift from WordPress (Phase 2 deliverable)</td>
+                      <td colspan="2" data-lang="es" class="u-italic">+ <?= $lly_fleet_pending ?> embarcaciones adicionales pendientes de extracción de WordPress (entregable Fase 2)</td>
                       <td></td><td></td>
                     </tr>
+                    <?php endif; ?>
                   </tbody>
                 </table>
               </div>

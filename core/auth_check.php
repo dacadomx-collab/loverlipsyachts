@@ -38,11 +38,20 @@ function lly_check_remember_me(): bool
         return false; // DB unavailable — treat as unauthenticated
     }
 
-    $stmt = $pdo->prepare(
-        'SELECT id, email FROM lly_users WHERE remember_token = :token AND token_expiry > NOW() LIMIT 1'
-    );
-    $stmt->execute(['token' => $token]);
-    $user = $stmt->fetch();
+    try {
+        $stmt = $pdo->prepare(
+            'SELECT id, email, role FROM lly_users WHERE remember_token = :token AND token_expiry > NOW() LIMIT 1'
+        );
+        $stmt->execute(['token' => $token]);
+        $user = $stmt->fetch();
+    } catch (PDOException) {
+        // Column not present yet (sql/007 not run on this environment).
+        $stmt = $pdo->prepare(
+            'SELECT id, email FROM lly_users WHERE remember_token = :token AND token_expiry > NOW() LIMIT 1'
+        );
+        $stmt->execute(['token' => $token]);
+        $user = $stmt->fetch();
+    }
 
     if (!$user) {
         return false;
@@ -51,6 +60,7 @@ function lly_check_remember_me(): bool
     session_regenerate_id(true);
     $_SESSION['lly_user_id'] = (int) $user['id'];
     $_SESSION['lly_email']   = $user['email'];
+    $_SESSION['lly_role']    = $user['role'] ?? 'owner';
 
     // Rotate the token on every remember-login: sliding 30-day window,
     // and the old cookie value stops working the moment it's used once.

@@ -11,10 +11,10 @@ declare(strict_types=1);
 
 require __DIR__ . '/api/conexion.php';
 require __DIR__ . '/core/auth_check.php';
+require __DIR__ . '/core/dev_bypass.php';
 
 if (!lly_is_authenticated()) {
-    http_response_code(403);
-    echo 'Acceso denegado.';
+    header('Location: index.php');
     exit;
 }
 ?><!DOCTYPE html>
@@ -49,6 +49,10 @@ if (!lly_is_authenticated()) {
         </a>
 
         <div class="topbar-actions">
+          <a href="index.php" class="topbar-back-btn">
+            <span data-lang="en">⬅️ Back to Main Dashboard</span>
+            <span data-lang="es">⬅️ Regresar al Dashboard Principal</span>
+          </a>
           <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" aria-label="Switch to Night Mode" aria-pressed="false">
             <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
@@ -74,12 +78,6 @@ if (!lly_is_authenticated()) {
     ═══════════════════════════════════════════════════════════════ -->
     <section class="section section-white" aria-labelledby="strategy-title">
       <div class="container">
-        <nav class="book-feature-editorial-nav strategy-back-nav" aria-label="Back to dashboard">
-          <a href="index.php">
-            <span data-lang="en">← Back to Dashboard</span>
-            <span data-lang="es">← Volver al Panel</span>
-          </a>
-        </nav>
         <p class="section-label">
           <span data-lang="en">Business Strategy · Report E · Confidential</span>
           <span data-lang="es">Estrategia de Negocio · Reporte E · Confidencial</span>

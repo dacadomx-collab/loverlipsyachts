@@ -306,6 +306,777 @@ function initAccordion() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   9b. REPORT DIALOG (dashboard.php — Payments card)
+   Clicking a .dash-pay-row opens #lly-report-dialog pre-filled with
+   the reports its data-report-ids point to, read from the JSON payload
+   in #lly-reportes-data (rendered server-side from $lly_reportes).
+   ═══════════════════════════════════════════════════════════════════ */
+
+function openReportDialog(row) {
+  if (!row) return;
+  var dialog = document.getElementById('lly-report-dialog');
+  var dataEl = document.getElementById('lly-reportes-data');
+  if (!dialog || !dataEl) return;
+
+  var reportes;
+  try { reportes = JSON.parse(dataEl.textContent); } catch (e) { return; }
+
+  var ids = (row.dataset.reportIds || '').split(',').filter(Boolean);
+  if (!ids.length) return;
+
+  var lang = (document.body && document.body.dataset.activeLang) || 'en';
+  var titleEl    = document.getElementById('lly-report-dialog-title');
+  var eyebrowEl  = document.getElementById('lly-report-dialog-eyebrow');
+  var bodyEl     = document.getElementById('lly-report-dialog-body');
+  if (!titleEl || !eyebrowEl || !bodyEl) return;
+
+  titleEl.textContent = lang === 'es'
+    ? (row.dataset.batchLabelEs || '')
+    : (row.dataset.batchLabelEn || '');
+  eyebrowEl.textContent = lang === 'es' ? 'Trabajo Cubierto' : 'Work Covered';
+
+  var html = '';
+  ids.forEach(function (id) {
+    var r = reportes[id];
+    if (!r) return;
+    var date    = lang === 'es' ? r.date_es    : r.date_en;
+    var title   = lang === 'es' ? r.title_es   : r.title_en;
+    var benefit = lang === 'es' ? r.benefit_es : r.benefit_en;
+    html += '<p><strong>' + title + '</strong> — ' + date + '<br>' + benefit + '</p>';
+  });
+  bodyEl.innerHTML = html;
+
+  try { dialog.showModal(); } catch (e) {}
+}
+
+/** Bind click + keyboard activation to all .dash-pay-row elements. */
+function initReportDialog() {
+  var rows = document.querySelectorAll('.dash-pay-row');
+  if (!rows.length) return;
+  rows.forEach(function (row) {
+    row.addEventListener('click', function () { openReportDialog(row); });
+    row.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openReportDialog(row);
+      }
+    });
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   9a. LIVE LEADS PANEL (dashboard.php Card #1 — guards on
+   #leads-table absence for every other page)
+   ═══════════════════════════════════════════════════════════════════ */
+
+function leadsEscape(str) {
+  var div = document.createElement('div');
+  div.textContent = str == null ? '' : str;
+  return div.innerHTML;
+}
+
+function leadsChannelLabel(channelType) {
+  var labels = { whatsapp: '🟢 WhatsApp', telegram: '✈️ Telegram', web_widget: '🌐 Web' };
+  return labels[channelType] || leadsEscape(channelType);
+}
+
+function leadsRelativeWhen(isoDateTime) {
+  if (!isoDateTime) return '—';
+  var then = new Date(isoDateTime.replace(' ', 'T'));
+  if (isNaN(then.getTime())) return leadsEscape(isoDateTime);
+  var diffMs = Date.now() - then.getTime();
+  var diffMin = Math.round(diffMs / 60000);
+  if (diffMin < 1) return 'now';
+  if (diffMin < 60) return diffMin + 'm';
+  var diffHr = Math.round(diffMin / 60);
+  if (diffHr < 24) return diffHr + 'h';
+  return Math.round(diffHr / 24) + 'd';
+}
+
+function leadsRenderRows(leads) {
+  var tbody = document.getElementById('leads-tbody');
+  if (!tbody) return;
+  if (!leads.length) {
+    tbody.innerHTML = '<tr><td colspan="4">'
+      + '<span data-lang="en">No leads yet — new WhatsApp and website conversations will appear here.</span>'
+      + '<span data-lang="es">Aún no hay leads — las conversaciones nuevas de WhatsApp y el sitio web aparecerán aquí.</span></td></tr>';
+    return;
+  }
+  var rows = leads.map(function (l) {
+    var name = l.lead_contact || l.display_name || l.external_id || '—';
+    var vipBadge = (l.is_vip == 1) ? ' <span class="leads-vip-badge" title="White-Glove Escalation">⭐ VIP</span>' : '';
+    var preview = l.last_message ? leadsEscape(l.last_message).slice(0, 80) : '—';
+    return '<tr>'
+      + '<td>' + leadsEscape(name) + vipBadge + '</td>'
+      + '<td>' + leadsChannelLabel(l.channel_type) + '</td>'
+      + '<td>' + preview + '</td>'
+      + '<td>' + leadsRelativeWhen(l.last_activity_at) + '</td>'
+      + '</tr>';
+  }).join('');
+  tbody.innerHTML = rows;
+}
+
+function leadsLoadList() {
+  var tbody = document.getElementById('leads-tbody');
+  if (!tbody) return;
+  var csrfField = document.getElementById('ephemeral-csrf-field');
+  var body = new URLSearchParams();
+  body.set('action', 'list');
+  body.set('csrf_token', csrfField ? csrfField.value : '');
+  fetch('api/leads.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+  }).then(function (res) { return res.json(); }).then(function (data) {
+    if (data.status !== 'success') return;
+    if (csrfField && data.csrf_token) { csrfField.value = data.csrf_token; }
+    leadsRenderRows(data.leads || []);
+  }).catch(function () { /* degrade silently — panel just keeps its loading row */ });
+}
+
+function initLeadsPanel() {
+  var table = document.getElementById('leads-table');
+  if (!table) return; /* only dashboard.php ships this panel */
+  leadsLoadList();
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   9a2. PG-AI HUB — CONNECTION SETTINGS PANEL (pg_ai_hub.php only —
+   guards on #pgai-settings-form absence for every other page)
+   ═══════════════════════════════════════════════════════════════════ */
+
+function pgaiSettingsPost(action, extraFields) {
+  var csrfField = document.getElementById('pgai-settings-csrf-field');
+  var body = new URLSearchParams();
+  body.set('action', action);
+  body.set('csrf_token', csrfField ? csrfField.value : '');
+  if (extraFields) {
+    Object.keys(extraFields).forEach(function (key) {
+      body.set(key, extraFields[key] == null ? '' : String(extraFields[key]));
+    });
+  }
+  return fetch('api/pgai_settings.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+  }).then(function (res) {
+    return res.json().then(function (data) {
+      if (csrfField && data.csrf_token) { csrfField.value = data.csrf_token; }
+      return data;
+    });
+  });
+}
+
+function pgaiSettingsApply(settings) {
+  var inputs = document.querySelectorAll('#pgai-settings-form [data-setting-key]');
+  inputs.forEach(function (input) {
+    var key = input.getAttribute('data-setting-key');
+    var entry = settings[key];
+    if (!entry) return;
+
+    var badge = document.getElementById(input.id + '-badge');
+    if (input.type === 'password') {
+      /* Never prefill a secret input — only show a masked hint + status badge. */
+      input.placeholder = entry.value || input.placeholder;
+    } else if (entry.value) {
+      input.value = entry.value;
+    }
+    if (badge) {
+      badge.textContent = entry.is_set ? 'configured' : 'not set';
+      badge.classList.toggle('pgai-settings-badge--set', entry.is_set);
+    }
+  });
+}
+
+function initPgaiSettingsPanel() {
+  var form = document.getElementById('pgai-settings-form');
+  if (!form) return; /* only pg_ai_hub.php ships this panel */
+
+  pgaiSettingsPost('get').then(function (data) {
+    if (data.status === 'success') { pgaiSettingsApply(data.settings || {}); }
+  });
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var feedback = document.getElementById('pgai-settings-feedback');
+    var inputs = Array.prototype.slice.call(form.querySelectorAll('[data-setting-key]'));
+
+    var saves = inputs
+      .filter(function (input) { return input.value.trim() !== ''; })
+      .map(function (input) {
+        return pgaiSettingsPost('save', { key: input.getAttribute('data-setting-key'), value: input.value.trim() });
+      });
+
+    if (!saves.length) {
+      if (feedback) { feedback.textContent = 'Nothing to save — fill in a field first.'; }
+      return;
+    }
+
+    Promise.all(saves).then(function (results) {
+      var last = results[results.length - 1];
+      if (feedback) {
+        feedback.textContent = (last && last.status === 'success') ? 'Saved.' : (last.message || 'Could not save.');
+      }
+      if (last && last.status === 'success') {
+        pgaiSettingsApply(last.settings || {});
+        inputs.forEach(function (input) { if (input.type === 'password') { input.value = ''; } });
+      }
+    });
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   9b. SELF-DESTRUCT LINKS PANEL (dashboard.php / pg_ai_hub.php —
+   guards on #ephemeral-links-table absence for every other page)
+   ═══════════════════════════════════════════════════════════════════ */
+
+function ephemeralPost(action, extraFields) {
+  var form = document.getElementById('ephemeral-create-form');
+  var csrfField = document.getElementById('ephemeral-csrf-field');
+  var body = new URLSearchParams();
+  body.set('action', action);
+  body.set('csrf_token', csrfField ? csrfField.value : '');
+  if (extraFields) {
+    Object.keys(extraFields).forEach(function (key) {
+      body.set(key, extraFields[key] == null ? '' : String(extraFields[key]));
+    });
+  }
+  return fetch('api/ephemeral_links.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+  }).then(function (res) {
+    return res.json().then(function (data) {
+      if (csrfField && data.csrf_token) { csrfField.value = data.csrf_token; }
+      return data;
+    });
+  });
+}
+
+function ephemeralRenderRows(links) {
+  var tbody = document.getElementById('ephemeral-links-tbody');
+  if (!tbody) return;
+  if (!links.length) {
+    tbody.innerHTML = '<tr><td colspan="5">'
+      + '<span data-lang="en">No private links yet.</span>'
+      + '<span data-lang="es">Aún no hay enlaces privados.</span></td></tr>';
+    return;
+  }
+  var statusLabels = {
+    active:  '<span data-lang="en">Active</span><span data-lang="es">Activo</span>',
+    expired: '<span data-lang="en">Expired</span><span data-lang="es">Expirado</span>',
+    revoked: '<span data-lang="en">Revoked</span><span data-lang="es">Revocado</span>',
+  };
+  var rows = links.map(function (l) {
+    var statusLabel = statusLabels[l.status] || l.status;
+    var canEdit = l.status !== 'revoked';
+    return '<tr data-link-id="' + l.id + '">'
+      + '<td>' + ephemeralEscape(l.title) + '</td>'
+      + '<td><a href="' + ephemeralEscape(l.public_url) + '" target="_blank" rel="noopener noreferrer" class="ephemeral-copy-link" data-url="' + ephemeralEscape(l.public_url) + '">🔗 ' + l.token.slice(0, 10) + '…</a></td>'
+      + '<td>' + l.view_count + ' / <input type="number" min="' + l.view_count + '" max="50" value="' + l.max_views + '" class="ephemeral-max-views-input" ' + (canEdit ? '' : 'disabled') + '>'
+      + ' <span class="ephemeral-remaining-badge">(' + Math.max(0, l.max_views - l.view_count) + ' <span data-lang="en">left</span><span data-lang="es">restantes</span>)</span></td>'
+      + '<td>' + statusLabel + '</td>'
+      + '<td>'
+      + (canEdit ? '<button type="button" class="ephemeral-row-save" title="Save views">💾</button> <button type="button" class="ephemeral-row-revoke" title="Revoke">✕</button>' : '—')
+      + '</td></tr>';
+  }).join('');
+  tbody.innerHTML = rows;
+}
+
+function ephemeralEscape(str) {
+  var div = document.createElement('div');
+  div.textContent = str == null ? '' : str;
+  return div.innerHTML;
+}
+
+function ephemeralLoadList() {
+  var tbody = document.getElementById('ephemeral-links-tbody');
+  if (!tbody) return;
+  ephemeralPost('list').then(function (data) {
+    if (data.status !== 'success') return;
+    ephemeralRenderRows(data.links || []);
+    var defaultInput = document.getElementById('ephemeral-default-max-views');
+    if (defaultInput && data.default_max_views) { defaultInput.value = data.default_max_views; }
+  });
+}
+
+/** Reads dashboard.php's #lly-pgai-quote-templates-data JSON — PG-AI "PINK LIPS Experience" quick-fill templates. */
+function initEphemeralQuoteTemplates() {
+  var select = document.getElementById('ephemeral-quote-template');
+  var dataEl = document.getElementById('lly-pgai-quote-templates-data');
+  if (!select || !dataEl) return;
+
+  var templates = {};
+  try { templates = JSON.parse(dataEl.textContent || '{}'); } catch (e) { templates = {}; }
+
+  select.addEventListener('change', function () {
+    var tpl = templates[select.value];
+    if (!tpl) return;
+    var titleField = document.getElementById('ephemeral-title');
+    var payloadField = document.getElementById('ephemeral-payload');
+    var typeField = document.getElementById('ephemeral-resource-type');
+    if (titleField && !titleField.value) { titleField.value = tpl.title_internal; }
+    if (payloadField) { payloadField.value = tpl.html; }
+    if (typeField) { typeField.value = 'quote'; }
+  });
+}
+
+function initEphemeralLinksPanel() {
+  var table = document.getElementById('ephemeral-links-table');
+  if (!table) return; /* only dashboard.php ships this panel */
+
+  initEphemeralQuoteTemplates();
+  ephemeralLoadList();
+
+  var saveDefaultBtn = document.getElementById('ephemeral-save-default-btn');
+  if (saveDefaultBtn) {
+    saveDefaultBtn.addEventListener('click', function () {
+      var input = document.getElementById('ephemeral-default-max-views');
+      ephemeralPost('set_default_max_views', { max_views: input.value }).then(function () {
+        ephemeralLoadList();
+      });
+    });
+  }
+
+  var form = document.getElementById('ephemeral-create-form');
+  if (form) {
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var feedback = document.getElementById('ephemeral-create-feedback');
+      ephemeralPost('create', {
+        title: document.getElementById('ephemeral-title').value,
+        resource_type: document.getElementById('ephemeral-resource-type').value,
+        payload_html: document.getElementById('ephemeral-payload').value,
+        target_url: document.getElementById('ephemeral-target-url').value,
+        max_views: document.getElementById('ephemeral-max-views').value,
+      }).then(function (data) {
+        if (!feedback) return;
+        if (data.status === 'success') {
+          feedback.textContent = 'Link ready: ' + data.link.public_url;
+          form.reset();
+          ephemeralLoadList();
+        } else {
+          feedback.textContent = data.message || 'Could not create the link.';
+        }
+      });
+    });
+  }
+
+  table.addEventListener('click', function (e) {
+    var row = e.target.closest('tr[data-link-id]');
+    if (!row) return;
+    var id = row.getAttribute('data-link-id');
+
+    if (e.target.classList.contains('ephemeral-copy-link')) {
+      e.preventDefault();
+      var url = e.target.getAttribute('data-url');
+      if (navigator.clipboard) { navigator.clipboard.writeText(url); }
+    }
+
+    if (e.target.classList.contains('ephemeral-row-save')) {
+      var input = row.querySelector('.ephemeral-max-views-input');
+      ephemeralPost('update_max_views', { id: id, max_views: input.value }).then(function () {
+        ephemeralLoadList();
+      });
+    }
+
+    if (e.target.classList.contains('ephemeral-row-revoke')) {
+      if (!window.confirm('Revoke this link? It will stop working immediately.')) return;
+      ephemeralPost('revoke', { id: id }).then(function () {
+        ephemeralLoadList();
+      });
+    }
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   9c. FLEET CATALOG EDITOR (pg_ai_hub.php Section E — guards on
+   #fleet-catalog-table absence for every other page)
+   ═══════════════════════════════════════════════════════════════════ */
+
+function fleetPost(action, extraFields) {
+  var csrfField = document.getElementById('fleet-csrf-field');
+  var body = new URLSearchParams();
+  body.set('action', action);
+  body.set('csrf_token', csrfField ? csrfField.value : '');
+  if (extraFields) {
+    Object.keys(extraFields).forEach(function (key) {
+      body.set(key, extraFields[key] == null ? '' : String(extraFields[key]));
+    });
+  }
+  return fetch('api/fleet_catalog.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+  }).then(function (res) {
+    return res.json().then(function (data) {
+      if (csrfField && data.csrf_token) { csrfField.value = data.csrf_token; }
+      return data;
+    });
+  });
+}
+
+function fleetEscape(str) {
+  var div = document.createElement('div');
+  div.textContent = str == null ? '' : str;
+  return div.innerHTML;
+}
+
+function fleetRenderRows(vessels) {
+  var tbody = document.getElementById('fleet-catalog-tbody');
+  if (!tbody) return;
+  if (!vessels.length) {
+    tbody.innerHTML = '<tr><td colspan="5">'
+      + '<span data-lang="en">No vessels yet — add the first one above.</span>'
+      + '<span data-lang="es">Aún no hay embarcaciones — agrega la primera arriba.</span></td></tr>';
+    return;
+  }
+  var rows = vessels.map(function (v) {
+    var statusLabel = v.verification_status === 'verified'
+      ? '<span class="pill pill-green"><span data-lang="en">Verified</span><span data-lang="es">Verificado</span></span>'
+      : '<span class="pill pill-orange"><span data-lang="en">Pending</span><span data-lang="es">Pendiente</span></span>';
+    return '<tr data-vessel-id="' + v.id + '">'
+      + '<td><strong>' + fleetEscape(v.vessel_name) + '</strong>' + (v.vessel_slug ? '<br><small>' + fleetEscape(v.vessel_slug) + '</small>' : '') + '</td>'
+      + '<td>' + (v.max_pax != null ? v.max_pax : '—') + '</td>'
+      + '<td>' + (v.length_ft != null ? v.length_ft + ' ft' : '—') + '</td>'
+      + '<td>' + statusLabel + '</td>'
+      + '<td><button type="button" class="fleet-row-edit" title="Edit">✏️</button> <button type="button" class="fleet-row-delete" title="Delete">✕</button></td>'
+      + '</tr>';
+  }).join('');
+  tbody.innerHTML = rows;
+}
+
+function fleetLoadList() {
+  var tbody = document.getElementById('fleet-catalog-tbody');
+  if (!tbody) return;
+  fleetPost('list').then(function (data) {
+    if (data.status !== 'success') return;
+    fleetRenderRows(data.vessels || []);
+    window.__fleetVesselsCache = data.vessels || [];
+  });
+}
+
+function fleetResetForm() {
+  var form = document.getElementById('fleet-form');
+  if (!form) return;
+  form.reset();
+  document.getElementById('fleet-id').value = '';
+  document.getElementById('fleet-submit-btn').querySelector('[data-lang="en"]').textContent = '💾 Save Vessel';
+  document.getElementById('fleet-submit-btn').querySelector('[data-lang="es"]').textContent = '💾 Guardar Embarcación';
+  var cancelBtn = document.getElementById('fleet-cancel-edit-btn');
+  if (cancelBtn) { cancelBtn.hidden = true; }
+}
+
+function fleetPopulateFormForEdit(vessel) {
+  document.getElementById('fleet-id').value = vessel.id;
+  document.getElementById('fleet-vessel-name').value = vessel.vessel_name || '';
+  document.getElementById('fleet-vessel-slug').value = vessel.vessel_slug || '';
+  document.getElementById('fleet-max-pax').value = vessel.max_pax != null ? vessel.max_pax : '';
+  document.getElementById('fleet-length-ft').value = vessel.length_ft != null ? vessel.length_ft : '';
+  document.getElementById('fleet-role-en').value = vessel.role_label_en || '';
+  document.getElementById('fleet-role-es').value = vessel.role_label_es || '';
+  document.getElementById('fleet-status-pill').value = vessel.status_pill || 'pill-orange';
+  document.getElementById('fleet-verification-status').value = vessel.verification_status || 'pending';
+  document.getElementById('fleet-submit-btn').querySelector('[data-lang="en"]').textContent = '💾 Update Vessel';
+  document.getElementById('fleet-submit-btn').querySelector('[data-lang="es"]').textContent = '💾 Actualizar Embarcación';
+  document.getElementById('fleet-cancel-edit-btn').hidden = false;
+  document.getElementById('fleet-vessel-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function initFleetCatalogPanel() {
+  var table = document.getElementById('fleet-catalog-table');
+  if (!table) return; /* only pg_ai_hub.php ships this panel */
+
+  fleetLoadList();
+
+  var form = document.getElementById('fleet-form');
+  if (form) {
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var feedback = document.getElementById('fleet-feedback');
+      var id = document.getElementById('fleet-id').value;
+      var fields = {
+        vessel_name: document.getElementById('fleet-vessel-name').value,
+        vessel_slug: document.getElementById('fleet-vessel-slug').value,
+        max_pax: document.getElementById('fleet-max-pax').value,
+        length_ft: document.getElementById('fleet-length-ft').value,
+        role_label_en: document.getElementById('fleet-role-en').value,
+        role_label_es: document.getElementById('fleet-role-es').value,
+        status_pill: document.getElementById('fleet-status-pill').value,
+        verification_status: document.getElementById('fleet-verification-status').value,
+      };
+      var action = id ? 'update' : 'create';
+      if (id) { fields.id = id; }
+      fleetPost(action, fields).then(function (data) {
+        if (!feedback) return;
+        if (data.status === 'success') {
+          feedback.textContent = '';
+          fleetResetForm();
+          fleetLoadList();
+        } else {
+          feedback.textContent = data.message || 'Could not save the vessel.';
+        }
+      });
+    });
+  }
+
+  var cancelBtn = document.getElementById('fleet-cancel-edit-btn');
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', fleetResetForm);
+  }
+
+  table.addEventListener('click', function (e) {
+    var row = e.target.closest('tr[data-vessel-id]');
+    if (!row) return;
+    var id = row.getAttribute('data-vessel-id');
+
+    if (e.target.classList.contains('fleet-row-edit')) {
+      var vessel = (window.__fleetVesselsCache || []).find(function (v) { return String(v.id) === String(id); });
+      if (vessel) { fleetPopulateFormForEdit(vessel); }
+    }
+
+    if (e.target.classList.contains('fleet-row-delete')) {
+      if (!window.confirm('Delete this vessel? This cannot be undone.')) return;
+      fleetPost('delete', { id: id }).then(function () {
+        fleetLoadList();
+      });
+    }
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   9d. PG-AI CONFIG — MASTER PROMPT EDITOR (pg_ai_config.php — guards on
+   #prompt-editor-textarea absence for every other page)
+   ═══════════════════════════════════════════════════════════════════ */
+
+function promptEditorPost(action, extraFields) {
+  var csrfField = document.getElementById('prompt-editor-csrf-field');
+  var body = new URLSearchParams();
+  body.set('action', action);
+  body.set('csrf_token', csrfField ? csrfField.value : '');
+  if (extraFields) {
+    Object.keys(extraFields).forEach(function (key) {
+      body.set(key, extraFields[key] == null ? '' : String(extraFields[key]));
+    });
+  }
+  return fetch('api/prompt_editor.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+  }).then(function (res) {
+    return res.json().then(function (data) {
+      if (csrfField && data.csrf_token) { csrfField.value = data.csrf_token; }
+      return data;
+    });
+  });
+}
+
+function initPromptEditorPanel() {
+  var textarea = document.getElementById('prompt-editor-textarea');
+  if (!textarea) return; /* only pg_ai_config.php ships this panel */
+
+  var feedback = document.getElementById('prompt-editor-feedback');
+  var saveBtn  = document.getElementById('prompt-editor-save-btn');
+
+  promptEditorPost('get').then(function (data) {
+    if (data.status === 'success') { textarea.value = data.content || ''; }
+    else if (feedback) { feedback.textContent = data.message || 'Could not load the prompt file.'; }
+  });
+
+  if (saveBtn) {
+    saveBtn.addEventListener('click', function () {
+      saveBtn.disabled = true;
+      promptEditorPost('save', { content: textarea.value }).then(function (data) {
+        if (feedback) {
+          feedback.textContent = data.status === 'success'
+            ? 'Saved — the live chatbot will use this on its next message.'
+            : (data.message || 'Could not save.');
+        }
+      }).then(function () { saveBtn.disabled = false; });
+    });
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   9e. PG-AI CONFIG — LEAD NOTIFICATION TEMPLATES (pg_ai_config.php —
+   guards on #templates-list absence for every other page)
+   ═══════════════════════════════════════════════════════════════════ */
+
+function templatesPost(action, extraFields) {
+  var csrfField = document.getElementById('templates-csrf-field');
+  var body = new URLSearchParams();
+  body.set('action', action);
+  body.set('csrf_token', csrfField ? csrfField.value : '');
+  if (extraFields) {
+    Object.keys(extraFields).forEach(function (key) {
+      body.set(key, extraFields[key] == null ? '' : String(extraFields[key]));
+    });
+  }
+  return fetch('api/notification_templates.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+  }).then(function (res) {
+    return res.json().then(function (data) {
+      if (csrfField && data.csrf_token) { csrfField.value = data.csrf_token; }
+      return data;
+    });
+  });
+}
+
+function templatesEscape(str) {
+  var div = document.createElement('div');
+  div.textContent = str == null ? '' : str;
+  return div.innerHTML;
+}
+
+function templatesRender(container, templates) {
+  container.innerHTML = templates.map(function (t) {
+    var subjectRow = (t.channel === 'email')
+      ? '<div class="ephemeral-form-row ephemeral-form-row--inline">'
+        + '<label>Subject (EN)</label><input type="text" class="tpl-subject-en" value="' + templatesEscape(t.subject_en) + '">'
+        + '<label>Subject (ES)</label><input type="text" class="tpl-subject-es" value="' + templatesEscape(t.subject_es) + '">'
+        + '</div>'
+      : '';
+    return '<div class="ephemeral-form" data-template-id="' + t.id + '">'
+      + '<h4>' + templatesEscape(t.template_key) + ' — ' + templatesEscape(t.channel) + '</h4>'
+      + subjectRow
+      + '<div class="ephemeral-form-row"><label>Body (EN)</label><textarea class="editor-textarea tpl-body-en" rows="4">' + templatesEscape(t.body_en) + '</textarea></div>'
+      + '<div class="ephemeral-form-row"><label>Body (ES)</label><textarea class="editor-textarea tpl-body-es" rows="4">' + templatesEscape(t.body_es) + '</textarea></div>'
+      + '<button type="button" class="dash-card-btn dash-card-btn--secondary tpl-save-btn">💾 Save</button>'
+      + '<span class="ephemeral-feedback tpl-feedback" role="status" aria-live="polite"></span>'
+      + '</div>';
+  }).join('');
+}
+
+function initNotificationTemplatesPanel() {
+  var container = document.getElementById('templates-list');
+  if (!container) return; /* only pg_ai_config.php ships this panel */
+
+  templatesPost('list').then(function (data) {
+    if (data.status !== 'success') {
+      container.innerHTML = '<p>' + (data.message || 'Could not load templates.') + '</p>';
+      return;
+    }
+    templatesRender(container, data.templates || []);
+  });
+
+  container.addEventListener('click', function (e) {
+    if (!e.target.classList.contains('tpl-save-btn')) return;
+    var row = e.target.closest('[data-template-id]');
+    if (!row) return;
+    var id = row.getAttribute('data-template-id');
+    var fields = {
+      body_en: row.querySelector('.tpl-body-en').value,
+      body_es: row.querySelector('.tpl-body-es').value,
+    };
+    var subjectEnEl = row.querySelector('.tpl-subject-en');
+    var subjectEsEl = row.querySelector('.tpl-subject-es');
+    if (subjectEnEl) { fields.subject_en = subjectEnEl.value; }
+    if (subjectEsEl) { fields.subject_es = subjectEsEl.value; }
+
+    e.target.disabled = true;
+    templatesPost('update', Object.assign({ id: id }, fields)).then(function (data) {
+      var feedback = row.querySelector('.tpl-feedback');
+      if (feedback) { feedback.textContent = data.status === 'success' ? 'Saved.' : (data.message || 'Could not save.'); }
+      e.target.disabled = false;
+    });
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   9f. PG-AI CONFIG — KNOWLEDGE MODULE EDITOR (pg_ai_config.php,
+   super_admin only — guards on #moduledoc-editor-textarea absence)
+   ═══════════════════════════════════════════════════════════════════ */
+
+function moduleDocPost(action, extraFields) {
+  var csrfField = document.getElementById('moduledoc-editor-csrf-field');
+  var body = new URLSearchParams();
+  body.set('action', action);
+  body.set('csrf_token', csrfField ? csrfField.value : '');
+  if (extraFields) {
+    Object.keys(extraFields).forEach(function (key) {
+      body.set(key, extraFields[key] == null ? '' : String(extraFields[key]));
+    });
+  }
+  return fetch('api/module_doc_editor.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+  }).then(function (res) {
+    return res.json().then(function (data) {
+      if (csrfField && data.csrf_token) { csrfField.value = data.csrf_token; }
+      return data;
+    });
+  });
+}
+
+function initModuleDocEditorPanel() {
+  var textarea = document.getElementById('moduledoc-editor-textarea');
+  if (!textarea) return; /* only pg_ai_config.php Section 6 (super_admin) ships this panel */
+
+  var feedback = document.getElementById('moduledoc-editor-feedback');
+  var saveBtn  = document.getElementById('moduledoc-editor-save-btn');
+
+  moduleDocPost('get').then(function (data) {
+    if (data.status === 'success') { textarea.value = data.content || ''; }
+    else if (feedback) { feedback.textContent = data.message || 'Could not load the module doc.'; }
+  });
+
+  if (saveBtn) {
+    saveBtn.addEventListener('click', function () {
+      saveBtn.disabled = true;
+      moduleDocPost('save', { content: textarea.value }).then(function (data) {
+        if (feedback) {
+          feedback.textContent = data.status === 'success' ? 'Saved.' : (data.message || 'Could not save.');
+        }
+      }).then(function () { saveBtn.disabled = false; });
+    });
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   9g. PG-AI CONFIG — M2M HANDSHAKE TEST BUTTON (pg_ai_config.php,
+   super_admin only — guards on #handshake-test-btn absence)
+   ═══════════════════════════════════════════════════════════════════ */
+
+function initHandshakeTestPanel() {
+  var btn = document.getElementById('handshake-test-btn');
+  if (!btn) return; /* only pg_ai_config.php Section 5 (super_admin) ships this panel */
+
+  var result    = document.getElementById('handshake-result');
+  var csrfField = document.getElementById('handshake-csrf-field');
+
+  btn.addEventListener('click', function () {
+    btn.disabled = true;
+    if (result) { result.textContent = 'Testing…'; }
+
+    var body = new URLSearchParams();
+    body.set('action', 'handshake');
+    body.set('csrf_token', csrfField ? csrfField.value : '');
+
+    fetch('api/aura_diagnostic.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    }).then(function (res) { return res.json(); }).then(function (data) {
+      if (csrfField && data.csrf_token) { csrfField.value = data.csrf_token; }
+      if (!result) return;
+      if (data.status === 'success' && data.result) {
+        var r = data.result;
+        result.textContent = (r.success ? '✅ ' : '❌ ') + 'channel=' + r.channelUsed + ' http=' + r.httpCode
+          + (r.reportedLatencyMs ? ' latency=' + r.reportedLatencyMs + 'ms' : '')
+          + (r.errorMessage ? ' — ' + r.errorMessage : '');
+      } else {
+        result.textContent = data.message || 'Handshake failed.';
+      }
+    }).catch(function () {
+      if (result) { result.textContent = 'Network error — check your connection.'; }
+    }).then(function () { btn.disabled = false; });
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    10. INIT — readyState-aware entry point
    Deferred scripts run after HTML parse; document.readyState is
    already 'interactive' or 'complete' by that time.  Using the
@@ -314,17 +1085,43 @@ function initAccordion() {
    DOMContentLoaded event that may have already fired.
    ═══════════════════════════════════════════════════════════════════ */
 
+/**
+ * Runs one init function in isolation — a thrown error (or a bad
+ * assumption inside it) is logged and swallowed instead of stopping the
+ * rest of llyInitAll(). Each init* already self-guards on its own
+ * element's absence (if (!el) return;), so this is a second, independent
+ * safety net: one panel misbehaving can never take the others down with
+ * it. Named functions only (not arrow fns) so the name shows up in the
+ * console.error for whoever's debugging.
+ */
+function llySafeInit(fn) {
+  try {
+    fn();
+  } catch (err) {
+    console.error('[LLY init] ' + fn.name + '() failed — other panels continue.', err);
+  }
+}
+
 function llyInitAll() {
-  restoreTheme();       /* html[data-theme] from localStorage            */
-  restoreLang();        /* sync toggle buttons (body attr set by IIFE)   */
-  resolveUrlParams();   /* ?lang= and #hash activation                   */
-  initHubCards();       /* .hub-card[data-target] → activateHub          */
-  initTopbarNav();      /* .topbar-nav-link[data-target] → activateHubFromTopbar */
-  initLangToggle();     /* #btn-en / #btn-es → setLang                   */
-  initThemeToggle();    /* #theme-toggle → toggleTheme                   */
-  initAccordion();      /* .accordion-trigger → toggleAccordion          */
-  initSmoothScroll();   /* a[href^="#"] → scrollIntoView                 */
-  initBackToTop();      /* #back-to-top → scrollTo(0)                   */
+  llySafeInit(restoreTheme);       /* html[data-theme] from localStorage            */
+  llySafeInit(restoreLang);        /* sync toggle buttons (body attr set by IIFE)   */
+  llySafeInit(resolveUrlParams);   /* ?lang= and #hash activation                   */
+  llySafeInit(initHubCards);       /* .hub-card[data-target] → activateHub          */
+  llySafeInit(initTopbarNav);      /* .topbar-nav-link[data-target] → activateHubFromTopbar */
+  llySafeInit(initLangToggle);     /* #btn-en / #btn-es → setLang                   */
+  llySafeInit(initThemeToggle);    /* #theme-toggle → toggleTheme                   */
+  llySafeInit(initAccordion);      /* .accordion-trigger → toggleAccordion          */
+  llySafeInit(initReportDialog);   /* .dash-pay-row → openReportDialog              */
+  llySafeInit(initSmoothScroll);   /* a[href^="#"] → scrollIntoView                 */
+  llySafeInit(initBackToTop);      /* #back-to-top → scrollTo(0)                   */
+  llySafeInit(initEphemeralLinksPanel); /* #ephemeral-links-table → create/list/revoke */
+  llySafeInit(initLeadsPanel);          /* #leads-table → list recent WhatsApp/Web leads */
+  llySafeInit(initPgaiSettingsPanel);   /* #pgai-settings-form → get/save AURA+WhatsApp config */
+  llySafeInit(initFleetCatalogPanel);   /* #fleet-catalog-table → create/list/update/delete vessels */
+  llySafeInit(initPromptEditorPanel);        /* #prompt-editor-textarea → get/save master prompt */
+  llySafeInit(initNotificationTemplatesPanel); /* #templates-list → list/update lead notification templates */
+  llySafeInit(initModuleDocEditorPanel);     /* #moduledoc-editor-textarea → get/save knowledge module doc */
+  llySafeInit(initHandshakeTestPanel);       /* #handshake-test-btn → one-click AURA handshake test */
 }
 
 if (document.readyState === 'loading') {

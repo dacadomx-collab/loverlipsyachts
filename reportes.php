@@ -53,6 +53,10 @@ $lly_public_book_url = $lly_is_local
         </a>
 
         <div class="topbar-actions">
+          <a href="index.php" class="topbar-back-btn">
+            <span data-lang="en">⬅️ Back to Main Dashboard</span>
+            <span data-lang="es">⬅️ Regresar al Dashboard Principal</span>
+          </a>
           <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch to Night Mode" aria-pressed="false">
             <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
@@ -78,13 +82,6 @@ $lly_public_book_url = $lly_is_local
     ═══════════════════════════════════════════════════════════════ -->
     <section class="section section-white" aria-labelledby="reports-title">
       <div class="container">
-
-        <nav class="book-feature-editorial-nav strategy-back-nav" aria-label="Back to dashboard">
-          <a href="index.php">
-            <span data-lang="en">← Back to Dashboard</span>
-            <span data-lang="es">← Volver al Panel</span>
-          </a>
-        </nav>
 
         <p class="section-label">
           <span data-lang="en">Work Completed</span>

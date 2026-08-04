@@ -248,4 +248,8 @@ try {
 
 /* ── Layer 8: Success ────────────────────────────────────────────── */
 
-echo json_encode(['status' => 'success', 'message' => 'Changes successfully saved to live database!']);
+echo json_encode([
+    'status'     => 'success',
+    'message'    => 'Changes successfully saved to live database!',
+    'csrf_token' => $_SESSION['csrf_token'],
+]);

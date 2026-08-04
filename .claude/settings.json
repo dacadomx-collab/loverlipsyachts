@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell($php = \"C:\\\\xampp\\\\php\\\\php.exe\"; foreach \\($f in \"dashboard.php\",\"reportes.php\",\"alianzas.php\",\"propuestas.php\",\"strategy.php\",\"book_editor.php\"\\) { Write-Host \"== $f ==\"; & $php -l $f })",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost/loverlipsyachts/dashboard.php)",
+      "Bash(curl -s http://localhost/loverlipsyachts/dashboard.php)"
+    ]
+  }
+}

@@ -16,6 +16,65 @@ if (!lly_is_authenticated()) {
     header('Location: index.php');
     exit;
 }
+
+/**
+ * Same report catalogue as dashboard.php's Payments card (no DB table yet
+ * for this — plain hand-edited PHP array, kept in sync by convention).
+ * Powers the "tap a batch to see the plain-language work" dialog below.
+ */
+$lly_reportes = [
+    'i' => [
+        'date_en' => 'July 1, 2026', 'date_es' => '1 de Julio, 2026',
+        'title_en' => 'Edit Your Own Book Page', 'title_es' => 'Edita Tu Propia Página del Libro',
+        'benefit_en' => 'You can now edit your book\'s text and cover yourself, anytime, with no developer needed.',
+        'benefit_es' => 'Ahora puedes editar el texto y la portada de tu libro tú mismo, cuando quieras, sin ayuda técnica.',
+    ],
+    'h' => [
+        'date_en' => 'June 29, 2026', 'date_es' => '29 de Junio, 2026',
+        'title_en' => 'Book Menu Connected Live', 'title_es' => 'Menú del Libro Conectado en Vivo',
+        'benefit_en' => 'Connected your book\'s language button to the live site and added it to the main menu.',
+        'benefit_es' => 'Conectamos el botón de idioma de tu libro al sitio en vivo y lo añadimos al menú principal.',
+    ],
+    'g' => [
+        'date_en' => 'June 27, 2026', 'date_es' => '27 de Junio, 2026',
+        'title_en' => 'Faster Sunseeker 52 Photos', 'title_es' => 'Fotos del Sunseeker 52 Más Rápidas',
+        'benefit_en' => 'Optimized 51 photos and 2 videos for the Sunseeker 52, so the page loads much faster.',
+        'benefit_es' => 'Optimizamos 51 fotos y 2 videos del Sunseeker 52, logrando que la página cargue mucho más rápido.',
+    ],
+    'f' => [
+        'date_en' => 'June 20, 2026', 'date_es' => '20 de Junio, 2026',
+        'title_en' => 'New Book Landing Page', 'title_es' => 'Nueva Página del Libro',
+        'benefit_en' => 'Built a beautiful landing page to promote your book and attract new customers for free.',
+        'benefit_es' => 'Creamos una hermosa página para promocionar tu libro y atraer nuevos clientes sin gastar en publicidad.',
+    ],
+    'd' => [
+        'date_en' => 'June 20, 2026', 'date_es' => '20 de Junio, 2026',
+        'title_en' => 'Higher Google Score', 'title_es' => 'Mejor Calificación en Google',
+        'benefit_en' => 'Improved your website\'s Google score to 91/100, helping more people find your yachts online.',
+        'benefit_es' => 'Mejoramos la calificación de tu sitio en Google a 91/100, ayudando a que más gente encuentre tus yates.',
+    ],
+    'c' => [
+        'date_en' => 'June 5, 2026', 'date_es' => '5 de Junio, 2026',
+        'title_en' => 'Cleaner Photo Galleries', 'title_es' => 'Galerías de Fotos Más Limpias',
+        'benefit_en' => 'Removed ugly technical text over your photos, making every gallery look clean and professional.',
+        'benefit_es' => 'Eliminamos texto técnico feo que aparecía sobre tus fotos, dejando las galerías limpias y profesionales.',
+    ],
+    'b' => [
+        'date_en' => 'June 5, 2026', 'date_es' => '5 de Junio, 2026',
+        'title_en' => 'Two Booking Pages Rescued', 'title_es' => 'Dos Páginas de Reservas Rescatadas',
+        'benefit_en' => 'Rescued two broken booking pages so guests can find and book your yachts again.',
+        'benefit_es' => 'Rescatamos dos páginas de reservas caídas para que los clientes puedan encontrar y reservar tus yates de nuevo.',
+    ],
+    'a' => [
+        'date_en' => 'June 5, 2026', 'date_es' => '5 de Junio, 2026',
+        'title_en' => 'Instant, Polished Homepage', 'title_es' => 'Página de Inicio Instantánea y Pulida',
+        'benefit_en' => 'Fixed a visual glitch so your homepage always looks polished from the very first second.',
+        'benefit_es' => 'Corregimos un destello visual para que tu página de inicio siempre luzca perfecta desde el primer segundo.',
+    ],
+];
+
+$lly_batch1_ids = ['a', 'b', 'c'];
+$lly_batch2_ids = ['d', 'f', 'g', 'h', 'i'];
 ?><!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
@@ -48,6 +107,10 @@ if (!lly_is_authenticated()) {
         </a>
 
         <div class="topbar-actions">
+          <a href="index.php" class="topbar-back-btn">
+            <span data-lang="en">⬅️ Back to Main Dashboard</span>
+            <span data-lang="es">⬅️ Regresar al Dashboard Principal</span>
+          </a>
           <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch to Night Mode" aria-pressed="false">
             <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
@@ -73,13 +136,6 @@ if (!lly_is_authenticated()) {
     ═══════════════════════════════════════════════════════════════ -->
     <section class="section section-white" aria-labelledby="alliance-title">
       <div class="container">
-
-        <nav class="book-feature-editorial-nav strategy-back-nav" aria-label="Back to dashboard">
-          <a href="index.php">
-            <span data-lang="en">← Back to Dashboard</span>
-            <span data-lang="es">← Volver al Panel</span>
-          </a>
-        </nav>
 
         <p class="section-label">
           <span data-lang="en">Account Statement</span>
@@ -119,14 +175,20 @@ if (!lly_is_authenticated()) {
           </div>
           <div class="proposal-vault-divider"></div>
           <ul class="proposal-vault-breakdown">
-            <li>
-              <span data-lang="en"><strong>Batch 1</strong> Recovery</span>
-              <span data-lang="es"><strong>Lote 1</strong> Rescate</span>
+            <li class="dash-pay-row" tabindex="0" role="button"
+                data-report-ids="<?= htmlspecialchars(implode(',', $lly_batch1_ids), ENT_QUOTES) ?>"
+                data-batch-label-en="Batch 1 — Emergency Recovery"
+                data-batch-label-es="Lote 1 — Rescate de Emergencia">
+              <span data-lang="en"><strong>Batch 1</strong> Recovery — tap to see the work</span>
+              <span data-lang="es"><strong>Lote 1</strong> Rescate — toca para ver el trabajo</span>
               <span>$1,000 MXN</span>
             </li>
-            <li>
-              <span data-lang="en"><strong>Batch 2</strong> Optimization + CMS</span>
-              <span data-lang="es"><strong>Lote 2</strong> Optimización + CMS</span>
+            <li class="dash-pay-row" tabindex="0" role="button"
+                data-report-ids="<?= htmlspecialchars(implode(',', $lly_batch2_ids), ENT_QUOTES) ?>"
+                data-batch-label-en="Batch 2 — Book Launch, Fleet Pipeline &amp; CMS"
+                data-batch-label-es="Lote 2 — Libro, Pipeline de Flota y CMS">
+              <span data-lang="en"><strong>Batch 2</strong> Optimization + CMS — tap to see the work</span>
+              <span data-lang="es"><strong>Lote 2</strong> Optimización + CMS — toca para ver el trabajo</span>
               <span>$1,900 MXN</span>
             </li>
           </ul>
@@ -139,7 +201,10 @@ if (!lly_is_authenticated()) {
         <!-- ══ BATCH 2 — newest first (settled June 29, 2026) ═════════ -->
         <div class="proposal-phase">
 
-          <div class="proposal-phase-header proposal-phase-header--done">
+          <div class="proposal-phase-header proposal-phase-header--done dash-pay-row" tabindex="0" role="button"
+               data-report-ids="<?= htmlspecialchars(implode(',', $lly_batch2_ids), ENT_QUOTES) ?>"
+               data-batch-label-en="Batch 2 — Book Launch, Fleet Pipeline &amp; CMS"
+               data-batch-label-es="Lote 2 — Libro, Pipeline de Flota y CMS">
             <div class="proposal-phase-num">2</div>
             <div class="proposal-phase-meta">
               <p class="proposal-phase-tag" data-lang="en">Batch 2 · Book Launch &amp; Fleet Pipeline Optimization</p>
@@ -192,7 +257,10 @@ if (!lly_is_authenticated()) {
         <!-- ══ BATCH 1 — older (settled June 20, 2026) ════════════════ -->
         <div class="proposal-phase">
 
-          <div class="proposal-phase-header proposal-phase-header--done">
+          <div class="proposal-phase-header proposal-phase-header--done dash-pay-row" tabindex="0" role="button"
+               data-report-ids="<?= htmlspecialchars(implode(',', $lly_batch1_ids), ENT_QUOTES) ?>"
+               data-batch-label-en="Batch 1 — Emergency Recovery"
+               data-batch-label-es="Lote 1 — Rescate de Emergencia">
             <div class="proposal-phase-num">1</div>
             <div class="proposal-phase-meta">
               <p class="proposal-phase-tag" data-lang="en">Batch 1 · Emergency Intervention &amp; Platform Recovery</p>
@@ -267,6 +335,21 @@ if (!lly_is_authenticated()) {
   <button id="back-to-top" class="back-to-top" aria-label="Back to top" type="button">
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
   </button>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       REPORT DIALOG — opens from a batch row/header (same widget as
+       dashboard.php's Payments card; see main.js → openReportDialog())
+  ═══════════════════════════════════════════════════════════════ -->
+  <dialog class="chapter-dialog" id="lly-report-dialog" aria-labelledby="lly-report-dialog-title">
+    <div class="chapter-dialog-inner">
+      <button type="button" class="chapter-dialog-close" aria-label="Close" onclick="document.getElementById('lly-report-dialog').close()">✕</button>
+      <p class="chapter-dialog-eyebrow" id="lly-report-dialog-eyebrow"></p>
+      <h2 class="chapter-dialog-title" id="lly-report-dialog-title"></h2>
+      <div class="chapter-dialog-body" id="lly-report-dialog-body"></div>
+    </div>
+  </dialog>
+
+  <script type="application/json" id="lly-reportes-data"><?= json_encode($lly_reportes, JSON_UNESCAPED_UNICODE) ?></script>
 
   <script src="assets/js/main.js" defer></script>
 

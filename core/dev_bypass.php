@@ -30,4 +30,8 @@ $lly_is_loopback = in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1'],
 if ($lly_is_loopback && empty($_SESSION['lly_user_id'])) {
     $_SESSION['lly_user_id'] = 1;
     $_SESSION['lly_email']   = 'dev-local@loverlipsyachts.test';
+    // super_admin locally: whoever has physical/loopback access to this
+    // machine is the developer, not Lester — Section C (pg_ai_hub.php)
+    // should be visible while building/debugging it.
+    $_SESSION['lly_role']    = 'super_admin';
 }
