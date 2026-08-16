@@ -4,7 +4,7 @@ declare(strict_types=1);
 /**
  * LOVER LIPS YACHTS — core/ProxyBridge.php
  * Local bridge of PG-AI Pink Glove AI's Cognitive Omnichannel Operator (see
- * modulos/MOD_OPERADOR_COGNITIVO_OMNICANAL.md, section 3.2, for the
+ * modulos/MOD_CONCIERGE_COGNITIVO_OMNICANAL.md, section 6.2, for the
  * agnostic blueprint this class implements for this project).
  *
  * This class does not reason or decide anything — it only reads local
@@ -70,27 +70,38 @@ final class ProxyBridge
      * Never throws — network/config failures degrade to a controlled
      * status the caller can render as a "please wait" reply, never a 500.
      *
-     * Dispatch order (explicit Architect decision, 2026-08-03 — Route 3
-     * added the same day AuraSatelliteClient was promoted from
-     * diagnostic-only to the real dispatch path — see
-     * docs/02_SYSTEM_CODEX_REGISTRY.md):
-     *   1. AURA LAN  (http://192.168.1.224:8090)
-     *   2. AURA WAN  (https://axon.acadep.com) — both 1 and 2 are one call
-     *      into dispatchViaAura(), which delegates the LAN→WAN→WAN-by-IP
-     *      failover to AuraSatelliteClient::dispatch() — same client
-     *      validated live in production.
-     *   3. OpenAI fallback (core/OpenAiFallbackClient.php,
-     *      FALLBACK_AI_PROVIDER_KEY/_MODEL) — only reached if both AURA
-     *      routes fail. NOT YET VALIDATED live (no real API key provided
-     *      as of this hito) — implemented and wired, pending that test.
-     *   4. Legacy HMAC-signed gateway (AI_GATEWAY_URL/AI_TENANT_ID/
+     * Dispatch order (updated 2026-08-15 — direct high-speed OpenAI route,
+     * explicit Architect directive):
+     *   1. OpenAI direct (core/OpenAiFallbackClient.php, FALLBACK_AI_PROVIDER_KEY/
+     *      _MODEL) — tried FIRST when a real key is configured. Sends the full
+     *      local system_prompt (core/prompts/pg_ai_lester_master.md, fleet-
+     *      substituted) + the guest's message every call — no server-side
+     *      persistent-context dependency, so this project keeps full local
+     *      sovereignty over persona/language/catalog on this route, and avoids
+     *      AURA's WAN latency (10-30s+ observed) entirely. Falls through
+     *      (returns null, never throws) when unconfigured or the call fails.
+     *   2. AURA LAN → WAN (dispatchViaAura(), delegates the LAN→WAN→WAN-by-IP
+     *      failover to AuraSatelliteClient::dispatch()) — the default route
+     *      whenever OpenAI isn't configured, and the fallback if OpenAI is
+     *      configured but fails. Context lives server-side (Protocolo de
+     *      Contexto Persistente M2M) — see core/AuraSatelliteClient.php
+     *      ::syncTenantContext() docblock for how that context gets onboarded.
+     *   3. Legacy HMAC-signed gateway (AI_GATEWAY_URL/AI_TENANT_ID/
      *      AI_SHARED_SECRET) — dormant, kept only because AI_TENANT_ID is
      *      still used by getTenantId() for OCMC persistence; the gateway
-     *      itself was never provisioned with a real host and is not part
-     *      of the 3 officially directed routes above. Candidate for
+     *      itself was never provisioned with a real host. Candidate for
      *      removal (Mandamiento 8) once someone explicitly confirms it
      *      will never be provisioned.
-     *   5. Controlled "still connecting" degraded reply.
+     *   4. Controlled "still connecting" degraded reply.
+     *
+     * (2026-08-03 → 2026-08-15 history: OpenAI was originally wired as
+     * step 3, reached only if both AURA routes failed — see
+     * docs/02_SYSTEM_CODEX_REGISTRY.md for that decision. Promoted to
+     * step 1 now that "soberanía total" over the prompt is the explicit
+     * goal; this reorder has zero live behavioral effect while
+     * FALLBACK_AI_PROVIDER_KEY remains unset — OpenAiFallbackClient::
+     * isConfigured() gates it, so an unconfigured key falls straight
+     * through to AURA exactly as before.)
      */
     public function forward(array $ocmcMessage): array
     {
@@ -101,18 +112,18 @@ final class ProxyBridge
             error_log('[PG-AI · ProxyBridge] Knowledge base read failed — ' . $e::class . ': ' . $e->getMessage());
         }
 
-        $auraReply = $this->dispatchViaAura($ocmcMessage);
-        if ($auraReply !== null) {
-            return $auraReply;
-        }
-
         $openAiReply = $this->dispatchViaOpenAiFallback($knowledge, $ocmcMessage);
         if ($openAiReply !== null) {
             return $openAiReply;
         }
 
+        $auraReply = $this->dispatchViaAura($ocmcMessage);
+        if ($auraReply !== null) {
+            return $auraReply;
+        }
+
         if ($this->tenantId === '' || $this->sharedSecret === '' || $this->gatewayUrl === '') {
-            error_log('[PG-AI · ProxyBridge] AURA + OpenAI fallback both failed and no legacy AI_GATEWAY_URL configured — degrading.');
+            error_log('[PG-AI · ProxyBridge] OpenAI direct + AURA both unavailable/failed and no legacy AI_GATEWAY_URL configured — degrading.');
             return $this->degraded();
         }
 
@@ -132,14 +143,18 @@ final class ProxyBridge
     }
 
     /**
-     * Route 3 — OpenAI fallback (core/OpenAiFallbackClient.php). Only
-     * called after both AURA routes fail. Returns null (never throws)
-     * when not configured or the call fails, so forward() can continue
-     * down the cascade. Sends the full knowledge (system prompt, already
-     * fleet-substituted) as the system message — unlike AURA's ultra-light
-     * payload, OpenAI has no server-side persistent-context mechanism
-     * here, so the context has to travel with the request same as before
-     * the Protocolo de Contexto Persistente M2M change.
+     * Direct high-speed route (core/OpenAiFallbackClient.php) — tried
+     * FIRST by forward() as of 2026-08-15 when a real key is configured
+     * (still named "Fallback" in the class/file name — historical, from
+     * when this was step 3; renaming is a separate decision, not made
+     * here per Mandamiento 8/10 discipline on unforced renames). Returns
+     * null (never throws) when not configured or the call fails, so
+     * forward() falls through to AURA exactly as if this route didn't
+     * exist. Sends the full knowledge (system prompt, already
+     * fleet-substituted) as the system message on every call — unlike
+     * AURA's ultra-light persistent-context payload, OpenAI has no
+     * server-side context mechanism here, so this project's prompt stays
+     * fully sovereign/local on this route by construction.
      */
     private function dispatchViaOpenAiFallback(string $knowledge, array $ocmcMessage): ?array
     {
@@ -160,6 +175,36 @@ final class ProxyBridge
     }
 
     /**
+     * Local Language Lock — deliberately NOT the full ~10KB system prompt.
+     *
+     * 2026-08-15 finding: AURA replied in Spanish to unambiguous English
+     * messages ("hi IM INTERESTING", later reproduced with a clean "Information
+     * about swimming with whale sharks" on a fresh session) even after the
+     * language rule in core/prompts/pg_ai_lester_master.md was strengthened —
+     * because that file is only read locally (readKnowledgeBase() below) and,
+     * per the Protocolo de Contexto Persistente M2M, is never resent on the
+     * AURA path (see dispatchViaAura()'s own docblock). AURA v3.0's "Fast-Path
+     * Router" appears to handle short/simple messages differently from
+     * complex ones (complex queries DID correctly reflect the onboarded
+     * persona/fleet context in earlier live tests) — consistent with a fast
+     * lane that gives less weight to onboarded context on quick turns.
+     *
+     * The obvious fix — prepend the full master prompt to every AURA
+     * dispatch — is exactly what caused the WAN 502s documented in
+     * dispatchViaAura()'s docblock on 2026-08-03. Re-introducing that payload
+     * size on every message is not an acceptable trade for fixing a language
+     * bug. Instead, this constant is a short, fixed-cost directive (tens of
+     * bytes, not ~10KB) prepended to the guest's message on every AURA
+     * dispatch — small enough to be unlikely to trip the same size-related
+     * instability, and small enough that a fast-path/short-message lane is
+     * more likely to actually honor it than a large buried instruction.
+     *
+     * Do not "fix" a future language complaint by expanding this into the
+     * full prompt — see the WAN 502 history above first.
+     */
+    private const LANGUAGE_LOCK_DIRECTIVE = "[LANGUAGE LOCK: Reply strictly in the same language as the user message below — do not translate or switch languages, regardless of earlier turns in this conversation.]\n\n";
+
+    /**
      * Dispatches through the AURA M2M satellite (core/AuraSatelliteClient.php,
      * ACADEP_AURA_* keys in core/.env).
      *
@@ -171,10 +216,12 @@ final class ProxyBridge
      * onboarded once via AuraSatelliteClient::syncTenantContext() (manual,
      * not yet wired to a trigger — see that method's docblock and
      * modulos/MOD_CONEXION_SATELLITE_AURA_M2M.md section 3.4). Each chat
-     * dispatch sends only the guest's raw message — ~200 bytes instead of
-     * ~10KB. Returns null (never throws) when AURA isn't configured or its
-     * dispatch fails, so forward() can fall through to the legacy gateway
-     * instead of failing the whole request.
+     * dispatch sends only the guest's raw message plus the short
+     * LANGUAGE_LOCK_DIRECTIVE above (2026-08-15) — still ~200-400 bytes,
+     * nowhere near the ~10KB that caused WAN 502s. Returns null (never
+     * throws) when AURA isn't configured or its dispatch fails, so
+     * forward() can fall through to the legacy gateway instead of failing
+     * the whole request.
      */
     private function dispatchViaAura(array $ocmcMessage): ?array
     {
@@ -195,10 +242,16 @@ final class ProxyBridge
         $guestMessage = (string) ($ocmcMessage['message']['text'] ?? '');
         $sessionId    = (string) ($ocmcMessage['session_id'] ?? '');
 
-        $result = $client->dispatch($agentId, $sessionId, $guestMessage);
+        // Only the outbound dispatch is decorated — $ocmcMessage itself
+        // (and therefore what gets persisted to omnichannel_messages and
+        // shown in any leads view) keeps the guest's original, undecorated
+        // text. See LANGUAGE_LOCK_DIRECTIVE above for why this exists.
+        $result = $client->dispatch($agentId, $sessionId, self::LANGUAGE_LOCK_DIRECTIVE . $guestMessage);
 
         if (!$result['success'] || $result['response'] === null || trim((string) $result['response']) === '') {
-            error_log('[PG-AI · ProxyBridge] AURA dispatch did not produce a usable reply (channel=' . $result['channelUsed'] . ', error=' . ($result['errorMessage'] ?? 'none') . ') — falling back.');
+            // See core/AuraSatelliteClient.php's own '[PG-AI · AuraSatelliteClient] RAW' log
+            // line for the exact response body/curl errno behind this summary.
+            error_log('[PG-AI · ProxyBridge] AURA dispatch did not produce a usable reply (channel=' . $result['channelUsed'] . ', http=' . $result['httpCode'] . ', error=' . ($result['errorMessage'] ?? 'none') . ') — falling back.');
             return null;
         }
 

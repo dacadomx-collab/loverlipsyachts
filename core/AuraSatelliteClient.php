@@ -8,11 +8,11 @@ declare(strict_types=1);
  * this class implements — it's a straight fill-in of that molde's
  * reference artifact, no project-specific logic added.
  *
- * Diagnostic-only for now (api/aura_diagnostic.php): the live widget and
- * WhatsApp webhook still dispatch exclusively through ProxyBridge's
- * HMAC-signed gateway (core/ProxyBridge.php). This client exists to
- * validate the AURA M2M connection independently before any decision to
- * route real traffic through it.
+ * Promoted from diagnostic-only to the real chat dispatch path on
+ * 2026-08-03 (see docs/02_SYSTEM_CODEX_REGISTRY.md) — core/ProxyBridge.php
+ * ::dispatchViaAura() is the live production caller for the widget and
+ * WhatsApp webhook. api/aura_diagnostic.php still uses this same client
+ * for sandboxed connectivity checks against the same real endpoints.
  */
 final class AuraSatelliteClient
 {
@@ -115,44 +115,47 @@ final class AuraSatelliteClient
      * script or a future admin action) whenever
      * core/prompts/pg_ai_lester_master.md changes.
      *
-     * Endpoint/payload shape is provisional: reuses the same gateway URL
-     * as dispatch() with an `action` discriminator (same pattern this
-     * project already uses for other single-endpoint/multi-action APIs,
-     * e.g. api/leads.php) since AURA has not published a distinct
-     * onboarding route. Confirm against a real request before relying on
-     * this in production — see modulos/MOD_CONEXION_SATELLITE_AURA_M2M.md
-     * section 3.4.
+     * (2026-08-15) Endpoint confirmed live: AURA published a dedicated
+     * onboarding route, POST {gatewayEndpoint}/sync-context — a sibling
+     * path of the chat dispatch endpoint, not the same URL with an
+     * `action` discriminator. The original provisional contract (this
+     * same URL as dispatch() + `action: 'sync_context'`) was tried and
+     * rejected with HTTP 400 on 2026-08-03 — see
+     * docs/02_SYSTEM_CODEX_REGISTRY.md. This version targets the real,
+     * dedicated route and drops the now-unnecessary `action` field.
      */
     public function syncTenantContext(string $agentId, string $systemPrompt): array
     {
         return $this->dispatchPayload([
-            'action'        => 'sync_context',
             'agent_id'      => $agentId,
             'tenant'        => $this->tenant,
             'system_prompt' => $systemPrompt,
-        ]);
+        ], endpointSuffix: '/sync-context');
     }
 
     /**
      * Shared LAN → WAN → WAN-by-IP cascade (section 2 of the blueprint) —
      * both dispatch() and syncTenantContext() funnel through here so the
-     * failover policy lives in exactly one place.
+     * failover policy lives in exactly one place. $endpointSuffix lets a
+     * caller target a sibling route (e.g. syncTenantContext()'s
+     * "/sync-context") without duplicating the cascade.
      */
-    private function dispatchPayload(array $payload): array
+    private function dispatchPayload(array $payload, string $endpointSuffix = ''): array
     {
         if ($this->apiKey === '' || $this->baseUrl === '') {
             return $this->result(success: false, channel: 'none', errorMessage: 'AURA client not configured (missing base URL or API key).');
         }
 
-        $body = json_encode($payload, JSON_THROW_ON_ERROR);
+        $body     = json_encode($payload, JSON_THROW_ON_ERROR);
+        $endpoint = $this->gatewayEndpoint . $endpointSuffix;
 
-        $lan = $this->attempt($this->baseUrl . $this->gatewayEndpoint, $body, 'lan');
+        $lan = $this->attempt($this->baseUrl . $endpoint, $body, 'lan');
 
         if (!$lan['connectFailed'] || $this->fallbackUrl === null || $this->fallbackUrl === '') {
             return $lan['raw'];
         }
 
-        $wanUrl = $this->fallbackUrl . $this->gatewayEndpoint;
+        $wanUrl = $this->fallbackUrl . $endpoint;
         $wan    = $this->attempt($wanUrl, $body, 'wan', readTimeout: self::WAN_READ_TIMEOUT);
 
         if ($wan['raw']['success'] || !$wan['dnsFailed'] || $this->fallbackIp === null || $this->fallbackIp === '') {
@@ -203,6 +206,24 @@ final class AuraSatelliteClient
         $errno    = curl_errno($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
+
+        // Diagnostic log (2026-08-06 directive): the exact RAW response
+        // AXON/AURA returned, so a failure ("still connecting…" fallback
+        // on the widget) can be told apart as an HTTP error (502/504),
+        // a curl-level failure (timeout/DNS/connect), or a malformed body
+        // — without this, only a summarized errorMessage reached the log.
+        // Truncated to 800 chars — enough to see the shape of a JSON error
+        // or an HTML error page, never meant to capture full guest content
+        // long-term (see Fase 3 of MOD_CONEXION_SATELLITE_AURA_M2M.md on
+        // not logging prompts/replies in full).
+        error_log(sprintf(
+            '[PG-AI · AuraSatelliteClient] RAW (channel=%s, http=%d, curl_errno=%d%s): %s',
+            $channel,
+            $httpCode,
+            $errno,
+            $errno !== 0 ? ', curl_error=' . curl_strerror($errno) : '',
+            substr((string) $response, 0, 800)
+        ));
 
         $networkLatencyMs = (int) round((microtime(true) - $start) * 1000);
         $dnsFailed         = $errno === CURLE_COULDNT_RESOLVE_HOST;

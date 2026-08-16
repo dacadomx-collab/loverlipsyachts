@@ -436,8 +436,8 @@ $lly_is_super_admin = ($_SESSION['lly_role'] ?? '') === 'super_admin';
           <span data-lang="es">🧬 Editor del Módulo de Conocimiento</span>
         </h2>
         <p class="section-desc">
-          <span data-lang="en">modulos/MOD_OPERADOR_COGNITIVO_OMNICANAL.md — the agnostic Santuario_Genesis blueprint. This is governance content about the reusable module itself, not Lover Lips Yachts business content — that's why it's restricted here, separate from the Master Prompt editor above.</span>
-          <span data-lang="es">modulos/MOD_OPERADOR_COGNITIVO_OMNICANAL.md — el molde agnóstico Santuario_Genesis. Es contenido de gobernanza sobre el módulo reutilizable, no contenido de negocio de Lover Lips Yachts — por eso está restringido aquí, separado del editor del Prompt Maestro de arriba.</span>
+          <span data-lang="en">modulos/MOD_CONCIERGE_COGNITIVO_OMNICANAL.md — the agnostic Santuario_Genesis blueprint (now also including the portable prompt template layer). This is governance content about the reusable module itself, not Lover Lips Yachts business content — that's why it's restricted here, separate from the Master Prompt editor above.</span>
+          <span data-lang="es">modulos/MOD_CONCIERGE_COGNITIVO_OMNICANAL.md — el molde agnóstico Santuario_Genesis (ahora también incluye la capa de plantilla de prompt portable). Es contenido de gobernanza sobre el módulo reutilizable, no contenido de negocio de Lover Lips Yachts — por eso está restringido aquí, separado del editor del Prompt Maestro de arriba.</span>
         </p>
         <div class="ephemeral-panel">
           <textarea id="moduledoc-editor-textarea" class="editor-textarea editor-textarea--chapter" rows="24" spellcheck="false"></textarea>

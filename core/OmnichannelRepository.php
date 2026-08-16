@@ -5,7 +5,7 @@ declare(strict_types=1);
  * LOVER LIPS YACHTS — core/OmnichannelRepository.php
  * Part of PG-AI Pink Glove AI (Chatbot IA + Omnichannel Handshake +
  * Ephemeral Quotes). Persists OCMC-normalized events into the
- * omnichannel_* tables (Fase 2 of modulos/MOD_OPERADOR_COGNITIVO_OMNICANAL.md)
+ * omnichannel_* tables (Fase 2 of modulos/MOD_CONCIERGE_COGNITIVO_OMNICANAL.md)
  * so a visitor gets the same conversation history whether they write via
  * the WhatsApp Business channel or the WordPress/site widget — same
  * tenant, same session thread.

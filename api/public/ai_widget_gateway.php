@@ -4,7 +4,7 @@ declare(strict_types=1);
 /**
  * LOVER LIPS YACHTS — api/public/ai_widget_gateway.php
  * PG-AI Pink Glove AI — Synchronous Web Widget Gateway (Fase 3 — see
- * modulos/MOD_OPERADOR_COGNITIVO_OMNICANAL.md).
+ * modulos/MOD_CONCIERGE_COGNITIVO_OMNICANAL.md).
  *
  * Public, unauthenticated endpoint: any site visitor talking to the
  * public chat widget hits this, not just the logged-in Owner. It
@@ -112,6 +112,13 @@ $ocmc = [
 
 $bridge   = ProxyBridge::fromEnv();
 $response = $bridge->forward($ocmc);
+
+// Diagnostic log (2026-08-06 directive): what ProxyBridge::forward()
+// actually returned to this gateway, so a "still connecting…" reply seen
+// on the widget can be traced back to which stage produced it — pair with
+// '[PG-AI · AuraSatelliteClient] RAW' / '[PG-AI · ProxyBridge]' log lines
+// for the underlying HTTP code/curl errno.
+error_log('[PG-AI · ai_widget_gateway] forward() result: status=' . ($response['status'] ?? 'null') . ', message_key=' . ($response['message_key'] ?? 'n/a') . ', reply_len=' . strlen((string) ($response['reply'] ?? '')));
 
 /* ── Resolve PG-AI action sentinels (quote link / escalation) before
    the reply is persisted or shown — see core/PgAiActionProcessor.php.

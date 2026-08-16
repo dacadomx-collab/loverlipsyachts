@@ -5,8 +5,8 @@ tipo: Blueprint de Construcción — Checklist Táctico
 alcance: Genérico / Agnóstico de Stack Cliente (WordPress, HTML puro, React, o cualquier lenguaje backend con soporte cURL/HTTP)
 nucleo_inferencia: Servidor Linux AURA (motor de inferencia centralizado, fuera del árbol del proyecto cliente)
 clasificacion: Molde Reutilizable — Santuario_Genesis
-version: 1.4
-fecha: 2026-08-03
+version: 1.5
+fecha: 2026-08-15
 autoridad: Arquitecto (DCD LABS / ACADEP)
 tono: Calma Ejecutiva (Executive Calm)
 ---
@@ -15,7 +15,7 @@ tono: Calma Ejecutiva (Executive Calm)
 
 > Este documento es la fuente de verdad para conectar, desde cero, cualquier proyecto clonado del Santuario_Genesis a un motor de inferencia central **AURA** vía un canal machine-to-machine (M2M) autenticado por llave estática. No es un chatbot ni un framework de conversación — es el **satélite de conexión**: un cliente HTTP delgado, sin lógica de negocio, que garantiza que el proyecto cliente jamás vea ni almacene una llave de proveedor LLM, solo la llave de túnel M2M hacia AURA.
 
-Este molde es complementario a `MOD_OPERADOR_COGNITIVO_OMNICANAL.md` (que cubre el aislamiento HMAC por tenant vía `ProxyBridge`). Un mismo proyecto puede tener ambos caminos de despacho provisionados en paralelo — uno no reemplaza al otro salvo decisión explícita del Arquitecto — pero solo debe existir **un** camino activo a la vez consumiendo tráfico real de visitantes.
+Este molde es complementario a `MOD_CONCIERGE_COGNITIVO_OMNICANAL.md` (que cubre el aislamiento HMAC por tenant vía `ProxyBridge`). Un mismo proyecto puede tener ambos caminos de despacho provisionados en paralelo — uno no reemplaza al otro salvo decisión explícita del Arquitecto — pero solo debe existir **un** camino activo a la vez consumiendo tráfico real de visitantes.
 
 ---
 
@@ -48,6 +48,19 @@ Hasta la v1.3 de este molde, cada despacho de chat reenviaba el prompt de sistem
 3. **Payload de Chat Ultra-Liviano.** Las llamadas recurrentes del widget de chat (sección 3.1) envían únicamente `{ agent_id, user_session, prompt }` donde `prompt` es el mensaje crudo del huésped — sin el System Prompt reanexado. Orden de magnitud esperado: ~200 bytes por mensaje, no ~10 KB.
 
 **Consecuencia arquitectónica:** el satélite cliente deja de ser responsable de "recordarle" a AURA quién es el tenant en cada mensaje — esa responsabilidad se mueve enteramente al onboarding de la regla 2. Un proyecto que siembra este molde sin haber completado el onboarding recibirá respuestas genéricas/sin personalidad de AURA (el motor sigue funcionando, solo sin contexto de tenant) — esto es una señal de "onboarding pendiente", no un fallo de conexión.
+
+**Advertencia validada en producción (2026-08-15) — la memoria por `user_session` no está garantizada.** Un proyecto concreto confirmó, con el mismo `user_session` verificado idéntico en el log de cada turno, que el motor central no acumuló de forma confiable los datos entregados en turnos anteriores de una misma conversación (una conversación de captura progresiva de datos volvió a pedir información ya dada, incluso reiniciando el flujo por completo en un turno posterior) — con `tokensUsed` reportado plano entre turnos en vez de creciente, señal adicional de que el historial no viajaba realmente en el contexto de inferencia. La regla 2 de esta sección describe el contrato **esperado** (onboarding una vez, memoria por sesión mantenida del lado de AURA); un proyecto que dependa de continuidad conversacional multi-turno debe **validarlo con una prueba en vivo propia** antes de asumirlo — no es un supuesto seguro solo porque el parámetro `user_session` se acepta y el primer turno de una conversación luce correcto.
+
+### 1.5 Ruta Directa de Alta Velocidad — Proveedor Alternativo como Primario (opcional)
+
+La sección 1.5 de `MOD_CONCIERGE_COGNITIVO_OMNICANAL.md` documenta el fallback cognitivo multi-proveedor como última instancia, solo si el canal M2M de este molde falla por completo. Un proyecto puede, como decisión explícita, **invertir esa prioridad**: intentar primero un proveedor externo genérico (configurado con el System Prompt completo en cada llamada, sin depender del onboarding de contexto persistente descrito arriba) y usar el canal M2M de este molde como respaldo, en vez de al revés.
+
+Cuándo tiene sentido esta inversión:
+- El proyecto prioriza **soberanía total** sobre el prompt (el proveedor alternativo recibe el prompt completo en cada llamada, así que el proyecto nunca depende de un onboarding externo desactualizado o de un contrato de sincronización aún no confirmado).
+- La latencia del canal M2M (WAN en particular) es consistentemente mayor que la del proveedor alternativo.
+- El proyecto ya documentó, con evidencia real (no una suposición), que el canal M2M no cumple una garantía que el flujo de negocio necesita (ej. la advertencia de memoria de sesión de esta misma sección).
+
+Esta inversión es puramente una decisión de orden de intento en el ensamblador local (Fase 1) — no cambia nada del contrato M2M de este molde ni requiere modificarlo. Documentar en el Codex del proyecto concreto cuál orden está activo y por qué, para que un mantenedor futuro no lo revierta sin conocer la razón original.
 
 ---
 
@@ -199,14 +212,14 @@ Enviado al mismo `{{BASE_URL}}{{GATEWAY_ENDPOINT}}` que el despacho de chat (sec
 - [ ] `500` — error interno del motor central. Reintentar una vez contra el mismo canal es aceptable; si persiste, degradar.
 - [ ] `504` (o timeout de lectura agotado) — el motor central tardó demasiado en responder. Tratar como fallo de ese canal específico, no como "AURA está caído" — el otro canal (LAN/WAN) puede seguir sano.
 - [ ] Cualquier otro código o cuerpo no-JSON — tratar como error genérico, nunca intentar `json_decode` sin verificar antes que el cuerpo es JSON válido.
-- [ ] Ninguna excepción de red o de parseo debe propagarse como error 500 crudo hacia el visitante final si este cliente corre detrás de un endpoint público — degradar a una respuesta controlada (mismo patrón "degraded_fallback" de `MOD_OPERADOR_COGNITIVO_OMNICANAL.md`).
+- [ ] Ninguna excepción de red o de parseo debe propagarse como error 500 crudo hacia el visitante final si este cliente corre detrás de un endpoint público — degradar a una respuesta controlada (mismo patrón "degraded_fallback" de `MOD_CONCIERGE_COGNITIVO_OMNICANAL.md`).
 
 ### Fase 3 — Telemetría y Registro de Consumo
 
 - [ ] Registrar, por cada petición: timestamp, canal usado (`lan`/`wan`), código HTTP, latencia de red medida por el cliente (wall-clock, ver 5.4), `latencyMs` reportado por AURA, `tokensUsed`, `tokensRemaining`, y si la petición tuvo éxito o no.
 - [ ] Nunca registrar el prompt completo del usuario ni la respuesta completa de la IA en logs de texto plano persistentes salvo que el proyecto tenga un requisito explícito de auditoría — preferir un hash o los primeros N caracteres.
 - [ ] Nunca registrar `{{API_KEY}}` en ningún log, ni siquiera parcialmente enmascarada junto a suficiente contexto como para ser reconstruible.
-- [ ] Si el proyecto ya tiene una tabla de telemetría omnicanal (ver Fase 2 de `MOD_OPERADOR_COGNITIVO_OMNICANAL.md`), reutilizarla con un `channel_type` o campo equivalente distinguiendo el origen `aura_m2m` — no crear una tabla paralela sin necesidad real.
+- [ ] Si el proyecto ya tiene una tabla de telemetría omnicanal (ver Fase 2 de `MOD_CONCIERGE_COGNITIVO_OMNICANAL.md`), reutilizarla con un `channel_type` o campo equivalente distinguiendo el origen `aura_m2m` — no crear una tabla paralela sin necesidad real.
 
 ### Fase 4 — Validación en Vivo (Diagnóstico)
 
@@ -264,7 +277,7 @@ Un `200 OK` en un solo nivel no es evidencia suficiente de que el módulo comple
 
 ## 5. Artefacto de Código de Referencia — `AuraSatelliteClient`
 
-> Molde genérico: sustituir los placeholders al momento de sembrar este archivo en un proyecto clonado — ningún host, tenant ni llave real de un cliente concreto debe vivir en este documento agnóstico (Mandato de Sincronización Génesis, igual que en `MOD_OPERADOR_COGNITIVO_OMNICANAL.md`).
+> Molde genérico: sustituir los placeholders al momento de sembrar este archivo en un proyecto clonado — ningún host, tenant ni llave real de un cliente concreto debe vivir en este documento agnóstico (Mandato de Sincronización Génesis, igual que en `MOD_CONCIERGE_COGNITIVO_OMNICANAL.md`).
 
 ### 5.1 Configuración (constructor)
 
@@ -565,8 +578,8 @@ final class AuraSatelliteClient
 
 ## 6. Notas de Gobernanza
 
-- Este documento vive en `knowledge/Santuario_Genesis/modulos/` (o el equivalente `modulos/` del proyecto que lo siembra) como **molde agnóstico** — ningún dato real de un cliente o tenant específico debe incorporarse aquí (Mandato de Sincronización Génesis, Ley de Fricción Cero, igual que en `MOD_OPERADOR_COGNITIVO_OMNICANAL.md`).
-- Este molde cubre exclusivamente el **canal de transporte M2M** (autenticación por llave estática, fallback LAN/WAN, mapeo de contrato). No define personalidad de agente, prompts de sistema, ni lógica de negocio — eso vive del lado del motor central AURA o, si el proyecto ya usa el patrón HMAC de `MOD_OPERADOR_COGNITIVO_OMNICANAL.md`, en su respectivo `.md` de conocimiento.
+- Este documento vive en `knowledge/Santuario_Genesis/modulos/` (o el equivalente `modulos/` del proyecto que lo siembra) como **molde agnóstico** — ningún dato real de un cliente o tenant específico debe incorporarse aquí (Mandato de Sincronización Génesis, Ley de Fricción Cero, igual que en `MOD_CONCIERGE_COGNITIVO_OMNICANAL.md`).
+- Este molde cubre exclusivamente el **canal de transporte M2M** (autenticación por llave estática, fallback LAN/WAN, mapeo de contrato). No define personalidad de agente, prompts de sistema, ni lógica de negocio — eso vive del lado del motor central AURA o, si el proyecto ya usa el patrón HMAC de `MOD_CONCIERGE_COGNITIVO_OMNICANAL.md`, en su respectivo `.md` de conocimiento.
 - Un proyecto no debe tener dos caminos de despacho activos simultáneamente sirviendo el mismo tráfico de producción (ver 1.0) — decidir cuál es el camino canónico es una decisión del Arquitecto, no una elección por defecto de la IA que siembra este molde.
 - Cualquier hallazgo de una validación en vivo (Fase 4) que revele un problema de configuración (ej. llave rechazada, tenant no coincide) se documenta en el Codex del proyecto concreto, nunca en este documento agnóstico.
 - (2026-07-31, v1.1) Añadidas la sección 2.1 (desambiguación de puerto multi-instancia), 3.2.1 (matriz de equivalencia de cabeceras `X-AURA-KEY`/`Authorization: Bearer`) y 4.1 (harness cURL de diagnóstico en 2 clics). Cualquier nombre comercial que un proyecto concreto le dé a una instancia satélite específica (ej. qué puerto usa, para qué línea de negocio) vive únicamente en el Codex de ese proyecto — nunca en este molde, igual que rige para "PG-AI Pink Glove AI" en `MOD_OPERADOR_COGNITIVO_OMNICANAL.md`.
@@ -574,3 +587,4 @@ final class AuraSatelliteClient
 - (2026-07-31, v1.3) Confirmado en validación real contra un servidor AURA en vivo: el payload de éxito puede venir envuelto bajo `"data"` en lugar de plano en la raíz (ver nota de compatibilidad en 3.3). El artefacto de referencia (5.4) ahora normaliza ambas formas. Este hallazgo se originó al conectar un proyecto concreto a la instancia Satélite (`:8090`) — el detalle de qué proyecto, qué puerto y qué llave se usó vive en su Codex, no aquí.
 - (2026-07-31, v1.3 — Aprovisionamiento Fricción Cero) Añadida la sección 4.1.1 (procedimiento de verificación en 4 niveles: cURL crudo, ejecutor PHP CLI, endpoint HTTP de diagnóstico, logs de servidor). Formaliza como checklist reutilizable la secuencia de validación que ya exigía la regla de avance de la sección 4 — un proyecto concreto que ejecutó y documentó estos 4 niveles en su Codex fue el origen de este formalismo, pero el procedimiento en sí es agnóstico desde su primera versión aquí.
 - (2026-08-03, v1.4 — Protocolo de Contexto Persistente M2M) Añadida la sección 1.4 (las 3 reglas de oro: AURA como agente autónomo, onboarding de contexto una sola vez, payload de chat ultra-liviano), la sección 3.4 (contrato provisional de onboarding — incluye un hallazgo de validación real: un servidor AURA concreto rechazó este contrato con `400`, confirmando que aún no hay un endpoint de onboarding oficial publicado) y la sección 5.5 (`syncTenantContext()` en el artefacto de referencia). Motivado por un hallazgo real de un proyecto concreto: reenviar el System Prompt completo (~10 KB) en cada mensaje de chat provocaba `502` intermitentes del lado de AURA — el detalle de qué proyecto, qué tamaño de prompt y qué latencias se midieron vive en su Codex, no aquí. **Nota de honestidad para el próximo proyecto que siembre este molde:** la migración al payload liviano no eliminó por sí sola la inestabilidad observada en el servidor AURA de referencia — un mensaje corto sin System Prompt adjunto obtuvo tanto una respuesta exitosa en ~5s como un `502` en ~30s en pruebas consecutivas. La causa raíz parece ser latencia/capacidad de inferencia inconsistente del lado de AURA, no exclusivamente el tamaño del payload — este molde documenta el protocolo correcto (reducir payload, mover el contexto a onboarding), pero no garantiza por sí solo la estabilidad del servidor central.
+- **(2026-08-15, v1.5)** Añadida una advertencia validada en producción a la sección 1.4: la memoria conversacional por `user_session` (regla de oro 2/3 de esa sección) no está garantizada — un proyecto concreto confirmó con evidencia real (mismo `user_session` en el log de cada turno, `tokensUsed` plano en vez de creciente) que el motor central no acumuló datos de turnos anteriores de forma confiable. Añadida también la sección 1.5 (Ruta Directa de Alta Velocidad — proveedor alternativo como primario, opcional), generalizando una decisión real de ese mismo proyecto: invertir la prioridad del fallback cognitivo multi-proveedor de `MOD_CONCIERGE_COGNITIVO_OMNICANAL.md` sección 1.5 cuando la soberanía total sobre el prompt y la latencia pesan más que la gobernanza centralizada. Ningún nombre de tabla, endpoint, ni dato de negocio específico del proyecto de origen se incorporó — esos detalles concretos viven en su Codex.

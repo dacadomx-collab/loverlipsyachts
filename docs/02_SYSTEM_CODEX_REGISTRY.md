@@ -809,3 +809,115 @@ Enlace directo agregado en 3 lugares: topbar de `pg_ai_hub.php` (junto al de reg
 
 ### Verificación técnica
 `php -l` limpio en: `pg_ai_config.php`, `pg_ai_hub.php`, `dashboard.php`, `api/prompt_editor.php`, `api/module_doc_editor.php`, `api/notification_templates.php`, `core/NotificationTemplateRepository.php`. `node --check` limpio en `assets/js/main.js`. Cero cambios a `pg_ai_widget.js`/`ai_widget_gateway.php` (Regla de Inmutabilidad respetada).
+
+## 📌 REGISTRO FORMAL — Repunte a `MOD_CONCIERGE_COGNITIVO_OMNICANAL.md` + Directiva de Idioma Local Probada en Vivo, Insuficiente (vigente, 2026-08-15)
+
+### Repunte y archivado (confirmado en vivo, no solo por lectura de código)
+`api/module_doc_editor.php` (`MODULE_DOC_PATH`) y `pg_ai_config.php` (Sección 6) repuntados de `modulos/MOD_OPERADOR_COGNITIVO_OMNICANAL.md` a `modulos/MOD_CONCIERGE_COGNITIVO_OMNICANAL.md` (v2.1). Docblocks de `core/ProxyBridge.php`, `core/OmnichannelRepository.php`, `api/public/ai_widget_gateway.php`, `api/public/whatsapp_webhook.php`, `core/EphemeralLinkManager.php`, `api/ephemeral_links.php`, `sql/003_create_omnichannel_schema.sql` y las referencias vivas dentro de `modulos/MOD_CONEXION_SATELLITE_AURA_M2M.md` actualizados al nuevo nombre (entradas de changelog fechadas de ambos documentos se dejaron intactas, como historial). `MOD_OPERADOR_COGNITIVO_OMNICANAL.md` (vía `git mv`, preserva historial) y `CONCIERGE_PROMPT_GENERICO.md` movidos a `modulos/archive/`. Verificado en vivo con emulación de navegador real: `pg_ai_config.php` → el panel "Editor del Módulo de Conocimiento" hizo su llamada automática `get`, `HTTP 200`, textarea cargó 91,701 caracteres empezando con `modulo: MOD_CONCIERGE_COGNITIVO_OMNICANAL` — no una inferencia de código, confirmación end-to-end real.
+
+### Directiva de idioma local en `dispatchViaAura()` — implementada, probada en vivo, insuficiente
+Directiva pedida: reenviar el prompt maestro completo en cada mensaje hacia AURA para forzar simetría de idioma EN↔ES. **Se identificó que esto es exactamente lo que causó los 502 de WAN documentados el 2026-08-03** (prompt de ~10KB por mensaje) — revertir esa decisión de arquitectura sin red de seguridad no se ejecutó sin antes confirmar el trade-off con el Arquitecto. Se optó, con su confirmación explícita, por una mitigación de menor riesgo: `ProxyBridge::LANGUAGE_LOCK_DIRECTIVE` (~150 bytes, no el prompt completo) antepuesto al mensaje del huésped en cada despacho vía AURA.
+
+**Prueba en vivo (navegador real, `chat-lab.php`, sesión limpia):**
+1. Verificación de despliegue: log de diagnóstico temporal confirmó, byte a byte, que la directiva sí llega a AURA (no era un problema de caché/OPcache) — línea removida después de confirmar.
+2. *"Ask about CNR Maranatha 120 for a corporate event"* → respuesta **100% en español**. Bug reproducido con la mitigación activa.
+3. *"Cotizar chárter a Balandra para 8 personas"* → respuesta correcta en español, solicitó fecha/experiencia antes de cotizar (cerrojo `NO_PRICE_WITHOUT_LEAD_DATA` aplicado).
+4. Los logs de AURA de este hito y de hitos anteriores muestran `"intent":"DEEP_PATH"` en **todas** las respuestas, incluyendo mensajes triviales — descarta la hipótesis previa de un enrutador de "vía rápida" que aplicara el contexto onboardeado de forma más débil en mensajes simples.
+
+**Conclusión honesta:** la directiva local no resuelve el bug. La causa raíz vive 100% en el contexto/modelo onboardeado del lado de AURA (`model: loverlips-agent`, `engine: ollama`, confirmado en el log de `AuraSatelliteClient`) — fuera del alcance de cualquier mitigación de este repositorio. Se conserva la directiva en el código como defensa de costo mínimo (no hace daño, podría ayudar en algunos casos), pero no se reporta como solución. Escalación al equipo de AXON sigue siendo la vía real de corrección (mensaje ya preparado en un hito anterior, pendiente de reenvío con esta nueva evidencia).
+
+### Ruta 3 (OpenAI) — confirmado sin cambios
+`core/.env` sigue sin `FALLBACK_AI_PROVIDER_KEY` — confirmado por lectura directa (no se expuso el valor, solo se confirmó ausencia de la línea). `core/OpenAiFallbackClient.php` no se tocó — ya estaba completo y correcto desde el hito del 2026-08-03. Decisión explícita de no reordenar la cascada de `ProxyBridge::forward()` hasta que exista una key real.
+
+### Verificación técnica
+`php -l` limpio en `core/ProxyBridge.php` tras la adición y posterior remoción de la línea de diagnóstico temporal. Cero cambios a `core/AuraSatelliteClient.php`, `core/OpenAiFallbackClient.php`, `api/public/ai_widget_gateway.php` (Regla de Inmutabilidad respetada — solo `ProxyBridge.php` fue el punto de inyección). `chat-lab.php`: recorrido completo en navegador real (carga + envío de mensaje) sin errores de consola ni respuestas `403`/`401`/`500` en ninguna llamada de red.
+
+## 📌 REGISTRO FORMAL — Endpoint Real `POST /sync-context` Confirmado, Bloqueado por Mismatch de Tenant (vigente, 2026-08-15)
+
+### Corrección de `AuraSatelliteClient::syncTenantContext()`
+El contrato provisional anterior (mismo endpoint de `dispatch()` + campo `action: 'sync_context'`, rechazado con `HTTP 400` el 2026-08-03) se reemplazó por el endpoint real publicado por AXON: `POST {ACADEP_AURA_GATEWAY_ENDPOINT}/sync-context` — ruta hermana del endpoint de chat, no el mismo endpoint con discriminador. `dispatchPayload()` ahora acepta un `$endpointSuffix` opcional para que `dispatch()` y `syncTenantContext()` compartan la misma cascada LAN→WAN→WAN-por-IP sin duplicar lógica. Payload ajustado a exactamente `{agent_id, tenant, system_prompt}` (sin `action`). Docblock de clase corregido — decía "diagnostic-only", desactualizado desde que se promovió a despacho real el 2026-08-03.
+
+### Prueba en vivo — dos intentos reales, mismo bloqueo
+Script de un solo uso (`core/_tmp_sync_context_once.php`, no permanente) leyó `core/prompts/pg_ai_lester_master.md` (v1.2, con el endurecimiento de idioma), intentó resolver `{{FLEET_CATALOG_TABLE}}` (degradó de forma segura al texto honesto de "catálogo no disponible" — la conexión a BD local falló por credenciales, problema de entorno local sin relación con AURA) y despachó vía `syncTenantContext()`.
+
+1. **Intento 1** — `tenant = "LOVER_LIPS_YACHTS"` (valor ya configurado en `ACADEP_AURA_TENANT`, nunca antes transmitido en un payload real porque `dispatch()` no envía `tenant`) → `HTTP 403` vía WAN, ~678ms: `{"status":"error","message":"El tenant del payload no coincide con el titular de la X-AURA-KEY.","data":[]}`.
+2. **Intento 2** — `tenant = "loverlipsyachts"` (valor especificado explícitamente por el Arquitecto) → mismo `HTTP 403`, mismo mensaje exacto, ~619ms.
+
+**Lectura honesta:** el endpoint, las cabeceras y los demás campos del contrato están correctos — AURA respondió con un error estructurado real de validación de negocio, no un 404 ni un error de conectividad. El único bloqueo confirmado es el valor exacto de `tenant` registrado contra esta `X-AURA-KEY` (la misma llave que sí funciona para `dispatch()` normal). Ninguno de los dos valores probados coincide. Se preparó una consulta corta para el equipo de AXON pidiendo el valor exacto — no se siguió adivinando contra el endpoint real de producción de un socio tras dos intentos fallidos con la misma causa.
+
+### Verificación técnica
+`php -l` limpio en `core/AuraSatelliteClient.php` y `core/_tmp_sync_context_once.php`. Cero cambios a `core/ProxyBridge.php`, `core/OpenAiFallbackClient.php`, `api/public/ai_widget_gateway.php` en este hito. El script de un solo uso permanece en `core/` (nombre `_tmp_*`, claramente marcado como desechable) hasta confirmar el valor correcto de tenant y completar la sincronización — se elimina en ese momento, no antes.
+
+## 🏁 CIERRE DE HITO — Sincronización de Contexto AURA Confirmada en Vivo (2026-08-15)
+
+### Resultado
+Tercer intento de `tenant`, con el valor oficial confirmado desde el servidor Linux de AURA (`"Lover Lips Yachts"`, espacios y mayúsculas exactas — distinto de los dos valores previos ya descartados: `LOVER_LIPS_YACHTS` y `loverlipsyachts`) → **`HTTP 200` real, vía canal WAN, ~824ms**: `{"status":"success","message":"Context synchronized successfully","data":{"agentId":"899fd35d-19bf-4dc3-af9a-5a30a9bb5403","tenant":"Lover Lips Yachts"}}`.
+
+### Cambios aplicados
+- `core/.env` → `ACADEP_AURA_TENANT` corregido de `"LOVER_LIPS_YACHTS"` a `"Lover Lips Yachts"` (fuente de verdad corregida, no un parche puntual).
+- Corregida además la detección de host de BD para scripts CLI: `api/conexion.php` decide local-vs-producción leyendo `HTTP_HOST`/`SERVER_ADDR`, ambos ausentes bajo CLI — el intento anterior había degradado el catálogo de flota al texto de "no disponible" por un `Access denied` contra el host equivocado. Sembrar `$_SERVER['HTTP_HOST'] = 'localhost'` antes del `require` resolvió esto sin tocar `conexion.php`. El payload final incluyó el catálogo real (13,143 bytes totales, contra 12,531 del intento fallido sin catálogo).
+- Script de un solo uso (`core/_tmp_sync_context_once.php`) eliminado tras confirmar el éxito — cumplió su propósito, no es parte permanente del código.
+
+### Estado del contexto onboardeado en AURA
+El agente `899fd35d-19bf-4dc3-af9a-5a30a9bb5403` ahora tiene el `system_prompt` v1.2 completo (regla de idioma endurecida + catálogo de flota real) onboardeado del lado del servidor. Pendiente de este mismo hito: auditoría en vivo contra `chat-lab.php` para confirmar si la re-sincronización del contexto completo — a diferencia del parche de idioma por mensaje probado antes, que no fue suficiente — sí corrige el mismatch de idioma en el origen.
+
+### Verificación técnica
+`php -l` limpio en `core/AuraSatelliteClient.php` (sin cambios de código en este hito respecto al hito anterior — el endpoint ya estaba corregido; el bloqueo era exclusivamente el valor de `tenant`). Ningún secreto (`ACADEP_AURA_KEY`, contraseñas de BD/FTP/SMTP) se expuso en este registro ni en la salida de consola.
+
+## 📌 REGISTRO FORMAL — Auditoría en Vivo Post-Sync: Idioma Resuelto, Memoria de Sesión y Escalación VIP con Hallazgos Reales (vigente, 2026-08-15)
+
+### Corrección de fuente de verdad — `ACADEP_AURA_TENANT`
+Tercer valor de `tenant`, confirmado oficialmente desde el servidor Linux de AURA: `"Lover Lips Yachts"` (espacios/mayúsculas exactas) — distinto de los dos descartados en el hito anterior. `core/.env` corregido en la fuente (no un override puntual). Sincronización repetida → `HTTP 200`, `"status":"success"`. Adicionalmente corregida la detección de host de BD para scripts CLI (sembrando `$_SERVER['HTTP_HOST']='localhost'` antes de `require conexion.php`) — el intento anterior había degradado el catálogo de flota al texto de fallback por un error de conexión ajeno a AURA.
+
+### ✅ Hallazgo 1 — Simetría de idioma: RESUELTA por la resincronización completa
+A diferencia del parche de idioma por mensaje (`LANGUAGE_LOCK_DIRECTIVE`, hito anterior — confirmado en tránsito pero ignorado por AURA), la resincronización del **contexto completo onboardeado** sí corrigió el comportamiento en el origen:
+- *"Ask about CNR Maranatha 120 for a corporate event"* → respuesta 100% en inglés. Bug ya NO se reproduce.
+- *"Cotizar chárter a Balandra para 8 personas"* → respuesta 100% en español, solicitando datos de lead antes de cotizar.
+
+Confirma que la causa raíz real era un contexto onboardeado desactualizado/incompleto del lado de AURA, no un problema de enrutamiento ni de tamaño de payload — hipótesis que ya se había descartado en el hito anterior.
+
+### ❌ Hallazgo 2 — Memoria conversacional entre turnos: NO funciona
+Prueba de flujo completo (3 turnos, mismo `session_id` confirmado idéntico en el log de AURA en los 3 turnos — `54c359b9c13243f0a9d3022fb877c458`):
+1. *"Cotizar chárter a Balandra para 8 personas"* → pide nombre, contacto, fecha.
+2. *"Para el 20 de septiembre. Me llamo Carlos Fernández, mi WhatsApp es 6121234567 y mi correo es carlos@example.com"* → en vez de reconocer los datos, vuelve a preguntar "¿Cuál es la fecha exacta del 20 de septiembre? ¿Cuántos pasajeros...? ¿Qué ruta...?" — ignorando tanto los datos nuevos como el PAX/ruta ya dados en el turno 1.
+3. *"Sí, confirmo, todos los datos son correctos..."* → reinicia por completo, pidiendo nombre/contacto/fecha desde cero.
+
+Evidencia adicional: `tokensUsed` se mantuvo plano entre turnos (864 → 922 → 882) en vez de crecer, lo esperable si el historial se estuviera acumulando genuinamente en el contexto enviado a inferencia. **El flujo nunca llega a completar los 4 datos de lead reconocidos por el modelo**, por lo tanto nunca se alcanzó el punto de generar el marcador `[[PGAI_QUOTE_LINK]]` — la generación de enlaces efímeros vía chat queda **sin verificar** por este bloqueo previo, no por un fallo del propio `PgAiActionProcessor`/`EphemeralLinkManager` (esos componentes no llegaron a ejecutarse porque el marcador nunca se emitió).
+
+### ❌ Hallazgo 3 — Escalación White-Glove: el marcador `[[PGAI_ESCALATE]]` no se emite
+Mensaje de prueba con ambas señales de escalación presentes a la vez (sección 4 del prompt maestro): *"We are organizing a corporate retreat for 25 executives and are very interested in the CNR Maranatha 120."* (>20 personas + mención explícita de la unidad insignia). Respuesta de AURA inspeccionada en crudo (log `RAW`, antes de cualquier post-procesamiento local) — cero rastro del marcador `[[PGAI_ESCALATE]]` en el texto. Confirmado además que el contacto no aparece con insignia VIP en el panel de Leads de `pg_ai_hub.php`, consistente con que `OmnichannelRepository::markVip()` nunca se invocó (no hubo marcador que procesar). Nota aparte: la persistencia a `omnichannel_*` de este turno específico también falló por el ya documentado `SQLSTATE[HY000]: 2006 MySQL server has gone away` (degradación best-effort preexistente, sin relación con la lógica de escalación).
+
+### Conclusión honesta de la auditoría
+La misión pedía validar idioma, cerrojos comerciales, y generación de cotizaciones efímeras. Resultado real, sin adornar:
+- **Idioma:** ✅ resuelto y confirmado en ambas direcciones tras la resincronización.
+- **`NO_PRICE_WITHOUT_LEAD_DATA`:** ✅ se respeta dentro de un mismo turno — nunca se observó un precio entregado sin los 4 datos.
+- **Confidencialidad de alianzas B2B:** ✅ nunca mencionada en ninguna prueba.
+- **Memoria de sesión multi-turno:** ❌ no funciona — bloquea el flujo real de captura orgánica descrito en el prompt maestro.
+- **Generación de cotización efímera (`[[PGAI_QUOTE_LINK]]`):** ⏸️ sin verificar — bloqueada por el hallazgo de memoria, no por un fallo propio.
+- **Escalación White-Glove (`[[PGAI_ESCALATE]]`):** ❌ no se emite pese a que ambas señales de la sección 4 estaban presentes en el mismo mensaje.
+
+Los hallazgos 2 y 3 son, con alta probabilidad, la misma clase de problema que el mismatch de idioma resuelto en este hito: instrucciones presentes en el `system_prompt` onboardeado que el modelo (`loverlips-agent` sobre `engine: ollama`) no sigue de forma confiable. A diferencia del idioma, no hay todavía una acción de un solo paso (como la resincronización) confirmada para corregir esto — requiere decisión explícita del Arquitecto sobre cómo proceder (ver informe entregado al usuario en este mismo hito).
+
+### Verificación técnica
+Cero cambios de código en este hito de auditoría (solo `core/.env`, ya cubierto en el cierre de hito anterior). Todas las pruebas corrieron contra `chat-lab.php` con emulación de navegador real (390×844, iPhone), sesión limpia por prueba salvo el flujo multi-turno (misma sesión, confirmado por `session_id` en los logs). Ningún secreto expuesto en este registro.
+
+## 📌 REGISTRO FORMAL — Typing Indicator, Ruta OpenAI Directa Promovida a Primaria, y Segunda Confirmación del Bloqueo de Memoria de Sesión (vigente, 2026-08-15)
+
+### Aclaración de nomenclatura — antes de cualquier cambio de código
+La directiva de este hito pedía revisar/tocar `core/AiOrchestrator.php`, `SentinelPostProcessor` y `EphemeralAccessTokenManager`, y probar el marcador `[[GENERATE_RESOURCE_LINK type="charter_quote" ...]]`. Verificado por lectura directa del sistema de archivos: **ninguno de esos tres nombres existe como archivo real en este proyecto.** Son nombres de artefactos de referencia **ilustrativos** dentro de `modulos/MOD_CONCIERGE_COGNITIVO_OMNICANAL.md` (secciones 6.4/6.5/6.6) — el molde agnóstico, no la implementación concreta. La implementación real de este proyecto usa `core/ProxyBridge.php` (orquestación), `core/PgAiActionProcessor.php` (post-procesador de marcadores) y `core/EphemeralLinkManager.php` (tokens efímeros), con el contrato real `[[PGAI_QUOTE_LINK route="balandra|espiritu_santo" title="..."]]` / `[[PGAI_ESCALATE]]` (`core/prompts/pg_ai_lester_master.md`, secciones 4-5). Se ejecutó la prueba solicitada contra el sistema real, no contra los nombres ilustrativos — ambos blueprints (`MOD_CONCIERGE_COGNITIVO_OMNICANAL.md` v2.2, `MOD_CONEXION_SATELLITE_AURA_M2M.md`) se actualizaron para dejar esta distinción explícita y evitar que se repita.
+
+### 1. Typing Indicator — implementado y verificado en vivo
+`chat-lab.php` — nuevas funciones `showTyping()`/`hideTyping()` en el script inline, invocadas al inicio de `sendMessage()` (justo después de `setBusy(true)`) y removidas tanto en el `.then()` de éxito como en el `.catch()` de error, antes de renderizar la respuesta/mensaje de error real — nunca queda huérfano. `assets/css/style.css` — `.chatlab-typing`/`.chatlab-typing-dot`/`@keyframes chatlab-typing-bounce`, 3 puntos con `animation-delay` escalonado, colores `var(--pink)`/`var(--gold)` alternados (cero hex crudo). Reutiliza la burbuja `.lly-ai-widget-msg--bot` existente — mismo contenedor visual que una respuesta real, sin salto de layout al reemplazarlo. Verificado con navegador real (390×844): indicador visible inmediatamente tras tocar un Quick Prompt, botón de enviar deshabilitado durante la espera, auto-scroll acompañó la aparición del indicador.
+
+### 2. Ruta directa OpenAI — promovida a primaria cuando hay llave configurada
+`core/ProxyBridge.php::forward()` — orden de despacho invertido: se intenta `dispatchViaOpenAiFallback()` primero (antes: solo tras fallar ambas rutas de AURA), con AURA como respaldo. `core/OpenAiFallbackClient.php::fromEnv()` ahora acepta `OPENAI_API_KEY` como alias de `FALLBACK_AI_PROVIDER_KEY` (canónico, ya expuesto en `pg_ai_hub.php` Sección C) — `core/EnvSettingsStore.php` actualizado (`ALLOWED_KEYS`/`SECRET_KEYS`) para permitir esa lectura. **Confirmado por lectura directa de `core/.env`: sigue sin existir ninguna de las dos llaves** — el reordenamiento queda con cero efecto observable en producción hasta que se configure una llave real (verificado con una prueba de humo en vivo: mensaje trivial en español respondió correctamente vía AURA, sin regresión). No se marca esta ruta como "validada" — sigue pendiente de una llave real, mismo criterio que el hito del 2026-08-03.
+
+### 3. Prueba end-to-end de cotización — segunda confirmación del bloqueo de memoria de sesión
+Conversación de 2 turnos exactamente como se pidió (Fecha+PAX+Ruta en el turno 1, Contacto en el turno 2) — diseño más simple que la prueba de 3 turnos del hito anterior, por lo tanto una barra más baja para el sistema de memoria. **Mismo resultado:** el turno 2 ignoró por completo los datos del turno 1 (volvió a preguntar fecha/PAX/ruta desde cero), pese a `session_id` idéntico confirmado en el log de AURA (`08898e083da34024b3bf1a9770c0daa8`) y `tokensUsed` prácticamente plano (907 → 925). El marcador `[[PGAI_QUOTE_LINK]]` nunca se emitió (verificado inspeccionando el texto crudo de ambas respuestas de AURA) — por lo tanto `PgAiActionProcessor`/`EphemeralLinkManager` nunca se ejecutaron y **no se generó ninguna URL de cotización efímera**. No es un fallo de esos dos componentes — es el mismo bloqueo de memoria de sesión ya documentado en el hito anterior, ahora confirmado por segunda vez con un diseño de prueba independiente.
+
+### 4. Blueprints maestros actualizados
+- `modulos/MOD_CONCIERGE_COGNITIVO_OMNICANAL.md` → v2.2: nueva sección 7.1 (Indicador de Espera, patrón agnóstico), sección 1.5 actualizada (inversión de prioridad del fallback multi-proveedor documentada como opción válida), nota de corrección de nomenclatura sobre `SentinelPostProcessor`/`EphemeralAccessTokenManager`/`AiOrchestrator` como nombres ilustrativos.
+- `modulos/MOD_CONEXION_SATELLITE_AURA_M2M.md` → v1.5: nueva advertencia en la sección 1.4 (memoria por `user_session` no garantizada, generalizando el hallazgo de este hito y el anterior), nueva sección 1.5 (Ruta Directa de Alta Velocidad — proveedor alternativo como primario, simétrica a la actualización del otro molde).
+
+### Verificación técnica
+`php -l` limpio en `chat-lab.php`, `core/ProxyBridge.php`, `core/OpenAiFallbackClient.php`, `core/EnvSettingsStore.php`. Balance de llaves CSS confirmado en `assets/css/style.css` tras la adición. Ambos blueprints verificados libres de nombres de marca/tenant/persona reales (grep dirigido, cero coincidencias en las adiciones de este hito). Ningún secreto (`ACADEP_AURA_KEY`, `FALLBACK_AI_PROVIDER_KEY`) expuesto en este registro ni en salida de consola.

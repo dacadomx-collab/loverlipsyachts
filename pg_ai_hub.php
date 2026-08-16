@@ -188,6 +188,11 @@ $lly_csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
             </button>
           </form>
         </div>
+
+        <a class="dash-card-btn dash-card-btn--secondary u-mt-xs" href="chat-lab.php">
+          <span data-lang="en">📱 Open Mobile Chat Lab</span>
+          <span data-lang="es">📱 Abrir Chat Lab Móvil</span>
+        </a>
       </div>
     </section>
 

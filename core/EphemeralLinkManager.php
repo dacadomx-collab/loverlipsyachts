@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * LOVER LIPS YACHTS — core/EphemeralLinkManager.php
  * PG-AI Pink Glove AI — Self-Destruct Link module. See
- * modulos/MOD_OPERADOR_COGNITIVO_OMNICANAL.md,
- * section on "Enlaces Efimeros / Self-Destruct Link Architecture", for the
+ * modulos/MOD_CONCIERGE_COGNITIVO_OMNICANAL.md,
+ * section 8 ("Enlaces Efimeros / Self-Destruct Link Architecture"), for the
  * agnostic blueprint this class implements for this project.
  *
  * A link dies after `max_views` reads (default 3, owner-configurable both

@@ -28,6 +28,12 @@ final class EnvSettingsStore
         'WHATSAPP_APP_SECRET',
         'FALLBACK_AI_PROVIDER_KEY',
         'FALLBACK_AI_PROVIDER_MODEL',
+        // Alias accepted alongside FALLBACK_AI_PROVIDER_KEY (2026-08-15) —
+        // FALLBACK_AI_PROVIDER_KEY stays canonical (matches the existing
+        // pg_ai_hub.php Section C field); this just means core/.env also
+        // works if OPENAI_API_KEY is what gets pasted in. See
+        // OpenAiFallbackClient::fromEnv() for the read-order.
+        'OPENAI_API_KEY',
     ];
 
     /** Keys whose value is never echoed back in full — only a masked tail. */
@@ -36,6 +42,7 @@ final class EnvSettingsStore
         'WHATSAPP_ACCESS_TOKEN',
         'WHATSAPP_APP_SECRET',
         'FALLBACK_AI_PROVIDER_KEY',
+        'OPENAI_API_KEY',
     ];
 
     public static function isAllowedKey(string $key): bool

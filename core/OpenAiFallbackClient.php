@@ -3,22 +3,27 @@ declare(strict_types=1);
 
 /**
  * LOVER LIPS YACHTS — core/OpenAiFallbackClient.php
- * PG-AI Pink Glove AI — Route 3 of the dispatch cascade (2026-08-03
- * directive): only called when both AURA routes (LAN + WAN, handled
- * internally by core/AuraSatelliteClient.php) have failed. Talks to
+ * PG-AI Pink Glove AI — direct high-speed dispatch route. Talks to
  * OpenAI's Chat Completions API directly — no other provider abstraction,
- * this is a narrow last-resort path, not a general LLM client.
+ * a single-purpose client, not a general LLM SDK.
  *
- * Configuration: FALLBACK_AI_PROVIDER_KEY / FALLBACK_AI_PROVIDER_MODEL in
- * core/.env (whitelisted via core/EnvSettingsStore.php, editable from
- * pg_ai_hub.php Section C — super_admin only).
+ * (2026-08-03) Originally wired as Route 3 — only reached if both AURA
+ * routes failed. (2026-08-15) Promoted by core/ProxyBridge.php::forward()
+ * to be tried FIRST whenever isConfigured() is true, with AURA as the
+ * fallback — explicit Architect directive for full local sovereignty over
+ * the prompt plus lower latency than AURA's WAN round-trip. Class/file
+ * name kept as-is (unforced rename avoided per Mandamiento 8/10).
  *
- * STATUS (2026-08-03): implemented against OpenAI's documented Chat
- * Completions contract, but NOT YET VALIDATED live — no real API key has
- * been provided yet (same situation AuraSatelliteClient::syncTenantContext()
- * was in before its contract was confirmed). Do not treat this path as
- * production-proven until it's been exercised against a real key and that
- * result is logged in docs/02_SYSTEM_CODEX_REGISTRY.md.
+ * Configuration: FALLBACK_AI_PROVIDER_KEY (canonical) or OPENAI_API_KEY
+ * (accepted alias) / FALLBACK_AI_PROVIDER_MODEL in core/.env (whitelisted
+ * via core/EnvSettingsStore.php, editable from pg_ai_hub.php Section C —
+ * super_admin only).
+ *
+ * STATUS (2026-08-15): implemented against OpenAI's documented Chat
+ * Completions contract, still NOT YET VALIDATED live — no real API key
+ * has been provided yet. Do not treat this path as production-proven
+ * until it's been exercised against a real key and that result is logged
+ * in docs/02_SYSTEM_CODEX_REGISTRY.md.
  */
 final class OpenAiFallbackClient
 {
@@ -36,8 +41,17 @@ final class OpenAiFallbackClient
     {
         $settings = EnvSettingsStore::getRaw($envPath);
 
+        // FALLBACK_AI_PROVIDER_KEY is canonical (matches the pg_ai_hub.php
+        // Section C field) — OPENAI_API_KEY is accepted as an alias so
+        // core/.env still works if that's the name used when a key is
+        // pasted in (2026-08-15).
+        $apiKey = $settings['FALLBACK_AI_PROVIDER_KEY'] ?? '';
+        if ($apiKey === '') {
+            $apiKey = $settings['OPENAI_API_KEY'] ?? '';
+        }
+
         return new self(
-            apiKey: $settings['FALLBACK_AI_PROVIDER_KEY'] ?? '',
+            apiKey: $apiKey,
             model: $settings['FALLBACK_AI_PROVIDER_MODEL'] ?? 'gpt-4o-mini',
         );
     }

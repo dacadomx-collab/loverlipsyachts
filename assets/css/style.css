@@ -4030,3 +4030,125 @@ body[data-active-lang="es"] .lly-editable:empty::before { content: attr(data-pla
   .lly-ai-widget-panel { left: .75rem; bottom: 5.5rem; }
   .lly-ai-widget-fab   { left: .75rem; }
 }
+
+/* =====================================================================
+   CHAT LAB CONSOLE (chat-lab.php) — mobile-first, full-height PG-AI
+   audit console for Lester to test the live widget endpoint from his
+   phone. Reuses .lly-ai-widget-messages/-msg/-inputrow/-input/-send
+   and .arf-grid (Mandamiento 10 — same endpoint/classes as the public
+   widget and the pg_ai_hub.php Section B testbed, not a third system).
+   ===================================================================== */
+body.chatlab-page {
+  height: 100dvh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+/* .topbar-actions is flex-shrink:0 by design (Section 8) — on very
+   narrow phones the logo + theme/lang toggles don't all fit on one
+   row. Elsewhere that just grows the page (scrollable); here body is
+   overflow:hidden for the 100dvh chat shell, so an unwrapped row would
+   silently clip the language toggle instead. Scoped to this page only
+   — wrapping to a second line costs nothing since chatlab-shell below
+   is flex:1 and absorbs whatever height the topbar ends up needing. */
+.chatlab-page .topbar-inner { flex-wrap: wrap; row-gap: .35rem; }
+@media (max-width: 460px) {
+  /* Logo wordmark + subtitle + theme toggle + language toggle don't
+     all fit on one row under ~460px even after topbar-logo's own
+     shrink/ellipsis budget — drop the subtitle line and the (optional
+     on a single-purpose test console) theme toggle so the language
+     toggle, which the brief calls for explicitly, always stays put. */
+  .chatlab-page .topbar-brand span { display: none; }
+  .chatlab-page .theme-toggle      { display: none; }
+}
+.chatlab-shell {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 640px;
+  margin-inline: auto;
+  padding: 1rem 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+.chatlab-header {
+  border-radius: var(--r-lg);
+  flex-shrink: 0;
+}
+.chatlab-header-brand { display: flex; align-items: center; gap: .65rem; }
+/* Pure-white render of the red brand mark for legibility on the pink/gold
+   gradient header — same technique already used by .footer-logo .logo-day
+   on the dark footer surface, not a new pattern. */
+.chatlab-header-logo { height: 28px; width: auto; object-fit: contain; flex-shrink: 0; filter: brightness(0) invert(1); }
+.chatlab-status { display: inline-flex; align-items: center; gap: .4rem; }
+.chatlab-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #fff;
+  animation: pulse-dot 1.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.chatlab-messages {
+  flex: 1;
+  min-height: 0;
+  border: 1px solid var(--ink-10);
+  border-radius: var(--r-lg);
+}
+
+.chatlab-quickprompts { flex-shrink: 0; gap: .5rem; justify-content: flex-start; }
+.chatlab-quick-btn {
+  flex: 1 1 auto;
+  min-height: 44px;
+  padding: .55rem .85rem;
+  border: 1px solid var(--pink-20);
+  border-radius: var(--r-full);
+  background: var(--pink-10);
+  color: var(--pink);
+  font-family: var(--font-body);
+  font-size: .78rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+  transition: var(--ease);
+}
+.chatlab-quick-btn:hover     { background: var(--pink); color: #fff; transform: translateY(-1px); }
+.chatlab-quick-btn:disabled  { opacity: .5; cursor: wait; transform: none; }
+
+.chatlab-inputrow {
+  flex-shrink: 0;
+  margin-bottom: 1rem;
+  border: 1px solid var(--ink-10);
+  border-radius: var(--r-full);
+}
+
+@media (max-width: 400px) {
+  .chatlab-quickprompts { gap: .4rem; }
+  .chatlab-quick-btn { font-size: .74rem; }
+}
+
+/* "Concierge typing…" indicator — reuses the .lly-ai-widget-msg--bot bubble
+   shell (same shape/position as a real reply) with 3 pulsing dots instead
+   of text. Injected/removed by chat-lab.php's own script around each
+   fetch — never left stranded because it shares the same success/catch/
+   finally cleanup path as the real reply. */
+.chatlab-typing { display: flex; align-items: center; gap: .3rem; padding-block: .85rem; }
+.chatlab-typing-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--pink);
+  animation: chatlab-typing-bounce 1.2s ease-in-out infinite;
+}
+.chatlab-typing-dot:nth-child(2) { background: var(--gold); animation-delay: .2s; }
+.chatlab-typing-dot:nth-child(3) { background: var(--pink); animation-delay: .4s; }
+
+@keyframes chatlab-typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: .45; }
+  30%           { transform: translateY(-4px); opacity: 1; }
+}

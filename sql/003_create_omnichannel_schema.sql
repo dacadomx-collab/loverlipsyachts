@@ -1,6 +1,6 @@
 -- =============================================================================
 -- LOVER LIPS YACHTS — sql/003_create_omnichannel_schema.sql
--- Fase 2 (Base de Datos Omnicanal) de modulos/MOD_OPERADOR_COGNITIVO_OMNICANAL.md
+-- Fase 2 (Base de Datos Omnicanal) de modulos/MOD_CONCIERGE_COGNITIVO_OMNICANAL.md
 -- Run manually once via phpMyAdmin / cPanel on u713871298_lly_db.
 -- Not executed automatically — no migration runner exists in this project
 -- (same convention as sql/001 and sql/002).

@@ -4,11 +4,16 @@ declare(strict_types=1);
 /**
  * LOVER LIPS YACHTS — api/module_doc_editor.php
  * super_admin-only endpoint for pg_ai_config.php's Knowledge Module
- * editor. Reads/writes modulos/MOD_OPERADOR_COGNITIVO_OMNICANAL.md — the
+ * editor. Reads/writes modulos/MOD_CONCIERGE_COGNITIVO_OMNICANAL.md — the
  * agnostic Santuario_Genesis blueprint (Mandato de Sincronización
  * Génesis), not any Lover Lips Yachts business content. Restricted to
  * super_admin because editing this file is a governance action on the
  * reusable molde, not a business-content edit Lester should be doing.
+ *
+ * (2026-08-15) Repointed from modulos/MOD_OPERADOR_COGNITIVO_OMNICANAL.md
+ * (now archived at modulos/archive/) to the consolidated v2.1 blueprint,
+ * which also absorbed the former modulos/CONCIERGE_PROMPT_GENERICO.md —
+ * see the fused doc's own section 9 for the full changelog.
  *
  * Security pipeline mirrors api/fleet_catalog.php: session auth, role
  * check (server-side — never trust a hidden UI element as the only
@@ -24,7 +29,7 @@ require __DIR__ . '/../core/auth_check.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
-const MODULE_DOC_PATH = __DIR__ . '/../modulos/MOD_OPERADOR_COGNITIVO_OMNICANAL.md';
+const MODULE_DOC_PATH = __DIR__ . '/../modulos/MOD_CONCIERGE_COGNITIVO_OMNICANAL.md';
 
 function lly_mde_json(string $status, array $extra = [], int $code = 200): never
 {

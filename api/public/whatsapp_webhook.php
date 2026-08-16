@@ -4,7 +4,7 @@ declare(strict_types=1);
 /**
  * LOVER LIPS YACHTS — api/public/whatsapp_webhook.php
  * PG-AI Pink Glove AI — WhatsApp Cloud API normalizer (Fase 3 + Fase 5 — see
- * modulos/MOD_OPERADOR_COGNITIVO_OMNICANAL.md).
+ * modulos/MOD_CONCIERGE_COGNITIVO_OMNICANAL.md).
  *
  * GET  — Meta's subscription handshake (hub.mode / hub.verify_token / hub.challenge).
  * POST — inbound message events. Signature-verified against the raw body

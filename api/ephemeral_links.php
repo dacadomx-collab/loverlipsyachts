@@ -5,7 +5,7 @@ declare(strict_types=1);
  * LOVER LIPS YACHTS — api/ephemeral_links.php
  * Owner-only endpoint for PG-AI Pink Glove AI's Self-Destruct Link module
  * (Dashboard panel). See core/EphemeralLinkManager.php and
- * modulos/MOD_OPERADOR_COGNITIVO_OMNICANAL.md for the underlying design.
+ * modulos/MOD_CONCIERGE_COGNITIVO_OMNICANAL.md for the underlying design.
  * "PG-AI Pink Glove AI" is this project's product name for the combined
  * Chatbot IA + Omnichannel Handshake + Ephemeral Quotes module — an
  * internal/owner-facing label, never surfaced in public visitor copy.
