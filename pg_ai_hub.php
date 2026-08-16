@@ -44,7 +44,7 @@ $lly_csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
   <meta name="description" content="Lover Lips Yachts — PG-AI Pink Glove AI Hub" />
   <meta name="robots" content="noindex, nofollow" />
   <title>Lover Lips Yachts · PG-AI Hub</title>
-  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="stylesheet" href="assets/css/style.css?v=<?= filemtime(__DIR__ . '/assets/css/style.css') ?>" />
   <link rel="icon" type="image/png" href="assets/img/logo.png" />
   <script src="assets/js/theme-init.js"></script>
 </head>

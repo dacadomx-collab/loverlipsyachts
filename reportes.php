@@ -29,7 +29,7 @@ $lly_public_book_url = $lly_is_local
   <meta name="description" content="Lover Lips Yachts — Technical Progress Reports" />
   <meta name="robots" content="noindex, nofollow" />
   <title>Lover Lips Yachts · Reports</title>
-  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="stylesheet" href="assets/css/style.css?v=<?= filemtime(__DIR__ . '/assets/css/style.css') ?>" />
   <link rel="icon" type="image/png" href="assets/img/logo.png" />
   <script src="assets/js/theme-init.js"></script>
 </head>

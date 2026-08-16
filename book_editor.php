@@ -124,7 +124,7 @@ $currentCover = htmlspecialchars($currentCover, ENT_QUOTES, 'UTF-8');
   <meta name="description" content="Lover Lips Yachts — Book Editor Studio" />
   <meta name="robots" content="noindex, nofollow" />
   <title>Lover Lips Yachts · Book Editor Studio</title>
-  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="stylesheet" href="assets/css/style.css?v=<?= filemtime(__DIR__ . '/assets/css/style.css') ?>" />
   <link rel="icon" type="image/png" href="assets/img/logo.png" />
   <script src="assets/js/theme-init.js"></script>
 </head>

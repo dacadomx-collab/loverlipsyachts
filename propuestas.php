@@ -47,7 +47,7 @@ $lly_fleet_pending = FleetCatalogRepository::TOTAL_FLEET_SIZE - count($lly_fleet
   <meta name="description" content="Lover Lips Yachts — Proposals: Content Validation, Fleet, Roadmap &amp; Alliance" />
   <meta name="robots" content="noindex, nofollow" />
   <title>Lover Lips Yachts · Proposals</title>
-  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="stylesheet" href="assets/css/style.css?v=<?= filemtime(__DIR__ . '/assets/css/style.css') ?>" />
   <link rel="icon" type="image/png" href="assets/img/logo.png" />
   <script src="assets/js/theme-init.js"></script>
 </head>

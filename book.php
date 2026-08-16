@@ -122,7 +122,7 @@ $hasSample = ($book['sample_chapter']['en'] !== '' || $book['sample_chapter']['e
   <meta name="description" content="Nine Lives. One True Love — a memoir by Lester Keizer. The story of a jungle boy who should have died many times, and the one true love that taught him how to live." />
   <meta name="robots" content="index, follow" />
   <title>Nine Lives. One True Love — by Lester Keizer</title>
-  <link rel="stylesheet" href="<?= $baseAssetsUrl ?>css/style.css" />
+  <link rel="stylesheet" href="<?= $baseAssetsUrl ?>css/style.css?v=<?= filemtime(__DIR__ . '/assets/css/style.css') ?>" />
   <link rel="icon" type="image/png" href="<?= $baseAssetsUrl ?>img/logo.png" />
   <script src="<?= $baseAssetsUrl ?>js/theme-init.js"></script>
 </head>

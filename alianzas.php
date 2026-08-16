@@ -83,7 +83,7 @@ $lly_batch2_ids = ['d', 'f', 'g', 'h', 'i'];
   <meta name="description" content="Lover Lips Yachts — Alliance Account Statement" />
   <meta name="robots" content="noindex, nofollow" />
   <title>Lover Lips Yachts · Alliance</title>
-  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="stylesheet" href="assets/css/style.css?v=<?= filemtime(__DIR__ . '/assets/css/style.css') ?>" />
   <link rel="icon" type="image/png" href="assets/img/logo.png" />
   <script src="assets/js/theme-init.js"></script>
 </head>

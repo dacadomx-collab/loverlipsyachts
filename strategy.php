@@ -25,7 +25,7 @@ if (!lly_is_authenticated()) {
   <meta name="description" content="Lover Lips Yachts — Nine Lives Organic Marketing Strategy" />
   <meta name="robots" content="noindex, nofollow" />
   <title>Lover Lips Yachts · Marketing Strategy</title>
-  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="stylesheet" href="assets/css/style.css?v=<?= filemtime(__DIR__ . '/assets/css/style.css') ?>" />
   <link rel="icon" type="image/png" href="assets/img/logo.png" />
   <script src="assets/js/theme-init.js"></script>
 </head>

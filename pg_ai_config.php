@@ -42,7 +42,7 @@ $lly_is_super_admin = ($_SESSION['lly_role'] ?? '') === 'super_admin';
   <meta name="description" content="Lover Lips Yachts — PG-AI Configuration" />
   <meta name="robots" content="noindex, nofollow" />
   <title>Lover Lips Yachts · PG-AI Config</title>
-  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="stylesheet" href="assets/css/style.css?v=<?= filemtime(__DIR__ . '/assets/css/style.css') ?>" />
   <link rel="icon" type="image/png" href="assets/img/logo.png" />
   <script src="assets/js/theme-init.js"></script>
 </head>

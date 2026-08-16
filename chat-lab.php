@@ -29,7 +29,7 @@ if (!lly_is_authenticated()) {
   <meta name="description" content="Lover Lips Yachts — AI Concierge Chat Lab, mobile audit console" />
   <meta name="robots" content="noindex, nofollow" />
   <title>Lover Lips Yachts · Chat Lab</title>
-  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="stylesheet" href="assets/css/style.css?v=<?= filemtime(__DIR__ . '/assets/css/style.css') ?>" />
   <link rel="icon" type="image/png" href="assets/img/logo.png" />
   <script src="assets/js/theme-init.js"></script>
 </head>
