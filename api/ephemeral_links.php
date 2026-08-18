@@ -68,12 +68,42 @@ try {
 $action = (string) ($_POST['action'] ?? '');
 $userId = (int) ($_SESSION['lly_user_id'] ?? 0);
 
-/** Renders a public URL for a token — same host, so it works on both XAMPP and Hostinger without config. */
+/**
+ * Renders a public URL for a token. (2026-08-18) Was HTTP_HOST-derived
+ * only, which silently dropped this project's subfolder (/loverlipsyachts/
+ * locally, /cockpit/ on production) — prefers APP_URL from core/.env
+ * (per-environment, not git-tracked) and only falls back to the
+ * host-derived guess if APP_URL isn't configured yet. See
+ * core/PgAiActionProcessor.php::publicUrl() for the sibling copy of this fix.
+ */
 function lly_el_public_url(string $token): string
 {
+    $appUrl = lly_el_read_app_url();
+    if ($appUrl !== '') {
+        return rtrim($appUrl, '/') . '/api/public/l.php?t=' . rawurlencode($token);
+    }
+
     $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
     $host   = $_SERVER['HTTP_HOST'] ?? 'localhost';
     return "{$scheme}://{$host}/api/public/l.php?t=" . rawurlencode($token);
+}
+
+function lly_el_read_app_url(): string
+{
+    $path = __DIR__ . '/../core/.env';
+    if (!is_readable($path)) {
+        return '';
+    }
+    foreach (file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+        $line = trim($line);
+        if ($line === '' || $line[0] === '#' || !str_starts_with($line, 'APP_URL')) {
+            continue;
+        }
+        if (preg_match('/^APP_URL\s*=\s*(.*)$/', $line, $m)) {
+            return trim($m[1], " \t\"'");
+        }
+    }
+    return '';
 }
 
 try {

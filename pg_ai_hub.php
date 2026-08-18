@@ -68,6 +68,10 @@ $lly_csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
         </a>
 
         <div class="topbar-actions">
+          <a href="agenda.php" class="topbar-back-btn">
+            <span data-lang="en">📅 Agenda</span>
+            <span data-lang="es">📅 Agenda</span>
+          </a>
           <a href="pg_ai_config.php" class="topbar-back-btn">
             <span data-lang="en">⚙️ Config</span>
             <span data-lang="es">⚙️ Configuración</span>

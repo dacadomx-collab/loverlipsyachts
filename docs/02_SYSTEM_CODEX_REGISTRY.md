@@ -1011,3 +1011,41 @@ Generalizados al molde agnóstico (`modulos/`) los patrones ya validados en este
 
 ### Verificación técnica
 El bloque `sql` de la sección 6.1 tiene paréntesis balanceados (57/57) y 6 `CREATE TABLE`. El nuevo bloque `php` de la sección 6.7 (`DeterministicLeadExtractor`) se extrajo a un archivo real y pasó `php -l` limpio. Escaneo dirigido sobre el archivo completo confirma cero menciones de nombres de marca/tenant/IP/ruta real de este proyecto. Ningún secreto expuesto.
+
+## 📌 REGISTRO FORMAL — Fix de Extracción de Nombre, Dominio Dinámico de Enlaces Efímeros, Script de Purga, y Módulo de Agenda (vigente, 2026-08-18)
+
+### 1. Corrección de nomenclatura — antes de tocar código
+La directiva de este hito pedía modificar `core/SentinelPostProcessor.php` — ese archivo **no existe** en este proyecto (es el nombre ilustrativo del molde agnóstico, `modulos/MOD_CONCIERGE_COGNITIVO_OMNICANAL.md` sección 6.6 — ver la advertencia de nomenclatura ya registrada en el hito v2.2). La implementación real de este proyecto es `core/PgAiActionProcessor.php`; ahí se aplicaron los cambios reales.
+
+### 2. Extractor de nombres — bug real confirmado y corregido
+`extractName()` requería que el nombre capturado empezara con mayúscula (guarda contra falsos positivos). El mensaje de prueba del Arquitecto (`"...mi nombre es david cabrera"`, todo en minúsculas) **nunca habría matcheado** con la versión anterior — confirmado antes de tocar código, no después. Corrección: el patrón ahora acepta cualquier capitalización; el filtro de falsos positivos se movió a una lista de stopwords sobre la primera palabra capturada (`muy`, `un`, `de`, `aquí`, `very`, `just`, etc. — cubre el caso más riesgoso, "soy" como verbo común fuera de una auto-presentación). Normalización con `mb_convert_case(..., MB_CASE_TITLE)`, no `ucwords()` — `ucwords()` solo entiende el rango ASCII y habría roto nombres con acento (ej. "José").
+
+**Nuevo:** `extractAndSummarizeLead()` ahora también sincroniza `omnichannel_contacts.display_name` (antes solo escribía `omnichannel_sessions.lead_name`) — el widget web nunca manda un `display_name` al crear el contacto (su único `external_id` es el UUID de sesión), así que sin este fix la tabla de Leads en Vivo caía al UUID crudo para cualquier lead cuyo nombre solo se supo a mitad de conversación. Nunca sobreescribe un `display_name` ya existente (ej. uno que WhatsApp sí hubiera mandado).
+
+Verificado en vivo, mensaje literal del Arquitecto (dos turnos — el segundo es el texto exacto pedido): `lead_name` = `"David Cabrera"`, `omnichannel_contacts.display_name` = `"David Cabrera"` (antes `NULL`), `lead_phone` = `"5512430059"` (de `"(55) 1243-0059"`).
+
+### 3. Dominio dinámico de enlaces efímeros — bug real, con evidencia directa de un hito anterior
+`core/PgAiActionProcessor.php::publicUrl()` y `api/ephemeral_links.php::lly_el_public_url()` armaban la URL pública solo con `$_SERVER['HTTP_HOST']`, sin contar con que este proyecto NO vive en la raíz del dominio en ningún entorno — local es `/loverlipsyachts/`, producción es `/cockpit/`. Evidencia directa: el enlace de cotización generado en el hito de la prueba de fuego de Roberto Garza fue literalmente `http://localhost/api/public/l.php?t=...` — sin el prefijo, un 404 garantizado. Corregido: ambas funciones ahora prefieren `APP_URL` (nuevo, `core/.env` — por entorno, nunca versionado en git, mismo patrón que `DB_HOST_LOCAL`), cayendo al comportamiento anterior basado en `HTTP_HOST` solo si `APP_URL` no está configurado todavía.
+
+`APP_URL="http://localhost/loverlipsyachts"` ya configurado en el `.env` local. **Pendiente de acción humana:** production necesita su propio `APP_URL="https://loverlipsyachts.com/cockpit"` en su `core/.env` — ese archivo no es el mismo que el local (no viaja por git), así que este cambio no puede llegar solo con un deploy; alguien con acceso al servidor debe agregarlo a mano.
+
+Verificado en vivo tras el fix: el enlace generado ahora es `http://localhost/loverlipsyachts/api/public/l.php?t=...` y resuelve HTTP 200 real.
+
+### 4. Script de purga — escrito, NO ejecutado
+`sql/010_reset_test_leads.sql` — revisadas las 26 sesiones existentes antes de escribirlo: todos los `session_uuid` son evidentemente tráfico de prueba (`smoketest-*`, `testsession*`, `livefiretest*`, `debugfiesta*`, `robertogarza*`, etc.), ninguno parece un huésped real. Mismo criterio que cada `sql/*.sql` anterior de este proyecto: manual, human-run — no lo ejecuté. `api/leads.php` ya degradaba correctamente a una lista vacía con `status:"success"` antes de este hito (verificado, no hizo falta tocar código ahí) — la clave de la respuesta es `leads`, no `data` como sugería la directiva; renombrarla habría roto el frontend ya funcionando (`assets/js/main.js`) sin ninguna ganancia funcional, así que se mantuvo `leads`.
+
+### 5. Módulo de Agenda / Calendario — construido, pendiente de `sql/011`
+`sql/011_create_booking_calendar_schema.sql` (nueva tabla `yacht_bookings`) + `api/bookings.php` (`list`/`detail`) + `agenda.php` (página independiente, script inline propio — mismo patrón que `chat-lab.php`/`aura_diagnostic.php`, no se agregó a `main.js`) + bloque CSS `.agenda-*` nuevo en `assets/css/style.css` reusando los tokens `--pink`/`--gold`/`--ink` existentes, cero paleta nueva.
+
+**Modelo de dos niveles, sin duplicar datos:** el nivel 🟡 (Interesados/En Cotización) se lee en vivo de `omnichannel_sessions` (leads del chatbot con ruta+fecha ya capturados, sección 4.4/6.7 del molde) — nunca se copia a `yacht_bookings`. El nivel 🟢 (Confirmados/Reservados) son filas reales en `yacht_bookings`, con depósito. Un lead que se formaliza en una reserva deja de aparecer en el nivel 🟡 automáticamente (`LEFT JOIN ... WHERE b.id IS NULL`), sin borrar ni duplicar nada.
+
+Filtros (yate, rango de PAX) y modal de detalle (dos bloques: campos + balance de pago Cash/Trade 50/50 para reservas formales, resumen ejecutivo para leads sin formalizar) implementados. Botón "Abrir Chat del Lead" enlaza a `pg_ai_hub.php?open_lead=ID` — nuevo soporte de deep-link agregado a `initLeadDetailModal()` (`assets/js/main.js`) para que ese parámetro abra el modal correspondiente automáticamente.
+
+Añadido a la whitelist de `.htaccess` (`agenda`, `bookings`) — el olvido de esto en un hito anterior costó una ronda completa de debugging, no se repitió esta vez. Enlace de navegación agregado al topbar de `pg_ai_hub.php`.
+
+**Bug real encontrado y corregido en el camino:** `api/bookings.php` accedía `$_POST['pax_min']`/`$_POST['pax_max']` sin `isset()` antes del operador `!==`, generando un *warning* de PHP que se colaba en el cuerpo de la respuesta HTTP antes del JSON — reproducido en vivo (la llamada sin esos filtros rompía el parseo JSON del lado del cliente), corregido, reverificado limpio.
+
+**Estado real, sin adornar:** la página carga, el CSRF funciona, y ambas consultas (`yacht_bookings` + leads sin formalizar) degradan a lista vacía con `status:"success"` — confirmado en el log que la causa es exactamente `Table 'u713871298_lly_db.yacht_bookings' doesn't exist`, no otro bug. **No se pudo probar el calendario con datos reales en este hito** porque `sql/011` todavía no se ha corrido — en cuanto se corra, el lead de David Cabrera (10 de diciembre, Isla Espíritu Santo, 4 PAX, ya capturado en este mismo hito) debería aparecer de inmediato en el nivel 🟡 sin necesidad de ninguna acción adicional. No se construyó formulario de alta/edición manual de reservas en este hito (fuera del alcance pedido — el pedido era vista de calendario + filtros + modal, no captura de datos).
+
+### Verificación técnica
+`php -l` limpio en `core/PgAiActionProcessor.php`, `api/ephemeral_links.php`, `api/bookings.php`, `agenda.php`, `pg_ai_hub.php`. `node --check` limpio en `assets/js/main.js`. Extractor de nombres unit-testeado (caso literal del Arquitecto + guardas de falso positivo + acentos) antes de la prueba end-to-end contra la app real. Enlace efímero verificado HTTP 200 real, no solo el string de la URL. Ningún secreto expuesto; `APP_URL` local no contiene credenciales.

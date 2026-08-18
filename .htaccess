@@ -42,7 +42,7 @@ Require all granted
     Require all denied
 </FilesMatch>
 
-<FilesMatch "^(index|login|strategy|book|book_editor|translate|test_infra|initialize_env|dashboard|reportes|alianzas|propuestas|ai_widget_gateway|pg_ai_hub|aura_diagnostic|openai_diagnostic|ephemeral_links|leads|pgai_settings|l|whatsapp_webhook|test_connection|fleet_catalog|pg_ai_config|prompt_editor|notification_templates|module_doc_editor|chat-lab)\.php$">
+<FilesMatch "^(index|login|strategy|book|book_editor|translate|test_infra|initialize_env|dashboard|reportes|alianzas|propuestas|ai_widget_gateway|pg_ai_hub|aura_diagnostic|openai_diagnostic|ephemeral_links|leads|pgai_settings|l|whatsapp_webhook|test_connection|fleet_catalog|pg_ai_config|prompt_editor|notification_templates|module_doc_editor|chat-lab|agenda|bookings|ai-showcase)\.php$">
     Require all granted
 </FilesMatch>
 

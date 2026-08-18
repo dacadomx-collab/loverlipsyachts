@@ -498,12 +498,7 @@ function initLeadDetailModal() {
     closeBtn.addEventListener('click', function () { dialog.close(); });
   }
 
-  tbody.addEventListener('click', function (e) {
-    var btn = e.target.closest('.leads-detail-btn');
-    if (!btn) return;
-    var sessionId = btn.getAttribute('data-session-id');
-    if (!sessionId) return;
-
+  function openLeadDetail(sessionId) {
     if (titleEl) { titleEl.textContent = 'Loading…'; }
     if (eyebrowEl) { eyebrowEl.textContent = ''; }
     if (summaryEl) { summaryEl.textContent = ''; }
@@ -551,7 +546,21 @@ function initLeadDetailModal() {
       if (titleEl) { titleEl.textContent = 'Error'; }
       if (summaryEl) { summaryEl.textContent = 'Network error — check your connection.'; }
     });
+  }
+
+  tbody.addEventListener('click', function (e) {
+    var btn = e.target.closest('.leads-detail-btn');
+    if (!btn) return;
+    var sessionId = btn.getAttribute('data-session-id');
+    if (sessionId) { openLeadDetail(sessionId); }
   });
+
+  // Deep link from agenda.php's "Open Lead Chat" button (?open_lead=ID) —
+  // opens straight to that lead's modal instead of just landing on the list.
+  try {
+    var deepLinkId = new URLSearchParams(window.location.search).get('open_lead');
+    if (deepLinkId) { openLeadDetail(deepLinkId); }
+  } catch (e) {}
 }
 
 /* ═══════════════════════════════════════════════════════════════════

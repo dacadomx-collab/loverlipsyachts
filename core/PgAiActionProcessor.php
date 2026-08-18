@@ -88,12 +88,48 @@ final class PgAiActionProcessor
         return str_replace($sentinel, self::publicUrl((string) $link['token']), $replyText);
     }
 
-    /** Same convention as api/ephemeral_links.php::lly_el_public_url() — same host the request arrived on, no hardcoded domain. */
+    /**
+     * (2026-08-18) Was HTTP_HOST-derived only — broke on any deployment
+     * where this codebase doesn't live at the web root. Confirmed live:
+     * this project runs at /loverlipsyachts/ locally and /cockpit/ on
+     * production, so a bare "{scheme}://{host}/api/public/l.php" silently
+     * dropped that prefix and produced a 404 in both places. APP_URL
+     * (core/.env, per-environment — this file is never git-tracked, so
+     * local and production each keep their own correct value permanently,
+     * same pattern as DB_HOST_LOCAL in api/conexion.php) fixes this by
+     * being explicit instead of derived. Same convention as
+     * api/ephemeral_links.php::lly_el_public_url().
+     */
     private static function publicUrl(string $token): string
     {
+        $appUrl = self::readAppUrl();
+        if ($appUrl !== '') {
+            return rtrim($appUrl, '/') . '/api/public/l.php?t=' . rawurlencode($token);
+        }
+
+        // Fallback only — used if APP_URL isn't set in core/.env yet. May
+        // produce a wrong path on any deployment mounted under a subfolder.
         $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
         $host   = $_SERVER['HTTP_HOST'] ?? 'localhost';
         return "{$scheme}://{$host}/api/public/l.php?t=" . rawurlencode($token);
+    }
+
+    private static function readAppUrl(): string
+    {
+        $path = __DIR__ . '/.env';
+        if (!is_readable($path)) {
+            return '';
+        }
+        foreach (file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+            $line = trim($line);
+            if ($line === '' || $line[0] === '#' || !str_starts_with($line, 'APP_URL')) {
+                continue;
+            }
+            if (preg_match('/^APP_URL\s*=\s*(.*)$/', $line, $m)) {
+                return trim($m[1], " \t\"'");
+            }
+        }
+        return '';
     }
 
     /* ═══════════════════════════════════════════════════════════════════
@@ -183,6 +219,26 @@ final class PgAiActionProcessor
                 error_log('[PG-AI · ActionProcessor] Lead field update skipped (has sql/009 been run?) — ' . $e->getMessage());
                 return;
             }
+
+            // Keep omnichannel_contacts.display_name in sync too — the web
+            // widget never sends one at contact-creation time (session UUID
+            // is the only external_id it has), so without this the Live
+            // Leads table falls through to showing the raw UUID for any
+            // lead whose name we only learned mid-conversation. Never
+            // overwrites an existing display_name (e.g. one a WhatsApp
+            // profile already supplied).
+            if (isset($extracted['lead_name'])) {
+                try {
+                    $pdo->prepare(
+                        'UPDATE omnichannel_contacts c
+                         JOIN omnichannel_sessions s ON s.contact_id = c.id
+                         SET c.display_name = :name
+                         WHERE s.id = :sid AND c.display_name IS NULL'
+                    )->execute(['name' => $extracted['lead_name'], 'sid' => $sessionId]);
+                } catch (\Throwable $e) {
+                    error_log('[PG-AI · ActionProcessor] Contact display_name sync skipped — ' . $e->getMessage());
+                }
+            }
         }
 
         self::regenerateSummary($pdo, $sessionId);
@@ -250,19 +306,41 @@ final class PgAiActionProcessor
         return null;
     }
 
+    /** Guards the riskiest trigger ("soy" is a common verb outside of self-introduction, e.g. "soy muy feliz") — checked against the first captured word regardless of which trigger matched, since a real name is never one of these anyway. */
+    private const NAME_STOPWORDS = [
+        'muy', 'un', 'una', 'de', 'del', 'el', 'la', 'los', 'las', 'aquí', 'aqui', 'ahora', 'bien', 'feliz', 'nuevo', 'nueva',
+        'very', 'just', 'here', 'now', 'fine', 'good', 'sure', 'not', 'from', 'new',
+    ];
+
     private static function extractName(string $text): ?string
     {
-        // Trigger phrase is case-insensitive ((?i:...), scoped) but the
-        // captured name itself stays case-SENSITIVE — it must actually be
-        // capitalized, or a phrase like "soy muy feliz" would get captured
-        // as a fake name.
-        $pattern = '/\b(?i:soy|me llamo|mi nombre es|i am|i\'m|my name is)\s+'
-            . '([A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ]+(?:\s+[A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ]+){0,2})/u';
-        if (preg_match($pattern, $text, $m)) {
-            $name = trim((string) preg_replace('/[,.;].*$/', '', $m[1]));
-            return $name !== '' ? $name : null;
+        // (2026-08-18) Trigger phrase AND the captured name are now BOTH
+        // case-insensitive — a guest typing in all lowercase ("mi nombre
+        // es david cabrera") is common and was previously missed entirely
+        // because the capture group required an already-capitalized word.
+        // The stopword guard below is what now does the false-positive
+        // filtering that capitalization used to do.
+        $pattern = '/\b(?:soy|me llamo|mi nombre es|i am|i\'m|my name is)\s+'
+            . '([a-zà-öø-ÿ]+(?:\s+[a-zà-öø-ÿ]+){0,2})/iu';
+
+        if (!preg_match($pattern, $text, $m)) {
+            return null;
         }
-        return null;
+
+        $name = trim((string) preg_replace('/[,.;!?].*$/', '', $m[1]));
+        if ($name === '') {
+            return null;
+        }
+
+        $firstWord = mb_strtolower(explode(' ', $name)[0]);
+        if (in_array($firstWord, self::NAME_STOPWORDS, true)) {
+            return null;
+        }
+
+        // mb_convert_case (not ucwords()) — ucwords() only understands the
+        // ASCII byte range and mangles accented names ("cabrera" is fine,
+        // but it would butcher e.g. "José").
+        return mb_convert_case($name, MB_CASE_TITLE, 'UTF-8');
     }
 
     private static function extractPax(string $text): ?int
