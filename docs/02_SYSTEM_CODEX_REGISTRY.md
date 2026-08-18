@@ -1002,3 +1002,12 @@ Sesión #26 devuelve el `summary` correcto arriba + 6 mensajes en orden cronoló
 
 ### Verificación técnica
 `php -l` limpio en `core/PgAiActionProcessor.php` (único archivo modificado este hito, el fix de fecha en español). Prueba de fuego completa corrida contra la base de datos real de Hostinger (única BD de este proyecto, ver hito anterior) — sin simulación, sin mocks. Ningún secreto expuesto en este registro ni en salida de consola; la llave AURA nueva se guardó sin imprimirse nunca en texto plano.
+
+## 📌 REGISTRO FORMAL — `MOD_CONCIERGE_COGNITIVO_OMNICANAL.md` Actualizado a v2.4 (vigente, 2026-08-18)
+
+Generalizados al molde agnóstico (`modulos/`) los patrones ya validados en este proyecto durante los hitos anteriores del día: schema DDL de referencia (sección 6.1) ampliado con las columnas de lead + `summary` que este proyecto ya tenía desde `sql/009`; sección 4.1 nombrando explícitamente la convención `[CONVERSATION HISTORY]` para el bloque de historial reinyectado; nuevo artefacto de referencia `DeterministicLeadExtractor` (sección 6.7, mismo aviso de "nombre ilustrativo, no de proyecto concreto" que las clases de referencia previas); Fase 8.5 del checklist formalizando la regla de una fila por sesión + modal de dos bloques.
+
+**Una adición NO sigue el patrón de las demás:** sección 3.5 (Consent Gate) se agregó marcada explícitamente como **propuesta, no validada en ningún proyecto concreto** — a diferencia de cada otra sección de ese documento, que solo generaliza algo ya estabilizado en producción. El Arquitecto pidió incorporarla directamente; se documentó con esa advertencia en vez de omitirla, para no comprometer la disciplina de honestidad que el propio documento exige de sí mismo (Protocolo de Actualización Secuencial en Cascada). Este proyecto (`loverlipsyachts.com`) **no tiene implementado** ningún mecanismo de consent gate — el patrón vive únicamente como propuesta en el molde, pendiente de una decisión de producto/cumplimiento legal explícita antes de construirse aquí.
+
+### Verificación técnica
+El bloque `sql` de la sección 6.1 tiene paréntesis balanceados (57/57) y 6 `CREATE TABLE`. El nuevo bloque `php` de la sección 6.7 (`DeterministicLeadExtractor`) se extrajo a un archivo real y pasó `php -l` limpio. Escaneo dirigido sobre el archivo completo confirma cero menciones de nombres de marca/tenant/IP/ruta real de este proyecto. Ningún secreto expuesto.

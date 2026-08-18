@@ -5,7 +5,7 @@ tipo: Blueprint de Construcción — Checklist Táctico + System Prompt Portable
 alcance: Genérico / Agnóstico de Stack Cliente (WordPress, HTML puro, React, o cualquier lenguaje) y de Proveedor LLM (Gemini, Claude, GPT o equivalente)
 nucleo_inferencia: PHP 8.x / MariaDB (servidor central) — prompt agnóstico de modelo
 clasificacion: Molde Reutilizable — Santuario_Genesis
-version: 2.3
+version: 2.4
 fecha: 2026-08-18
 autoridad: Arquitecto (DCD LABS)
 tono: Calma Ejecutiva (Executive Calm)
@@ -284,6 +284,18 @@ El Prompt Maestro (sección 2) nunca ejecuta una acción por sí mismo — cuand
 - Un marcador con un parámetro no reconocido (ej. un `type` sin plantilla registrada) se degrada a **remoción silenciosa + registro en log** — nunca se muestra el texto crudo `[[...]]` al usuario final, y nunca se propaga como error 500 hacia el canal de origen (mismo patrón de circuit breaker de la sección 1.5 y la Fase 1).
 - Añadir un nuevo tipo de marcador es una decisión de gobernanza explícita del proyecto concreto (se documenta en su Codex, con su propio nombre de negocio) — este molde define el contrato agnóstico, no la lista cerrada y final de marcadores posibles.
 
+### 3.5 Consent Gate — Consentimiento Informado para Captura de Datos (⚠️ Propuesto, no validado en producción)
+
+> **Nota de honestidad editorial, distinta al resto de este documento:** a diferencia de cada otra sección de este molde — que generaliza un hallazgo ya estabilizado en un proyecto concreto (Protocolo de Actualización Secuencial en Cascada, sección 9) — esta sección **no** tiene todavía esa base. Es un patrón de diseño recomendado, no una implementación ya construida ni probada en vivo en ningún proyecto que use este molde. Se documenta aquí como propuesta explícitamente marcada, no como regla validada, precisamente para no romper la disciplina que el resto de este documento sí sigue. Promuévase a texto sin esta advertencia solo después de estabilizarse en un proyecto concreto real, como cualquier otra sección.
+
+Este molde captura datos personales identificables (nombre, teléfono, correo — secciones 4.4/6.7) de forma orgánica, en el propio flujo conversacional. Eso no exime a un proyecto concreto de las obligaciones de privacidad de su jurisdicción — el patrón propuesto:
+
+- **Aviso, no bloqueo.** Un aviso breve de privacidad (qué se captura y para qué) debe ser alcanzable desde el primer contacto — pero no como una pantalla o mensaje que el huésped deba aceptar antes de poder escribir su primera pregunta. Interrumpir la fluidez orgánica de la conversación (sección 2) con una pared de consentimiento antes de cualquier intercambio es, en sí mismo, una fricción que el resto de este molde evita deliberadamente en cada otra decisión de diseño.
+- **Proporcionalidad por canal.** WhatsApp/Telegram ya llevan un consentimiento implícito de plataforma (el huésped inició el contacto hacia un número/cuenta de negocio conocido) — el aviso ahí puede vivir en el mensaje de bienvenida del canal, no repetirse cada turno. Un Widget Web, al no tener ese contexto de plataforma, es donde un enlace visible y persistente a la política de privacidad (nunca oculto ni en letra diminuta) importa más.
+- **Minimización.** Solo se captura lo que el Prompt Maestro (sección 2) realmente necesita para el cerrojo de negocio activo (ej. los datos de `NO_PRICE_WITHOUT_LEAD_DATA`, sección 3.1) — este molde no propone capturar ni retener ningún dato adicional "por si acaso".
+- **Registro del hecho de aviso, no del consentimiento como acción bloqueante.** Si un proyecto concreto necesita evidencia auditable de que el aviso fue mostrado (no que fue "aceptado" — eso es lo que este patrón evita convertir en un gate), un timestamp de primer contacto por sesión (ya disponible en `omnichannel_sessions.started_at`, sección 6.1) puede bastar, sin una columna ni un flujo nuevo dedicado.
+- La política de retención/eliminación de estos datos (cuánto tiempo vive un lead sin conversión, quién puede purgarlo) es una decisión de producto y de cumplimiento legal específica de cada proyecto y su jurisdicción — fuera del alcance agnóstico de este molde.
+
 ---
 
 ## 4. Reglas Operativas de Omnicanalidad
@@ -299,6 +311,8 @@ El Prompt Maestro (sección 2) nunca ejecuta una acción por sí mismo — cuand
 **Validado en producción (2026-08-18):** el mecanismo real para el segundo punto de arriba NO es delegar la memoria al motor central (aunque el proyecto haya adoptado el Protocolo de Contexto Persistente — sección 1.4/1.5.1) — un motor concreto mostró, en más de una prueba independiente, no sostener de forma confiable un dato dado en un turno anterior de la misma sesión. La forma que sí funcionó de punta a punta: el ensamblador local (Fase 1, `ProxyBridge` o equivalente) lee él mismo los últimos N turnos de `omnichannel_messages` para esa sesión — nunca confía en que el proveedor ya los tenga — y los reinyecta en cada despacho, con un límite distinto según la capacidad real del proveedor:
 - Un proveedor cuyo contrato de API ya soporta turnos reales alternados (rol usuario/asistente) los recibe como tal — no hace falta aplanarlos a texto, y no aplica la restricción de payload de la sección 1.5.1 (ese límite es específico del canal M2M/satélite).
 - Un canal con una restricción de tamaño de payload ya conocida (sección 1.5.1) recibe, en cambio, un recorte corto y de costo fijo — pocos turnos, cada uno truncado, presupuesto total acotado (decenas a unos cientos de bytes, nunca la transcripción completa) — mismo principio de "directiva de costo mínimo" que 1.5.1, aplicado ahora a historial real en vez de a una sola regla reforzada.
+
+**Nomenclatura estándar del bloque inyectado ("Context Stacking" local):** independientemente del proveedor, el bloque de historial reinyectado se antepone al mensaje del turno actual bajo un encabezado fijo y reconocible — `[CONVERSATION HISTORY]` (o el equivalente en el idioma del prompt del proyecto) — nunca mezclado sin marcar dentro del texto del turno actual. Esto le da al modelo una señal estructural clara de "esto es contexto pasado, no la pregunta de ahora", y le da a cualquier humano que inspeccione un log de despacho una forma inmediata de distinguir dónde termina el historial reinyectado y dónde empieza el mensaje real del huésped — el mismo principio de trazabilidad que ya rige el resto de este molde (sección 1.6).
 
 Esto no reemplaza el Protocolo de Contexto Persistente (sección 1.4) donde el proveedor lo soporte de forma confiable — es la capa de seguridad que hace cierto el primer punto de esta sección (4.1) incluso cuando esa promesa del proveedor falla, sin pagar el costo de payload que causó el hallazgo original de 502 (sección 1.4).
 
@@ -480,8 +494,10 @@ Por diseño, el `external_id` de WhatsApp (un número telefónico) y el de un Wi
   - [ ] Las acciones de escritura (crear/editar/eliminar) deben distinguirse de las de solo lectura (listar) en cualquier mecanismo de protección anti-CSRF de la sesión — ver nota de la Fase 5 sobre rotación de tokens.
 
 - [ ] **8.5 Visor de leads/conversaciones en tiempo real**
-  - [ ] Tabla de leads/conversaciones capturados, ordenada por actividad más reciente, con contacto, canal de origen, último mensaje, y una marca visual para perfiles de alto valor (ver White-Glove Escalation, sección 3.2, u homólogo del proyecto concreto).
+  - [ ] **Regla de oro: una sola fila por contacto/sesión, nunca por mensaje.** La tabla principal lista sesiones (Fase 2, `omnichannel_sessions`), no `omnichannel_messages` — un hilo de 20 turnos sigue siendo una fila. Columnas mínimas: nombre/contacto capturado (sección 4.4/6.7), fecha-hora de la última actividad, teléfono/canal de contacto, correo si aplica, estado + marca visual para perfiles de alto valor (White-Glove Escalation, sección 3.2, u homólogo del proyecto concreto).
   - [ ] Esta vista es de solo lectura — cualquier acción de escritura (marcar como atendido, escalar) es una acción explícita separada, nunca implícita al simplemente listar.
+  - [ ] **Detalle por fila vía modal, no navegación a otra página:** un botón de acción por fila (ej. "Ver Resumen y Charla") abre un modal con dos bloques — **(1) Resumen Ejecutivo**, el brief generado por plantilla de la sección 6.7, y **(2) Transcripción Completa**, el historial cronológico crudo de `omnichannel_messages` para esa sesión. Mantener ambos bloques separados es lo que evita la saturación de mensajes crudos en la vista principal — el resumen es lo que el operador necesita al primer vistazo; la transcripción completa queda un clic de distancia para cuando hace falta el detalle real.
+  - [ ] El modal se alimenta de una acción de solo lectura separada de la que lista la tabla (ej. `detail` vs. `list`) — pedir la transcripción completa de las 30 sesiones más recientes en la carga inicial de la página no escala y no es lo que el operador necesita de entrada.
 
 **Nota de concurrencia (aplica a toda esta fase y a la Fase 6):** si el panel carga varios paneles/tablas de forma simultánea al abrir la página (leads + plantillas + catálogo + credenciales, cada uno con su propia llamada de "listar"), y el mecanismo anti-CSRF del proyecto usa un token de sesión que rota en cada petición, **las llamadas de solo lectura no deben rotar ese token** — solo las que mutan estado. Rotar en una lectura invalida el token que las demás llamadas concurrentes ya llevaban consigo, produciendo fallos de "token inválido" que parecen un bug de JavaScript pero son una condición de carrera de sesión del lado del servidor. Este hallazgo se confirmó en un proyecto concreto — el detalle de la reproducción vive en su Codex, no aquí.
 
@@ -534,6 +550,18 @@ CREATE TABLE IF NOT EXISTS omnichannel_sessions (
     channel_id          BIGINT UNSIGNED NOT NULL,
     contact_id          BIGINT UNSIGNED NOT NULL,
     session_uuid        CHAR(36)        NOT NULL,
+    -- Campos de lead — llenados por la Capa Determinística Complementaria
+    -- (sección 6.7), nunca por el modelo directamente. NULL hasta que el
+    -- dato correspondiente aparezca en el texto del huésped; un campo ya
+    -- capturado nunca se sobreescribe con NULL por un turno posterior que
+    -- simplemente no lo repite (ver 6.7 para el porqué).
+    lead_name           VARCHAR(190)    NULL,
+    lead_phone          VARCHAR(60)     NULL,
+    lead_email          VARCHAR(190)    NULL,
+    lead_date           DATE            NULL,
+    lead_pax            SMALLINT UNSIGNED NULL,
+    lead_route          VARCHAR(190)    NULL COMMENT 'Ruta/experiencia solicitada — vocabulario libre por proyecto, ver sección 2.4',
+    summary             TEXT            NULL COMMENT 'Brief ejecutivo generado por plantilla (sección 6.7), no por el modelo — consumido por la Fase 8.5',
     status              ENUM('open','closed') NOT NULL DEFAULT 'open',
     started_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_activity_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1106,6 +1134,89 @@ final class SentinelPostProcessor
 }
 ```
 
+### 6.7 Clase de Referencia — Capa Determinística Complementaria (Extracción de Lead + Resumen)
+
+Artefacto agnóstico que respalda la extracción orgánica del Prompt Maestro (sección 2) con un paso de post-procesamiento **determinístico** — nunca otra llamada a un LLM — sobre el texto real del huésped, no sobre la respuesta del modelo. Generaliza el hallazgo de la sección 4.4: un motor central no siempre es fiable emitiendo datos en un formato estructurado bajo instrucción, así que esta capa nunca depende de que lo haga.
+
+```php
+<?php
+declare(strict_types=1);
+
+/**
+ * DeterministicLeadExtractor — expresiones regulares, no LLM, sobre el
+ * texto del huésped acumulado de una sesión. Re-escanea TODO el hilo en
+ * cada turno (no solo el turno actual) — un dato capturado en un turno
+ * temprano nunca se pierde solo porque un turno posterior no lo repite.
+ */
+final class DeterministicLeadExtractor
+{
+    /**
+     * @return array<string, string|int> Solo las claves efectivamente
+     *   encontradas — un llamador nunca debe sobreescribir una columna ya
+     *   poblada con NULL solo porque este turno no volvió a mencionar ese dato.
+     */
+    public static function extract(string $guestText): array
+    {
+        return array_filter([
+            'lead_email' => self::matchEmail($guestText),
+            'lead_phone' => self::matchPhone($guestText),
+            'lead_pax'   => self::matchPax($guestText),
+            // 'lead_name'/'lead_date'/'lead_route': mismo principio de
+            // expresión regular acotada — omitidos aquí por brevedad, el
+            // patrón exacto es una decisión de vocabulario/idioma del
+            // proyecto concreto (ver Codex de ese proyecto).
+        ], static fn ($v) => $v !== null);
+    }
+
+    private static function matchEmail(string $text): ?string
+    {
+        return preg_match('/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i', $text, $m) ? mb_strtolower($m[0]) : null;
+    }
+
+    private static function matchPhone(string $text): ?string
+    {
+        if (!preg_match('/(\+?\d[\d\s\-\(\)]{7,17}\d)/', $text, $m)) {
+            return null;
+        }
+        $digits = preg_replace('/[^\d+]/', '', $m[1]);
+        return (strlen((string) preg_replace('/\D/', '', $digits)) >= 8) ? $digits : null;
+    }
+
+    private static function matchPax(string $text): ?int
+    {
+        if (!preg_match('/\b(\d{1,3})\s*(?:pax|people|guests?)\b/i', $text, $m)) {
+            return null;
+        }
+        $n = (int) $m[1];
+        return ($n > 0 && $n <= 500) ? $n : null;
+    }
+
+    /**
+     * Brief ejecutivo generado por PLANTILLA — nunca otra llamada a un LLM,
+     * mismo razonamiento determinístico que extract(). Consumido por el
+     * visor de leads (Fase 8.5). $captured usa las mismas claves que
+     * extract() más cualquier campo ya persistido de turnos anteriores.
+     */
+    public static function buildSummary(array $captured): string
+    {
+        $parts = [];
+
+        if (!empty($captured['lead_route']) || !empty($captured['lead_pax']) || !empty($captured['lead_date'])) {
+            $ask = 'Solicitud';
+            if (!empty($captured['lead_route'])) { $ask .= ' — ' . $captured['lead_route']; }
+            if (!empty($captured['lead_pax']))   { $ask .= ' (' . $captured['lead_pax'] . ' pax)'; }
+            if (!empty($captured['lead_date']))  { $ask .= ', ' . $captured['lead_date']; }
+            $parts[] = $ask . '.';
+        }
+
+        $contact = array_filter([$captured['lead_name'] ?? null, $captured['lead_phone'] ?? null, $captured['lead_email'] ?? null]);
+        $parts[] = $contact ? 'Contacto: ' . implode(', ', $contact) . '.' : 'Contacto aún no capturado.';
+
+        return implode(' ', $parts);
+    }
+}
+```
+
 ---
 
 ## 7. Guía de Consumo Agnóstico del Widget Web
@@ -1210,3 +1321,10 @@ Dos requisitos no negociables si se implementa esta extensión:
 - **(2026-08-15, v2.1 — repunte y archivado) Este documento queda establecido como el estándar operativo definitivo del ecosistema.** Todo servicio de un proyecto concreto que antes leía/escribía el blueprint de infraestructura anterior fue repuntado hacia este archivo consolidado (el repunte en sí — nombres de endpoint, rutas, roles — es un hecho de un proyecto concreto y se documenta en su propio Codex, no aquí). Los dos documentos fuente (`MOD_OPERADOR_COGNITIVO_OMNICANAL.md` v1.3 y `CONCIERGE_PROMPT_GENERICO.md`) se movieron a `modulos/archive/` — se conservan como referencia histórica de cómo se llegó a esta versión, ya no como fuentes activas. Las referencias cruzadas vivas dentro de `MOD_CONEXION_SATELLITE_AURA_M2M.md` (molde hermano) que nombraban al blueprint anterior se actualizaron para apuntar aquí; sus entradas de changelog fechadas se dejaron intactas, como registro histórico. Ningún nombre de marca, ruta, ni tenant real se incorporó en este proceso.
 - **(2026-08-15, v2.2)** Añadida la sección 7.1 (Indicador de Espera / "Typing Indicator") generalizando un patrón de UX validado en un proyecto concreto. Actualizada la sección 1.5 (Fallback Cognitivo Multi-Proveedor) para documentar que la inversión de prioridad (proveedor alternativo como primario, canal M2M como respaldo) es una opción válida y explícitamente soportada, no solo el fallback de último recurso original — ver `MOD_CONEXION_SATELLITE_AURA_M2M.md` sección 1.5 (v1.5) para el detalle simétrico de esa misma decisión. **Corrección de nomenclatura importante:** las clases de referencia `SentinelPostProcessor` (sección 6.6) y `EphemeralAccessTokenManager` (sección 6.5), y el nombre de función `AiOrchestrator` (artefacto de la sección 6.4), son ejemplos ilustrativos de este documento agnóstico — nunca se deben tratar como nombres de clases reales de un proyecto concreto que ya haya sembrado este molde. Un proyecto que instancia esta plantilla típicamente les da sus propios nombres concretos (ver el Codex de ese proyecto) — confundir el nombre de referencia del molde con el nombre real de la implementación de un proyecto concreto llevó a un intento de prueba contra clases inexistentes en un hito reciente; queda documentado aquí para que no se repita.
 - **(2026-08-18, v2.3)** Un proyecto concreto validó de punta a punta, por primera vez, el mecanismo real de memoria conversacional cross-turno que la sección 4.1 ya prometía en abstracto desde v2.0 — hasta este hito, la promesa existía en el molde pero no se había confirmado operativa en ningún proyecto que lo hubiera sembrado (el motor central, incluso con Contexto Persistente onboardeado, no sostenía de forma confiable un dato de un turno anterior). Sección 4.1 ampliada con el patrón que sí funcionó: reinyección local explícita del historial reciente (nunca delegada al proveedor), con un límite de payload distinto según si el proveedor soporta turnos estructurados nativos o tiene una restricción de tamaño ya conocida (cross-referencia a 1.5.1). Nueva sección 4.4 (Extracción Determinística de Datos de Lead y Resumen Ejecutivo) generalizando un segundo hallazgo del mismo hito: no delegar al modelo la emisión de campos estructurados ni la generación del resumen — ambos determinísticos (regex + plantilla) en la capa de post-procesamiento local, por la misma desconfianza ya documentada en 1.5.1 sobre la fiabilidad del motor central en tareas de formato. Ningún nombre de marca, ruta comercial, ni dato de un tenant real se incorporó en este proceso — el hallazgo real y su verificación en vivo viven en el Codex de ese proyecto concreto, no aquí.
+- **(2026-08-18, v2.4)** Cuatro adiciones, tres validadas y una explícitamente marcada como propuesta:
+  - **6.1 (SQL DDL):** `omnichannel_sessions` ahora incluye las columnas de lead (`lead_name`/`lead_phone`/`lead_email`/`lead_date`/`lead_pax`/`lead_route`) y `summary` que la sección 4.4 (v2.3) ya asumía — un vacío heredado desde que esas columnas se validaron en un proyecto concreto sin propagarse nunca de vuelta al DDL de referencia de este molde.
+  - **4.1:** nombrada explícitamente la convención de encabezado fijo `[CONVERSATION HISTORY]` para el bloque de historial reinyectado (Context Stacking local) — una señal estructural para el modelo y para cualquier humano inspeccionando un log de despacho, distinguiendo contexto pasado del mensaje real del turno actual.
+  - **6.7 (nuevo):** artefacto de referencia `DeterministicLeadExtractor`, generalizando en código ilustrativo el patrón ya descrito en prosa en la sección 4.4. **Mismo aviso de nomenclatura que la entrada v2.2:** es un nombre de clase ilustrativo de este documento agnóstico, no el nombre real de ninguna clase de un proyecto concreto que ya haya sembrado este molde.
+  - **Fase 8.5 (checklist):** formalizada como regla de oro la vista de leads de una sola fila por sesión (nunca por mensaje) más el patrón de modal de dos bloques (Resumen Ejecutivo / Transcripción Completa) para el detalle por fila — generalizado de la misma implementación concreta que validó 4.1/4.4 en este mismo hito.
+  - **3.5 (nueva, marcada ⚠️ propuesta):** un patrón de Consent Gate para captura de datos personales en canales de mensajería, **explícitamente NO validado en ningún proyecto concreto** — a diferencia de cada otra entrada de este changelog, esta sección rompe deliberadamente el Protocolo de Actualización Secuencial en Cascada (sección 9) porque el Arquitecto solicitó incorporarla antes de esa estabilización real. Se documentó con una advertencia explícita en la sección misma en vez de omitirse, para no comprometer la disciplina de honestidad de este documento — no debe tratarse como regla probada hasta que un proyecto concreto la implemente y su Codex registre esa validación.
+  - Ningún nombre de marca, ruta comercial, ni dato de un tenant real se incorporó en este proceso.
