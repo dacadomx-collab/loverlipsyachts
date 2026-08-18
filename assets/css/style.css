@@ -3085,6 +3085,31 @@ body[data-active-lang="es"] ul[data-lang="es"] { display: flex; }
 }
 .chapter-dialog-body p:last-child { margin-bottom: 0; }
 
+/* ── Lead detail dialog (pg_ai_hub.php Section A) — reuses .chapter-dialog
+   shell; only the summary/transcript blocks below are lead-specific. ── */
+.lead-detail-block-title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 1.5rem 0 .6rem;
+}
+.lead-detail-block-title:first-of-type { margin-top: 0; }
+.lead-detail-summary {
+  font-size: .95rem;
+  line-height: 1.7;
+  color: var(--ink-60);
+  background: var(--surface-2);
+  border: 1px solid var(--gold-20);
+  border-radius: var(--r-md);
+  padding: 1rem 1.1rem;
+}
+.lead-detail-transcript {
+  max-height: 320px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--ink-10);
+}
+
 @media (min-width: 640px) {
   .editor-row--2col { flex-direction: row; }
 }
@@ -3864,37 +3889,6 @@ body[data-active-lang="es"] .lly-editable:empty::before { content: attr(data-pla
   color: var(--ink);
   margin: 2rem 0 .75rem;
 }
-
-.pgai-guardrail-badges { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: 1.5rem; }
-.pgai-guardrail-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: .4rem;
-  padding: .5rem .9rem;
-  border-radius: var(--r-full);
-  background: var(--gold-10);
-  border: 1px solid var(--gold-20);
-  color: var(--ink);
-  font-size: .85rem;
-  font-weight: 600;
-}
-
-/* Section B testbed — reuses .lly-ai-widget-* message/input classes,
-   embedded inline instead of a floating fab/panel. */
-.pgai-testbed-panel {
-  display: flex;
-  flex-direction: column;
-  background: var(--surface);
-  border: 1px solid var(--gold-20);
-  border-radius: var(--r-lg);
-  box-shadow: var(--sh-card);
-  overflow: hidden;
-}
-.pgai-testbed-messages {
-  height: 360px;
-  background: var(--surface-2);
-}
-.pgai-testbed-inputrow { border-top: 1px solid var(--ink-10); }
 
 /* Section C — connection settings grid */
 .pgai-settings-grid { display: flex; flex-direction: column; gap: 1.5rem; }

@@ -365,6 +365,28 @@ function initReportDialog() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   8b. CSRF TOKEN SYNC — shared across every panel below
+   pg_ai_config.php ships several independent panels (fleet, prompt
+   editor, templates, connection settings, module doc, AURA/OpenAI
+   tests), each with its own hidden csrf field, but the server keeps
+   only ONE session-wide token (see api/pgai_settings.php, api/
+   aura_diagnostic.php, api/openai_diagnostic.php — every successful
+   POST rotates it). If each panel only updated its own field, testing
+   one panel (e.g. "Test AURA Connection") would rotate the token
+   server-side while every OTHER panel's field kept the now-stale copy
+   — the next save from any other panel would fail with "Invalid or
+   expired CSRF token" even though nothing was wrong with that panel.
+   Every fetch callback below calls this instead of touching its own
+   field directly, so one rotation event stays valid for all panels
+   (naming convention: every csrf field's id ends in "-csrf-field").
+   ═══════════════════════════════════════════════════════════════════ */
+
+function llySyncCsrfFields(token) {
+  if (!token) return;
+  document.querySelectorAll('[id$="-csrf-field"]').forEach(function (el) { el.value = token; });
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    9a. LIVE LEADS PANEL (dashboard.php Card #1 — guards on
    #leads-table absence for every other page)
    ═══════════════════════════════════════════════════════════════════ */
@@ -393,24 +415,37 @@ function leadsRelativeWhen(isoDateTime) {
   return Math.round(diffHr / 24) + 'd';
 }
 
+/**
+ * One row per lead/session (never raw messages) — [Client Name] |
+ * [Date/Time] | [Phone/WhatsApp] | [Email] | [Status/VIP] | [Actions].
+ * Deterministically-captured fields (core/PgAiActionProcessor.php) take
+ * priority over the older free-text lead_contact/display_name, which
+ * stay only as a fallback for sessions captured before sql/009.
+ */
 function leadsRenderRows(leads) {
   var tbody = document.getElementById('leads-tbody');
   if (!tbody) return;
   if (!leads.length) {
-    tbody.innerHTML = '<tr><td colspan="4">'
+    tbody.innerHTML = '<tr><td colspan="6">'
       + '<span data-lang="en">No leads yet — new WhatsApp and website conversations will appear here.</span>'
       + '<span data-lang="es">Aún no hay leads — las conversaciones nuevas de WhatsApp y el sitio web aparecerán aquí.</span></td></tr>';
     return;
   }
   var rows = leads.map(function (l) {
-    var name = l.lead_contact || l.display_name || l.external_id || '—';
+    var name = l.lead_name || l.lead_contact || l.display_name || l.external_id || '—';
     var vipBadge = (l.is_vip == 1) ? ' <span class="leads-vip-badge" title="White-Glove Escalation">⭐ VIP</span>' : '';
-    var preview = l.last_message ? leadsEscape(l.last_message).slice(0, 80) : '—';
+    var statusLabel = l.status === 'open'
+      ? '<span data-lang="en">Open</span><span data-lang="es">Abierto</span>'
+      : '<span data-lang="en">Closed</span><span data-lang="es">Cerrado</span>';
     return '<tr>'
       + '<td>' + leadsEscape(name) + vipBadge + '</td>'
-      + '<td>' + leadsChannelLabel(l.channel_type) + '</td>'
-      + '<td>' + preview + '</td>'
       + '<td>' + leadsRelativeWhen(l.last_activity_at) + '</td>'
+      + '<td>' + (l.lead_phone ? leadsEscape(l.lead_phone) : '—') + '</td>'
+      + '<td>' + (l.lead_email ? leadsEscape(l.lead_email) : '—') + '</td>'
+      + '<td>' + statusLabel + '</td>'
+      + '<td><button type="button" class="dash-card-btn dash-card-btn--secondary leads-detail-btn" data-session-id="' + l.id + '">'
+      +   '<span data-lang="en">👁️ View Summary &amp; Chat</span><span data-lang="es">👁️ Ver Resumen y Charla</span>'
+      + '</button></td>'
       + '</tr>';
   }).join('');
   tbody.innerHTML = rows;
@@ -419,7 +454,7 @@ function leadsRenderRows(leads) {
 function leadsLoadList() {
   var tbody = document.getElementById('leads-tbody');
   if (!tbody) return;
-  var csrfField = document.getElementById('ephemeral-csrf-field');
+  var csrfField = document.getElementById('leads-csrf-field');
   var body = new URLSearchParams();
   body.set('action', 'list');
   body.set('csrf_token', csrfField ? csrfField.value : '');
@@ -429,15 +464,94 @@ function leadsLoadList() {
     body: body.toString(),
   }).then(function (res) { return res.json(); }).then(function (data) {
     if (data.status !== 'success') return;
-    if (csrfField && data.csrf_token) { csrfField.value = data.csrf_token; }
+    llySyncCsrfFields(data.csrf_token);
     leadsRenderRows(data.leads || []);
   }).catch(function () { /* degrade silently — panel just keeps its loading row */ });
 }
 
 function initLeadsPanel() {
   var table = document.getElementById('leads-table');
-  if (!table) return; /* only dashboard.php ships this panel */
+  if (!table) return; /* only pg_ai_hub.php Section A ships this panel */
   leadsLoadList();
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   9a2. LEAD DETAIL MODAL — "👁️ Ver Resumen y Charla" (pg_ai_hub.php
+   Section A — guards on #lead-detail-dialog absence). Event-delegated
+   on #leads-tbody so newly-rendered rows (after every leadsLoadList()
+   refresh) never need their own listener rebound.
+   ═══════════════════════════════════════════════════════════════════ */
+
+function initLeadDetailModal() {
+  var dialog = document.getElementById('lead-detail-dialog');
+  var tbody  = document.getElementById('leads-tbody');
+  if (!dialog || !tbody) return;
+
+  var closeBtn     = document.getElementById('lead-detail-close');
+  var eyebrowEl     = document.getElementById('lead-detail-eyebrow');
+  var titleEl       = document.getElementById('lead-detail-dialog-title');
+  var summaryEl     = document.getElementById('lead-detail-summary');
+  var transcriptEl  = document.getElementById('lead-detail-transcript');
+  var csrfField     = document.getElementById('leads-csrf-field');
+
+  if (closeBtn) {
+    closeBtn.addEventListener('click', function () { dialog.close(); });
+  }
+
+  tbody.addEventListener('click', function (e) {
+    var btn = e.target.closest('.leads-detail-btn');
+    if (!btn) return;
+    var sessionId = btn.getAttribute('data-session-id');
+    if (!sessionId) return;
+
+    if (titleEl) { titleEl.textContent = 'Loading…'; }
+    if (eyebrowEl) { eyebrowEl.textContent = ''; }
+    if (summaryEl) { summaryEl.textContent = ''; }
+    if (transcriptEl) { transcriptEl.innerHTML = ''; }
+    dialog.showModal();
+
+    var body = new URLSearchParams();
+    body.set('action', 'detail');
+    body.set('session_id', sessionId);
+    body.set('csrf_token', csrfField ? csrfField.value : '');
+
+    fetch('api/leads.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    }).then(function (res) { return res.json(); }).then(function (data) {
+      llySyncCsrfFields(data.csrf_token);
+
+      if (data.status !== 'success') {
+        if (titleEl) { titleEl.textContent = 'Error'; }
+        if (summaryEl) { summaryEl.textContent = data.message || 'Could not load this lead.'; }
+        return;
+      }
+
+      var s = data.session || {};
+      var name = s.lead_name || s.display_name || '—';
+      if (titleEl) { titleEl.textContent = name; }
+      if (eyebrowEl) {
+        eyebrowEl.textContent = leadsChannelLabel(s.channel_type) + (s.is_vip == 1 ? ' · ⭐ VIP' : '');
+      }
+      if (summaryEl) {
+        summaryEl.textContent = s.summary || 'No summary yet — not enough data captured.';
+      }
+
+      var messages = data.messages || [];
+      if (transcriptEl) {
+        transcriptEl.innerHTML = messages.length
+          ? messages.map(function (m) {
+              var who = m.direction === 'inbound' ? 'user' : 'bot';
+              return '<div class="lly-ai-widget-msg lly-ai-widget-msg--' + who + '">' + leadsEscape(m.content) + '</div>';
+            }).join('')
+          : '<p style="padding:1rem;color:var(--ink-60)">No messages.</p>';
+      }
+    }).catch(function () {
+      if (titleEl) { titleEl.textContent = 'Error'; }
+      if (summaryEl) { summaryEl.textContent = 'Network error — check your connection.'; }
+    });
+  });
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -461,7 +575,7 @@ function pgaiSettingsPost(action, extraFields) {
     body: body.toString(),
   }).then(function (res) {
     return res.json().then(function (data) {
-      if (csrfField && data.csrf_token) { csrfField.value = data.csrf_token; }
+      llySyncCsrfFields(data.csrf_token);
       return data;
     });
   });
@@ -499,28 +613,44 @@ function initPgaiSettingsPanel() {
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     var feedback = document.getElementById('pgai-settings-feedback');
-    var inputs = Array.prototype.slice.call(form.querySelectorAll('[data-setting-key]'));
+    var inputs = Array.prototype.slice.call(form.querySelectorAll('[data-setting-key]'))
+      .filter(function (input) { return input.value.trim() !== ''; });
 
-    var saves = inputs
-      .filter(function (input) { return input.value.trim() !== ''; })
-      .map(function (input) {
-        return pgaiSettingsPost('save', { key: input.getAttribute('data-setting-key'), value: input.value.trim() });
-      });
-
-    if (!saves.length) {
+    if (!inputs.length) {
       if (feedback) { feedback.textContent = 'Nothing to save — fill in a field first.'; }
       return;
     }
 
-    Promise.all(saves).then(function (results) {
-      var last = results[results.length - 1];
+    if (feedback) { feedback.textContent = 'Saving…'; }
+
+    // Sequential, NOT Promise.all: every 'save' call rotates the session-
+    // wide CSRF token server-side (api/pgai_settings.php). Saving multiple
+    // fields (e.g. the OpenAI key + model + Active AI Engine selector) used
+    // to fire one POST per field in parallel, all starting from the same
+    // token — only the first one the server happened to process could
+    // succeed; every other field came back "Invalid or expired CSRF token"
+    // even though nothing was wrong with it (reproduced live, 2026-08-18).
+    // Chaining guarantees each request waits for, and uses, the token the
+    // previous one just rotated to.
+    var lastResult = null;
+    var chain = inputs.reduce(function (promise, input) {
+      return promise.then(function () {
+        return pgaiSettingsPost('save', { key: input.getAttribute('data-setting-key'), value: input.value.trim() });
+      }).then(function (data) {
+        lastResult = data;
+      });
+    }, Promise.resolve());
+
+    chain.then(function () {
       if (feedback) {
-        feedback.textContent = (last && last.status === 'success') ? 'Saved.' : (last.message || 'Could not save.');
+        feedback.textContent = (lastResult && lastResult.status === 'success') ? 'Saved.' : ((lastResult && lastResult.message) || 'Could not save.');
       }
-      if (last && last.status === 'success') {
-        pgaiSettingsApply(last.settings || {});
+      if (lastResult && lastResult.status === 'success') {
+        pgaiSettingsApply(lastResult.settings || {});
         inputs.forEach(function (input) { if (input.type === 'password') { input.value = ''; } });
       }
+    }).catch(function () {
+      if (feedback) { feedback.textContent = 'Network error — check your connection.'; }
     });
   });
 }
@@ -547,7 +677,7 @@ function ephemeralPost(action, extraFields) {
     body: body.toString(),
   }).then(function (res) {
     return res.json().then(function (data) {
-      if (csrfField && data.csrf_token) { csrfField.value = data.csrf_token; }
+      llySyncCsrfFields(data.csrf_token);
       return data;
     });
   });
@@ -710,7 +840,7 @@ function fleetPost(action, extraFields) {
     body: body.toString(),
   }).then(function (res) {
     return res.json().then(function (data) {
-      if (csrfField && data.csrf_token) { csrfField.value = data.csrf_token; }
+      llySyncCsrfFields(data.csrf_token);
       return data;
     });
   });
@@ -865,7 +995,7 @@ function promptEditorPost(action, extraFields) {
     body: body.toString(),
   }).then(function (res) {
     return res.json().then(function (data) {
-      if (csrfField && data.csrf_token) { csrfField.value = data.csrf_token; }
+      llySyncCsrfFields(data.csrf_token);
       return data;
     });
   });
@@ -918,7 +1048,7 @@ function templatesPost(action, extraFields) {
     body: body.toString(),
   }).then(function (res) {
     return res.json().then(function (data) {
-      if (csrfField && data.csrf_token) { csrfField.value = data.csrf_token; }
+      llySyncCsrfFields(data.csrf_token);
       return data;
     });
   });
@@ -1005,7 +1135,7 @@ function moduleDocPost(action, extraFields) {
     body: body.toString(),
   }).then(function (res) {
     return res.json().then(function (data) {
-      if (csrfField && data.csrf_token) { csrfField.value = data.csrf_token; }
+      llySyncCsrfFields(data.csrf_token);
       return data;
     });
   });
@@ -1042,14 +1172,16 @@ function initModuleDocEditorPanel() {
 
 function initHandshakeTestPanel() {
   var btn = document.getElementById('handshake-test-btn');
-  if (!btn) return; /* only pg_ai_config.php Section 5 (super_admin) ships this panel */
+  if (!btn) return; /* only pg_ai_config.php Section 4 AURA fieldset (super_admin) ships this panel */
 
   var result    = document.getElementById('handshake-result');
-  var csrfField = document.getElementById('handshake-csrf-field');
+  var telemetry = document.getElementById('handshake-telemetry');
+  var csrfField = document.getElementById('pgai-settings-csrf-field'); /* shared with the enclosing #pgai-settings-form */
 
   btn.addEventListener('click', function () {
     btn.disabled = true;
     if (result) { result.textContent = 'Testing…'; }
+    if (telemetry) { telemetry.hidden = true; }
 
     var body = new URLSearchParams();
     body.set('action', 'handshake');
@@ -1060,18 +1192,77 @@ function initHandshakeTestPanel() {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: body.toString(),
     }).then(function (res) { return res.json(); }).then(function (data) {
-      if (csrfField && data.csrf_token) { csrfField.value = data.csrf_token; }
+      llySyncCsrfFields(data.csrf_token);
       if (!result) return;
       if (data.status === 'success' && data.result) {
         var r = data.result;
-        result.textContent = (r.success ? '✅ ' : '❌ ') + 'channel=' + r.channelUsed + ' http=' + r.httpCode
-          + (r.reportedLatencyMs ? ' latency=' + r.reportedLatencyMs + 'ms' : '')
-          + (r.errorMessage ? ' — ' + r.errorMessage : '');
+        var statusEl  = document.getElementById('handshake-status');
+        var latencyEl = document.getElementById('handshake-latency');
+        var tenantEl  = document.getElementById('handshake-tenant');
+        var engineEl  = document.getElementById('handshake-engine');
+        if (statusEl)  { statusEl.textContent  = r.success ? ('✅ Connected (HTTP ' + r.httpCode + ')') : ('❌ Error (HTTP ' + (r.httpCode || 'ERR') + ')'); }
+        if (latencyEl) { latencyEl.textContent = (r.reportedLatencyMs || r.networkLatencyMs) ? (r.reportedLatencyMs || r.networkLatencyMs) + ' ms' : '—'; }
+        if (tenantEl)  { tenantEl.textContent  = r.tenantName || '—'; }
+        if (engineEl)  { engineEl.textContent  = (r.engine || r.model) ? ((r.engine || '—') + ' / ' + (r.model || '—')) : '—'; }
+        if (telemetry) { telemetry.hidden = false; }
+        result.textContent = r.response || r.errorMessage || '';
       } else {
         result.textContent = data.message || 'Handshake failed.';
       }
     }).catch(function () {
       if (result) { result.textContent = 'Network error — check your connection.'; }
+    }).then(function () { btn.disabled = false; });
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   9h. PG-AI CONFIG — OPENAI TEST CONNECTION BUTTON (pg_ai_config.php,
+   super_admin only — guards on #openai-test-btn absence)
+   ═══════════════════════════════════════════════════════════════════ */
+
+function initOpenAiTestPanel() {
+  var btn = document.getElementById('openai-test-btn');
+  if (!btn) return; /* only pg_ai_config.php Section 4 (super_admin) ships this panel */
+
+  var telemetry = document.getElementById('openai-test-telemetry');
+  var response  = document.getElementById('openai-test-response');
+  var csrfField = document.getElementById('pgai-settings-csrf-field'); /* shared with the enclosing #pgai-settings-form */
+  var keyInput  = document.getElementById('pgai-openai-key');
+  var modelSel  = document.getElementById('pgai-openai-model');
+
+  btn.addEventListener('click', function () {
+    btn.disabled = true;
+    if (response) { response.textContent = 'Testing…'; }
+    if (telemetry) { telemetry.hidden = true; }
+
+    var body = new URLSearchParams();
+    body.set('action', 'test');
+    body.set('csrf_token', csrfField ? csrfField.value : '');
+    body.set('api_key', keyInput ? keyInput.value.trim() : '');
+    body.set('model', modelSel ? modelSel.value : '');
+
+    fetch('api/openai_diagnostic.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    }).then(function (res) { return res.json(); }).then(function (data) {
+      llySyncCsrfFields(data.csrf_token);
+      if (!response) return;
+      if (data.status === 'success' && data.result) {
+        var r = data.result;
+        var statusEl  = document.getElementById('openai-test-status');
+        var latencyEl = document.getElementById('openai-test-latency');
+        var modelEl   = document.getElementById('openai-test-model');
+        if (statusEl)  { statusEl.textContent  = r.success ? ('✅ Connected (HTTP ' + r.httpCode + ')') : ('❌ ' + (r.httpCode === 401 || r.httpCode === 403 ? 'Auth error' : 'Error') + ' (HTTP ' + (r.httpCode || 'ERR') + ')'); }
+        if (latencyEl) { latencyEl.textContent = r.latencyMs != null ? r.latencyMs + ' ms' : '—'; }
+        if (modelEl)   { modelEl.textContent   = r.model || '—'; }
+        if (telemetry) { telemetry.hidden = false; }
+        response.textContent = r.response || r.errorMessage || '';
+      } else {
+        response.textContent = data.message || 'Test failed.';
+      }
+    }).catch(function () {
+      if (response) { response.textContent = 'Network error — check your connection.'; }
     }).then(function () { btn.disabled = false; });
   });
 }
@@ -1116,12 +1307,14 @@ function llyInitAll() {
   llySafeInit(initBackToTop);      /* #back-to-top → scrollTo(0)                   */
   llySafeInit(initEphemeralLinksPanel); /* #ephemeral-links-table → create/list/revoke */
   llySafeInit(initLeadsPanel);          /* #leads-table → list recent WhatsApp/Web leads */
+  llySafeInit(initLeadDetailModal);     /* #lead-detail-dialog → "Ver Resumen y Charla" per-row modal */
   llySafeInit(initPgaiSettingsPanel);   /* #pgai-settings-form → get/save AURA+WhatsApp config */
   llySafeInit(initFleetCatalogPanel);   /* #fleet-catalog-table → create/list/update/delete vessels */
   llySafeInit(initPromptEditorPanel);        /* #prompt-editor-textarea → get/save master prompt */
   llySafeInit(initNotificationTemplatesPanel); /* #templates-list → list/update lead notification templates */
   llySafeInit(initModuleDocEditorPanel);     /* #moduledoc-editor-textarea → get/save knowledge module doc */
   llySafeInit(initHandshakeTestPanel);       /* #handshake-test-btn → one-click AURA handshake test */
+  llySafeInit(initOpenAiTestPanel);          /* #openai-test-btn → one-click OpenAI connection test */
 }
 
 if (document.readyState === 'loading') {

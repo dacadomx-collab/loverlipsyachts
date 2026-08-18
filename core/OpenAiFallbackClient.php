@@ -61,16 +61,32 @@ final class OpenAiFallbackClient
         return $this->apiKey !== '';
     }
 
+    /** Server-side use only (e.g. api/openai_diagnostic.php re-testing the persisted key against a different candidate model) — never echo this to the browser. */
+    public function getApiKey(): string
+    {
+        return $this->apiKey;
+    }
+
     /**
      * @return array{success: bool, response: ?string, errorMessage: ?string}
      * Never throws — network/API failures degrade to success=false so the
      * caller (core/ProxyBridge.php) can fall through to the final
      * controlled "still connecting" reply instead of a raw error.
      */
-    public function dispatch(string $systemPrompt, string $userMessage): array
+    /**
+     * @param array<int, array{role: string, content: string}> $history Prior
+     *   turns of this same session (oldest first), inserted between the
+     *   system prompt and the current user message — see
+     *   core/ProxyBridge.php::buildOpenAiHistoryMessages(). Empty by
+     *   default so every other caller (api/openai_diagnostic.php's test
+     *   button) is unaffected.
+     */
+    public function dispatch(string $systemPrompt, string $userMessage, array $history = []): array
     {
+        $start = microtime(true);
+
         if (!$this->isConfigured()) {
-            return ['success' => false, 'response' => null, 'errorMessage' => 'OpenAI fallback not configured (missing FALLBACK_AI_PROVIDER_KEY).'];
+            return $this->result(false, 0, $start, null, 'OpenAI fallback not configured (missing FALLBACK_AI_PROVIDER_KEY).');
         }
 
         try {
@@ -78,12 +94,13 @@ final class OpenAiFallbackClient
                 'model'    => $this->model,
                 'messages' => [
                     ['role' => 'system', 'content' => $systemPrompt],
+                    ...$history,
                     ['role' => 'user', 'content' => $userMessage],
                 ],
                 'max_tokens' => 600,
             ], JSON_THROW_ON_ERROR);
         } catch (\JsonException $e) {
-            return ['success' => false, 'response' => null, 'errorMessage' => 'Payload encoding failed: ' . $e->getMessage()];
+            return $this->result(false, 0, $start, null, 'Payload encoding failed: ' . $e->getMessage());
         }
 
         $ch = curl_init(self::ENDPOINT);
@@ -105,23 +122,36 @@ final class OpenAiFallbackClient
         curl_close($ch);
 
         if ($errno !== 0) {
-            return ['success' => false, 'response' => null, 'errorMessage' => 'Network error (curl ' . $errno . '): ' . curl_strerror($errno)];
+            return $this->result(false, 0, $start, null, 'Network error (curl ' . $errno . '): ' . curl_strerror($errno));
         }
 
         $decoded = json_decode((string) $response, true);
         if (!is_array($decoded)) {
-            return ['success' => false, 'response' => null, 'errorMessage' => 'Non-JSON response from OpenAI (HTTP ' . $httpCode . ').'];
+            return $this->result(false, $httpCode, $start, null, 'Non-JSON response from OpenAI (HTTP ' . $httpCode . ').');
         }
 
         if ($httpCode < 200 || $httpCode >= 300) {
-            return ['success' => false, 'response' => null, 'errorMessage' => (string) ($decoded['error']['message'] ?? 'OpenAI responded with HTTP ' . $httpCode)];
+            return $this->result(false, $httpCode, $start, null, (string) ($decoded['error']['message'] ?? 'OpenAI responded with HTTP ' . $httpCode));
         }
 
         $content = $decoded['choices'][0]['message']['content'] ?? null;
         if ($content === null || trim((string) $content) === '') {
-            return ['success' => false, 'response' => null, 'errorMessage' => 'OpenAI response had no message content.'];
+            return $this->result(false, $httpCode, $start, null, 'OpenAI response had no message content.');
         }
 
-        return ['success' => true, 'response' => (string) $content, 'errorMessage' => null];
+        return $this->result(true, $httpCode, $start, (string) $content, null);
+    }
+
+    /** @return array{success: bool, httpCode: int, latencyMs: int, model: string, response: ?string, errorMessage: ?string} */
+    private function result(bool $success, int $httpCode, float $start, ?string $response, ?string $errorMessage): array
+    {
+        return [
+            'success'      => $success,
+            'httpCode'     => $httpCode,
+            'latencyMs'    => (int) round((microtime(true) - $start) * 1000),
+            'model'        => $this->model,
+            'response'     => $response,
+            'errorMessage' => $errorMessage,
+        ];
     }
 }

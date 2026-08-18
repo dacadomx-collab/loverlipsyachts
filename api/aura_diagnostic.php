@@ -51,8 +51,15 @@ if (!in_array($action, ['handshake', 'prompt'], true)) {
     lly_aura_json('error', ['message' => 'Unknown action.', 'csrf_token' => $rotatedCsrf], 400);
 }
 
+// (2026-08-18) The old plain "diagnostic ping" wording got interpreted by
+// AURA's onboarded Lester persona as a service request — it applied
+// NO_PRICE_WITHOUT_LEAD_DATA and asked the diagnostic for a customer name
+// before "proceeding" (observed live, pg_ai_config.php's AURA test card).
+// This explicit framing is a best-effort fix, not a guarantee — see the
+// 2026-08-15 registry entry on AURA's fast-path not always honoring short
+// embedded directives.
 $prompt = $action === 'handshake'
-    ? 'diagnostic ping — respond with a short acknowledgement.'
+    ? '[SYSTEM HEALTH CHECK — this is an internal connectivity test, not a guest. Do not ask for a name, email, or any booking/customer details.] Reply with one short sentence confirming you received this message.'
     : trim((string) ($_POST['prompt'] ?? ''));
 
 if ($prompt === '') {

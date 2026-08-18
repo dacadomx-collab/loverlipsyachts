@@ -162,11 +162,15 @@ if (!lly_is_authenticated()) {
     if (!form || !input || !thread) return;
 
     function getSessionId() {
+      // localStorage (not sessionStorage, 2026-08-18) — the point is that
+      // reloading the page, or closing the tab and coming back later,
+      // reuses the same thread instead of starting a blank one every time.
       var key = 'lly_chatlab_session';
-      var id = sessionStorage.getItem(key);
+      var id = null;
+      try { id = localStorage.getItem(key); } catch (e) {}
       if (!id) {
         id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID().replace(/-/g, '') : ('c' + Date.now() + Math.random().toString(36).slice(2));
-        sessionStorage.setItem(key, id);
+        try { localStorage.setItem(key, id); } catch (e) {}
       }
       return id;
     }
@@ -258,6 +262,22 @@ if (!lly_is_authenticated()) {
         sendMessage(lang === 'es' ? btn.dataset.promptEs : btn.dataset.promptEn);
       });
     });
+
+    /* Reloading the page (or returning later, same localStorage session_id)
+       re-renders the prior thread instead of starting blank — only replaces
+       the default greeting bubbles if the session actually has history, so
+       a genuinely new visitor still sees the normal welcome message. */
+    function loadHistory() {
+      var url = 'api/public/ai_widget_gateway.php?action=history&session_id=' + encodeURIComponent(getSessionId());
+      fetch(url).then(function (res) { return res.json(); }).then(function (data) {
+        if (!data || data.status !== 'success' || !Array.isArray(data.messages) || !data.messages.length) return;
+        thread.innerHTML = '';
+        data.messages.forEach(function (m) {
+          addMessage(m.content || '', m.direction === 'inbound' ? 'user' : 'bot');
+        });
+      }).catch(function () { /* degrade silently — the default greeting bubbles stay as-is */ });
+    }
+    loadHistory();
   }());
   </script>
 

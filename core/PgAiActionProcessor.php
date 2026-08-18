@@ -95,4 +95,244 @@ final class PgAiActionProcessor
         $host   = $_SERVER['HTTP_HOST'] ?? 'localhost';
         return "{$scheme}://{$host}/api/public/l.php?t=" . rawurlencode($token);
     }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       DETERMINISTIC LEAD CAPTURE (2026-08-18)
+       Regex-based, on purpose — the AI's own output has already been shown
+       unreliable for structured extraction (session memory failures
+       documented 2026-08-15). Re-scans EVERY guest message in the session
+       on every turn (cheap at this volume) rather than only the latest one,
+       so a fact given in an earlier turn is never lost just because a later
+       turn doesn't repeat it — that re-scan IS the "preserve what's already
+       captured" mechanism, no separate merge bookkeeping needed. Requires
+       sql/009_add_lead_fields_and_summary.sql to have been run (lead_name/
+       lead_phone/lead_email/summary columns) — degrades to a no-op (logs
+       and returns) if they don't exist yet, never breaks the chat reply.
+       ═══════════════════════════════════════════════════════════════════ */
+
+    private const MONTHS = [
+        'enero' => 1, 'ene' => 1, 'january' => 1, 'jan' => 1,
+        'febrero' => 2, 'feb' => 2, 'february' => 2,
+        'marzo' => 3, 'mar' => 3, 'march' => 3,
+        'abril' => 4, 'abr' => 4, 'april' => 4, 'apr' => 4,
+        'mayo' => 5, 'may' => 5,
+        'junio' => 6, 'jun' => 6, 'june' => 6,
+        'julio' => 7, 'jul' => 7, 'july' => 7,
+        'agosto' => 8, 'ago' => 8, 'august' => 8, 'aug' => 8,
+        'septiembre' => 9, 'setiembre' => 9, 'sep' => 9, 'september' => 9, 'sept' => 9,
+        'octubre' => 10, 'oct' => 10, 'october' => 10,
+        'noviembre' => 11, 'nov' => 11, 'november' => 11,
+        'diciembre' => 12, 'dic' => 12, 'december' => 12, 'dec' => 12,
+    ];
+
+    private const ROUTE_KEYWORDS = [
+        'espíritu santo'  => 'Isla Espíritu Santo',
+        'espiritu santo'  => 'Isla Espíritu Santo',
+        'balandra'        => 'Balandra',
+        'tiburón ballena' => 'Nado con Tiburón Ballena',
+        'tiburon ballena' => 'Nado con Tiburón Ballena',
+        'whale shark'     => 'Nado con Tiburón Ballena',
+        'pink lips'       => 'Pink Lips',
+        'maranatha'       => 'CNR Maranatha 120',
+    ];
+
+    /**
+     * Called once per turn, after the guest's message is safely persisted
+     * (api/public/ai_widget_gateway.php, after OmnichannelRepository::
+     * persistInbound()) — needs $sessionId's full message history in the
+     * DB already, including the current turn. Best-effort: never throws,
+     * a DB/schema issue just skips this turn's capture.
+     */
+    public static function extractAndSummarizeLead(PDO $pdo, int $sessionId): void
+    {
+        try {
+            $stmt = $pdo->prepare(
+                'SELECT direction, content FROM omnichannel_messages WHERE session_id = :sid ORDER BY created_at ASC, id ASC'
+            );
+            $stmt->execute(['sid' => $sessionId]);
+            $rows = $stmt->fetchAll();
+        } catch (\Throwable $e) {
+            error_log('[PG-AI · ActionProcessor] Lead extraction skipped (history read failed) — ' . $e->getMessage());
+            return;
+        }
+
+        $guestText = implode("\n", array_map(
+            static fn (array $r) => (string) $r['content'],
+            array_filter($rows, static fn (array $r) => $r['direction'] === 'inbound'),
+        ));
+
+        if (trim($guestText) === '') {
+            return;
+        }
+
+        $extracted = array_filter([
+            'lead_name'  => self::extractName($guestText),
+            'lead_phone' => self::extractPhone($guestText),
+            'lead_email' => self::extractEmail($guestText),
+            'lead_date'  => self::extractDate($guestText),
+            'lead_pax'   => self::extractPax($guestText),
+            'lead_route' => self::extractRoute($guestText),
+        ], static fn ($v) => $v !== null);
+
+        if ($extracted) {
+            try {
+                $sets   = array_map(static fn ($col) => "{$col} = :{$col}", array_keys($extracted));
+                $sql    = 'UPDATE omnichannel_sessions SET ' . implode(', ', $sets) . ' WHERE id = :sid';
+                $pdo->prepare($sql)->execute($extracted + ['sid' => $sessionId]);
+            } catch (\Throwable $e) {
+                error_log('[PG-AI · ActionProcessor] Lead field update skipped (has sql/009 been run?) — ' . $e->getMessage());
+                return;
+            }
+        }
+
+        self::regenerateSummary($pdo, $sessionId);
+    }
+
+    /**
+     * Template-filled, not AI-generated — deliberate, same "deterministic"
+     * reasoning as the extraction above: reliable and free, versus another
+     * network call to a provider already shown flaky for this project.
+     */
+    private static function regenerateSummary(PDO $pdo, int $sessionId): void
+    {
+        try {
+            $stmt = $pdo->prepare(
+                'SELECT lead_route, lead_pax, lead_date, lead_name, lead_phone, lead_email
+                 FROM omnichannel_sessions WHERE id = :sid'
+            );
+            $stmt->execute(['sid' => $sessionId]);
+            $row = $stmt->fetch();
+            if (!$row) {
+                return;
+            }
+
+            $parts = [];
+
+            if ($row['lead_route'] || $row['lead_pax'] || $row['lead_date']) {
+                $ask = 'Solicitó chárter';
+                if ($row['lead_route']) { $ask .= ' a ' . $row['lead_route']; }
+                if ($row['lead_pax'])   { $ask .= ' para ' . $row['lead_pax'] . ' personas'; }
+                if ($row['lead_date'])  { $ask .= ' el ' . self::formatSpanishDate($row['lead_date']); }
+                $parts[] = $ask . '.';
+            }
+
+            $contactBits = array_filter([$row['lead_name'], $row['lead_phone'], $row['lead_email']]);
+            $parts[] = $contactBits
+                ? 'Datos de contacto confirmados: ' . implode(', ', $contactBits) . '.'
+                : 'Datos de contacto aún no capturados.';
+
+            $summary = trim(implode(' ', $parts));
+            if ($summary === '') {
+                return;
+            }
+
+            $pdo->prepare('UPDATE omnichannel_sessions SET summary = :s WHERE id = :sid')
+                ->execute(['s' => $summary, 'sid' => $sessionId]);
+        } catch (\Throwable $e) {
+            error_log('[PG-AI · ActionProcessor] Summary regeneration skipped — ' . $e->getMessage());
+        }
+    }
+
+    private static function extractEmail(string $text): ?string
+    {
+        if (preg_match('/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i', $text, $m)) {
+            return mb_strtolower($m[0]);
+        }
+        return null;
+    }
+
+    private static function extractPhone(string $text): ?string
+    {
+        if (preg_match('/(\+?\d[\d\s\-\(\)]{7,17}\d)/', $text, $m)) {
+            $digits = preg_replace('/[^\d+]/', '', $m[1]);
+            return (strlen((string) preg_replace('/\D/', '', $digits)) >= 8) ? $digits : null;
+        }
+        return null;
+    }
+
+    private static function extractName(string $text): ?string
+    {
+        // Trigger phrase is case-insensitive ((?i:...), scoped) but the
+        // captured name itself stays case-SENSITIVE — it must actually be
+        // capitalized, or a phrase like "soy muy feliz" would get captured
+        // as a fake name.
+        $pattern = '/\b(?i:soy|me llamo|mi nombre es|i am|i\'m|my name is)\s+'
+            . '([A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ]+(?:\s+[A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ]+){0,2})/u';
+        if (preg_match($pattern, $text, $m)) {
+            $name = trim((string) preg_replace('/[,.;].*$/', '', $m[1]));
+            return $name !== '' ? $name : null;
+        }
+        return null;
+    }
+
+    private static function extractPax(string $text): ?int
+    {
+        if (preg_match('/\b(\d{1,3})\s*(?:personas?|pax|people|guests?|huéspedes?)\b/iu', $text, $m)) {
+            $n = (int) $m[1];
+            return ($n > 0 && $n <= 500) ? $n : null;
+        }
+        return null;
+    }
+
+    private static function extractDate(string $text): ?string
+    {
+        // Spanish: "20 de Noviembre" / "20 de nov"
+        if (preg_match('/\b(\d{1,2})\s+de\s+([a-záéíóúñ]+)\b/iu', $text, $m)) {
+            $date = self::buildDate((int) $m[1], $m[2]);
+            if ($date !== null) {
+                return $date;
+            }
+        }
+        // English: "November 20" / "Nov 20th"
+        if (preg_match('/\b([a-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?\b/i', $text, $m)
+            && isset(self::MONTHS[mb_strtolower($m[1])])) {
+            return self::buildDate((int) $m[2], $m[1]);
+        }
+        return null;
+    }
+
+    private static function buildDate(int $day, string $monthName): ?string
+    {
+        $month = self::MONTHS[mb_strtolower($monthName)] ?? null;
+        if ($month === null || $day < 1 || $day > 31) {
+            return null;
+        }
+
+        try {
+            $candidate = new \DateTimeImmutable(sprintf('%04d-%02d-%02d', (int) date('Y'), $month, $day));
+        } catch (\Exception) {
+            return null;
+        }
+
+        // A named date with no year is assumed to mean "the next time this
+        // date occurs" — if it already passed this year, roll to next year.
+        if ($candidate < new \DateTimeImmutable('today')) {
+            $candidate = $candidate->modify('+1 year');
+        }
+
+        return $candidate->format('Y-m-d');
+    }
+
+    private const SPANISH_MONTHS = [
+        1 => 'enero', 2 => 'febrero', 3 => 'marzo', 4 => 'abril', 5 => 'mayo', 6 => 'junio',
+        7 => 'julio', 8 => 'agosto', 9 => 'septiembre', 10 => 'octubre', 11 => 'noviembre', 12 => 'diciembre',
+    ];
+
+    /** The summary is Spanish-only by design (internal Cockpit copy) — PHP's own format('F') would give the English month name, so this maps it explicitly rather than depending on the server locale. */
+    private static function formatSpanishDate(string $ymd): string
+    {
+        $date = new \DateTimeImmutable($ymd);
+        return $date->format('d') . ' de ' . self::SPANISH_MONTHS[(int) $date->format('n')];
+    }
+
+    private static function extractRoute(string $text): ?string
+    {
+        $lower = mb_strtolower($text);
+        foreach (self::ROUTE_KEYWORDS as $needle => $label) {
+            if (str_contains($lower, $needle)) {
+                return $label;
+            }
+        }
+        return null;
+    }
 }

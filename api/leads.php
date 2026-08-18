@@ -12,7 +12,10 @@ declare(strict_types=1);
  * POST-only, CSRF token (hash_equals + rotation), prepared statements.
  *
  * Actions (POST `action`):
- *   list — recent leads (session + contact + channel + last message)
+ *   list   — recent leads (session + contact + channel + last message)
+ *   detail — one session's executive summary + full message transcript
+ *            (`session_id` int param — the omnichannel_sessions.id, not
+ *            the public UUID) for pg_ai_hub.php's "Ver Resumen y Charla" modal
  */
 
 require __DIR__ . '/conexion.php';
@@ -65,6 +68,18 @@ switch ($action) {
         ]);
         // no break — lly_leads_json exits
 
+    case 'detail':
+        $sessionId = (int) ($_POST['session_id'] ?? 0);
+        if ($sessionId <= 0) {
+            lly_leads_json('error', ['message' => 'Missing or invalid session_id.', 'csrf_token' => $rotatedCsrf], 400);
+        }
+        $detail = lly_lead_detail($pdo, $sessionId);
+        if ($detail === null) {
+            lly_leads_json('error', ['message' => 'Lead not found.', 'csrf_token' => $rotatedCsrf], 404);
+        }
+        lly_leads_json('success', $detail + ['csrf_token' => $rotatedCsrf]);
+        // no break
+
     default:
         lly_leads_json('error', ['message' => 'Unknown action.', 'csrf_token' => $rotatedCsrf], 400);
 }
@@ -73,6 +88,7 @@ switch ($action) {
  * Most recent open/active conversations across WhatsApp and the web
  * widget, each with its latest message as a preview. Degrades to an
  * empty list (never a 500) if sql/003_create_omnichannel_schema.sql
+ * (or sql/009, for the lead_name/lead_phone/lead_email/summary columns)
  * has not been run yet on this environment — the panel still renders,
  * just with a "no leads yet" state.
  */
@@ -84,6 +100,7 @@ function lly_leads_list(PDO $pdo, int $limit): array
         $stmt = $pdo->query(
             "SELECT
                 s.id, s.session_uuid, s.lead_date, s.lead_pax, s.lead_route, s.lead_contact,
+                s.lead_name, s.lead_phone, s.lead_email, s.summary,
                 s.status, s.last_activity_at,
                 c.display_name, c.external_id, c.is_vip,
                 ch.channel_type,
@@ -105,5 +122,42 @@ function lly_leads_list(PDO $pdo, int $limit): array
     } catch (\PDOException $e) {
         error_log('[PG-AI · leads] Omnichannel schema not ready: ' . $e->getMessage());
         return [];
+    }
+}
+
+/** One session's lead fields/summary + its full ordered transcript, for the "Ver Resumen y Charla" modal. Null if the session doesn't exist. */
+function lly_lead_detail(PDO $pdo, int $sessionId): ?array
+{
+    try {
+        $stmt = $pdo->prepare(
+            "SELECT
+                s.id, s.lead_date, s.lead_pax, s.lead_route,
+                s.lead_name, s.lead_phone, s.lead_email, s.summary,
+                s.status, s.last_activity_at,
+                c.display_name, c.is_vip, ch.channel_type
+             FROM omnichannel_sessions s
+             JOIN omnichannel_contacts c ON c.id = s.contact_id
+             JOIN omnichannel_channels ch ON ch.id = s.channel_id
+             WHERE s.id = :sid
+             LIMIT 1"
+        );
+        $stmt->execute(['sid' => $sessionId]);
+        $session = $stmt->fetch();
+        if (!$session) {
+            return null;
+        }
+
+        $msgStmt = $pdo->prepare(
+            'SELECT direction, content, created_at
+             FROM omnichannel_messages
+             WHERE session_id = :sid
+             ORDER BY created_at ASC, id ASC'
+        );
+        $msgStmt->execute(['sid' => $sessionId]);
+
+        return ['session' => $session, 'messages' => $msgStmt->fetchAll()];
+    } catch (\PDOException $e) {
+        error_log('[PG-AI · leads] Lead detail query failed: ' . $e->getMessage());
+        return null;
     }
 }

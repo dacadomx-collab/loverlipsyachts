@@ -131,19 +131,22 @@ $lly_csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
           <span data-lang="en">Every conversation captured from the Website Widget and WhatsApp Business, in one unified thread per contact.</span>
           <span data-lang="es">Cada conversación capturada desde el Widget Web y WhatsApp Business, en un solo hilo unificado por contacto.</span>
         </p>
+        <input type="hidden" id="leads-csrf-field" value="<?= $lly_csrf ?>">
         <div class="ephemeral-panel">
           <div class="table-wrap">
             <table class="data-table" id="leads-table">
               <thead>
                 <tr>
-                  <th><span data-lang="en">Contact</span><span data-lang="es">Contacto</span></th>
-                  <th><span data-lang="en">Channel</span><span data-lang="es">Canal</span></th>
-                  <th><span data-lang="en">Last Message</span><span data-lang="es">Último Mensaje</span></th>
-                  <th><span data-lang="en">When</span><span data-lang="es">Cuándo</span></th>
+                  <th><span data-lang="en">Client Name</span><span data-lang="es">Nombre del Cliente</span></th>
+                  <th><span data-lang="en">Date / Time</span><span data-lang="es">Fecha / Hora</span></th>
+                  <th><span data-lang="en">Phone / WhatsApp</span><span data-lang="es">Teléfono/WhatsApp</span></th>
+                  <th>Email</th>
+                  <th><span data-lang="en">Status</span><span data-lang="es">Estado</span></th>
+                  <th><span data-lang="en">Actions</span><span data-lang="es">Acciones</span></th>
                 </tr>
               </thead>
               <tbody id="leads-tbody">
-                <tr><td colspan="4"><span data-lang="en">Loading…</span><span data-lang="es">Cargando…</span></td></tr>
+                <tr><td colspan="6"><span data-lang="en">Loading…</span><span data-lang="es">Cargando…</span></td></tr>
               </tbody>
             </table>
           </div>
@@ -152,49 +155,27 @@ $lly_csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
     </section>
 
     <!-- ═══════════════════════════════════════════════════════════════
-         SECTION B — CHATBOT TESTBED
+         LEAD DETAIL DIALOG — opens from a Live Leads row's
+         "👁️ Ver Resumen y Charla" button (Section A)
     ═══════════════════════════════════════════════════════════════ -->
-    <section class="section section-white" id="pgai-section-b" aria-labelledby="pgai-testbed-title">
-      <div class="container">
-        <h2 class="section-title" id="pgai-testbed-title">
-          <span data-lang="en">🧪 B. Chatbot Testbed</span>
-          <span data-lang="es">🧪 B. Banco de Pruebas del Chatbot</span>
-        </h2>
-        <p class="section-desc">
-          <span data-lang="en">Talk to PG-AI exactly as a real visitor would — this panel calls the same live endpoint as the site widget (api/public/ai_widget_gateway.php), so what you see here is what guests get.</span>
-          <span data-lang="es">Habla con PG-AI exactamente como lo haría un visitante real — este panel llama al mismo endpoint en vivo que el widget del sitio (api/public/ai_widget_gateway.php), así que lo que ves aquí es lo que reciben los huéspedes.</span>
-        </p>
+    <dialog class="chapter-dialog" id="lead-detail-dialog" aria-labelledby="lead-detail-dialog-title">
+      <div class="chapter-dialog-inner">
+        <button type="button" class="chapter-dialog-close" id="lead-detail-close" aria-label="Close">✕</button>
+        <p class="chapter-dialog-eyebrow" id="lead-detail-eyebrow"></p>
+        <h2 class="chapter-dialog-title" id="lead-detail-dialog-title"></h2>
+        <div class="chapter-dialog-body">
+          <h3 class="lead-detail-block-title">
+            <span data-lang="en">📋 Executive Summary</span><span data-lang="es">📋 Resumen Ejecutivo</span>
+          </h3>
+          <p id="lead-detail-summary" class="lead-detail-summary"></p>
 
-        <div class="pgai-guardrail-badges">
-          <span class="pgai-guardrail-badge" title="The AI never quotes a price until Date + PAX + Route + Contact are captured.">
-            🔒 <span data-lang="en">NO_PRICE_WITHOUT_LEAD_DATA</span><span data-lang="es">NO_PRICE_WITHOUT_LEAD_DATA</span>
-          </span>
-          <span class="pgai-guardrail-badge" title="C-Level / UHNWI profiles escalate to a human, never the 50/50 Cash/Trade structure.">
-            🥂 <span data-lang="en">White-Glove Escalation</span><span data-lang="es">Escalación de Guante Blanco</span>
-          </span>
+          <h3 class="lead-detail-block-title">
+            <span data-lang="en">💬 Full Transcript</span><span data-lang="es">💬 Transcripción Completa</span>
+          </h3>
+          <div class="lly-ai-widget-messages lead-detail-transcript" id="lead-detail-transcript"></div>
         </div>
-
-        <div class="pgai-testbed-panel">
-          <div class="lly-ai-widget-messages pgai-testbed-messages" id="pgai-testbed-messages">
-            <div class="lly-ai-widget-msg lly-ai-widget-msg--bot" data-lang="en">Hi! Ask me anything about the fleet, the book, or your charter.</div>
-            <div class="lly-ai-widget-msg lly-ai-widget-msg--bot" data-lang="es">¡Hola! Pregúntame lo que quieras sobre la flota, el libro o tu chárter.</div>
-          </div>
-          <form class="lly-ai-widget-inputrow pgai-testbed-inputrow" id="pgai-testbed-form">
-            <input type="text" class="lly-ai-widget-input" id="pgai-testbed-input" maxlength="2000" autocomplete="off"
-                   data-placeholder-en="Type your message…" data-placeholder-es="Escribe tu mensaje…"
-                   aria-label="Message / Mensaje" />
-            <button type="submit" class="lly-ai-widget-send" id="pgai-testbed-send" aria-label="Send / Enviar">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
-            </button>
-          </form>
-        </div>
-
-        <a class="dash-card-btn dash-card-btn--secondary u-mt-xs" href="chat-lab.php">
-          <span data-lang="en">📱 Open Mobile Chat Lab</span>
-          <span data-lang="es">📱 Abrir Chat Lab Móvil</span>
-        </a>
       </div>
-    </section>
+    </dialog>
 
     <!-- ═══════════════════════════════════════════════════════════════
          CONFIG LINK — AURA/WhatsApp credentials, Master Prompt, Fleet
@@ -361,68 +342,6 @@ $lly_csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
   </button>
 
   <script src="assets/js/main.js" defer></script>
-
-  <!-- Section B testbed — page-specific inline script, same pattern as
-       book.php's public widget (only reuses the endpoint + CSS classes,
-       embedded inline instead of a floating fab/panel). -->
-  <script>
-  (function () {
-    var form    = document.getElementById('pgai-testbed-form');
-    var input   = document.getElementById('pgai-testbed-input');
-    var sendBtn = document.getElementById('pgai-testbed-send');
-    var thread  = document.getElementById('pgai-testbed-messages');
-    if (!form || !input || !thread) return;
-
-    function getSessionId() {
-      var key = 'lly_pgai_testbed_session';
-      var id = sessionStorage.getItem(key);
-      if (!id) {
-        id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID().replace(/-/g, '') : ('t' + Date.now() + Math.random().toString(36).slice(2));
-        sessionStorage.setItem(key, id);
-      }
-      return id;
-    }
-
-    function currentLang() {
-      return (document.body && document.body.dataset.activeLang === 'es') ? 'es' : 'en';
-    }
-
-    function addMessage(text, who) {
-      var el = document.createElement('div');
-      el.className = 'lly-ai-widget-msg lly-ai-widget-msg--' + who;
-      el.textContent = text;
-      thread.appendChild(el);
-      thread.scrollTop = thread.scrollHeight;
-    }
-
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
-      var text = input.value.trim();
-      if (text === '') return;
-
-      addMessage(text, 'user');
-      input.value = '';
-      sendBtn.disabled = true;
-
-      fetch('api/public/ai_widget_gateway.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, session_id: getSessionId(), lang: currentLang() })
-      })
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
-        addMessage(data && data.reply ? data.reply : (currentLang() === 'es' ? 'Ocurrió un error, intenta de nuevo.' : 'Something went wrong, please try again.'), 'bot');
-      })
-      .catch(function () {
-        addMessage(currentLang() === 'es' ? 'Error de red — revisa tu conexión.' : 'Network error — check your connection.', 'bot');
-      })
-      .then(function () {
-        sendBtn.disabled = false;
-        input.focus();
-      });
-    });
-  }());
-  </script>
 
 </body>
 </html>

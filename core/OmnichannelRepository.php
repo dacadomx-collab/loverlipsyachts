@@ -67,6 +67,34 @@ final class OmnichannelRepository
     }
 
     /**
+     * Oldest-first messages for one session_uuid — backs both chat-lab.php /
+     * the public widget's "reload and keep talking" history view and
+     * core/ProxyBridge.php's conversation-context injection. Read-only,
+     * no tenant filter needed beyond the UUID itself (session_uuid is a
+     * random v4 UUID — unguessable, same trust model as an ephemeral link
+     * token — see core/EphemeralLinkManager.php). Returns [] (never
+     * throws) if the session doesn't exist yet, so a brand-new visitor's
+     * first request degrades to "no history" instead of an error.
+     */
+    public static function getMessagesBySessionUuid(PDO $pdo, string $sessionUuid, int $limit = 50): array
+    {
+        $limit = max(1, min(200, $limit));
+
+        $stmt = $pdo->prepare(
+            "SELECT m.direction, m.content, m.created_at
+             FROM omnichannel_messages m
+             JOIN omnichannel_sessions s ON s.id = m.session_id
+             WHERE s.session_uuid = :uuid
+             ORDER BY m.created_at DESC, m.id DESC
+             LIMIT {$limit}"
+        );
+        $stmt->execute(['uuid' => $sessionUuid]);
+        $rows = $stmt->fetchAll();
+
+        return array_reverse($rows);
+    }
+
+    /**
      * Flags a contact as VIP (White-Glove Escalation, see
      * core/prompts/pg_ai_lester_master.md section 4) — surfaced in
      * pg_ai_hub.php's Live Leads table. Heuristic marking only; never

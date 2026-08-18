@@ -288,19 +288,36 @@ $lly_is_super_admin = ($_SESSION['lly_role'] ?? '') === 'super_admin';
         </p>
 
         <div class="ephemeral-panel">
-          <form id="pgai-settings-form" class="pgai-settings-grid">
+          <form id="pgai-settings-form" class="pgai-settings-grid" autocomplete="off">
             <input type="hidden" name="csrf_token" id="pgai-settings-csrf-field" value="<?= $lly_csrf ?>">
+
+            <fieldset class="pgai-settings-fieldset">
+              <legend><span data-lang="en">🎛️ Active AI Engine</span><span data-lang="es">🎛️ Motor de Inferencia Activo</span></legend>
+              <p class="section-desc">
+                <span data-lang="en">Which route the live chatbot tries first (core/ProxyBridge.php). The other one stays as the automatic fallback either way — this only reorders, it never disables a configured route.</span>
+                <span data-lang="es">Qué ruta prueba primero el chatbot en vivo (core/ProxyBridge.php). La otra sigue como respaldo automático de cualquier forma — esto solo reordena, nunca deshabilita una ruta configurada.</span>
+              </p>
+              <div class="pgai-settings-field pgai-settings-field--wide">
+                <label for="pgai-primary-engine">
+                  <span data-lang="en">Primary AI Engine</span><span data-lang="es">Motor de IA Principal</span>
+                </label>
+                <select id="pgai-primary-engine" data-setting-key="PRIMARY_AI_PROVIDER">
+                  <option value="openai">OpenAI Direct / OpenAI Directo (Recommended — speed &amp; memory / Recomendado — velocidad y memoria)</option>
+                  <option value="aura">AURA Linux Core (private satellite server / servidor satélite privado)</option>
+                </select>
+              </div>
+            </fieldset>
 
             <fieldset class="pgai-settings-fieldset">
               <legend><span data-lang="en">AURA Gateway (ACADEP)</span><span data-lang="es">Gateway AURA (ACADEP)</span></legend>
 
               <div class="pgai-settings-field">
                 <label for="pgai-aura-base-url">Base URL</label>
-                <input type="text" id="pgai-aura-base-url" data-setting-key="ACADEP_AURA_BASE_URL" placeholder="http://192.168.1.224:8090" />
+                <input type="text" id="pgai-aura-base-url" data-setting-key="ACADEP_AURA_BASE_URL" placeholder="http://192.168.1.224:8090" autocomplete="off" />
               </div>
               <div class="pgai-settings-field">
                 <label for="pgai-aura-endpoint">Gateway Endpoint</label>
-                <input type="text" id="pgai-aura-endpoint" data-setting-key="ACADEP_AURA_GATEWAY_ENDPOINT" placeholder="/api/v2/aura/gateway" />
+                <input type="text" id="pgai-aura-endpoint" data-setting-key="ACADEP_AURA_GATEWAY_ENDPOINT" placeholder="/api/v2/aura/gateway" autocomplete="off" />
               </div>
               <div class="pgai-settings-field">
                 <label for="pgai-aura-key">
@@ -311,23 +328,49 @@ $lly_is_super_admin = ($_SESSION['lly_role'] ?? '') === 'super_admin';
               </div>
               <div class="pgai-settings-field">
                 <label for="pgai-aura-tenant">Tenant</label>
-                <input type="text" id="pgai-aura-tenant" data-setting-key="ACADEP_AURA_TENANT" placeholder="LOVER_LIPS_YACHTS" />
+                <input type="text" id="pgai-aura-tenant" data-setting-key="ACADEP_AURA_TENANT" placeholder="LOVER_LIPS_YACHTS" autocomplete="off" />
               </div>
               <div class="pgai-settings-field">
                 <label for="pgai-aura-agent-id">Agent ID (UUID)</label>
-                <input type="text" id="pgai-aura-agent-id" data-setting-key="ACADEP_AURA_AGENT_ID" placeholder="899fd35d-..." />
+                <input type="text" id="pgai-aura-agent-id" data-setting-key="ACADEP_AURA_AGENT_ID" placeholder="899fd35d-..." autocomplete="off" />
               </div>
               <div class="pgai-settings-field">
                 <label for="pgai-aura-fallback">
                   <span data-lang="en">WAN Fallback URL</span><span data-lang="es">URL de Respaldo WAN</span>
                 </label>
-                <input type="text" id="pgai-aura-fallback" data-setting-key="ACADEP_AURA_FALLBACK_URL" placeholder="https://axon.acadep.com" />
+                <input type="text" id="pgai-aura-fallback" data-setting-key="ACADEP_AURA_FALLBACK_URL" placeholder="https://axon.acadep.com" autocomplete="off" />
               </div>
               <div class="pgai-settings-field">
                 <label for="pgai-aura-fallback-ip">
                   <span data-lang="en">WAN Fallback IP (optional, DNS failure only)</span><span data-lang="es">IP de Respaldo WAN (opcional, solo si falla DNS)</span>
                 </label>
-                <input type="text" id="pgai-aura-fallback-ip" data-setting-key="ACADEP_AURA_FALLBACK_IP" placeholder="203.0.113.10" />
+                <input type="text" id="pgai-aura-fallback-ip" data-setting-key="ACADEP_AURA_FALLBACK_IP" placeholder="203.0.113.10" autocomplete="off" />
+              </div>
+
+              <div class="pgai-settings-field pgai-settings-field--wide">
+                <button type="button" id="handshake-test-btn" class="dash-card-btn dash-card-btn--secondary">
+                  <span data-lang="en">🧪 Test AURA Linux Connection</span>
+                  <span data-lang="es">🧪 Probar Conexión AURA Linux</span>
+                </button>
+                <div class="aura-diag-telemetry" id="handshake-telemetry" hidden>
+                  <div class="aura-diag-tile">
+                    <p class="aura-diag-tile-label"><span data-lang="en">Status</span><span data-lang="es">Estado</span></p>
+                    <p class="aura-diag-tile-value" id="handshake-status">—</p>
+                  </div>
+                  <div class="aura-diag-tile">
+                    <p class="aura-diag-tile-label"><span data-lang="en">Latency</span><span data-lang="es">Latencia</span></p>
+                    <p class="aura-diag-tile-value" id="handshake-latency">—</p>
+                  </div>
+                  <div class="aura-diag-tile">
+                    <p class="aura-diag-tile-label"><span data-lang="en">Tenant</span><span data-lang="es">Tenant</span></p>
+                    <p class="aura-diag-tile-value" id="handshake-tenant">—</p>
+                  </div>
+                  <div class="aura-diag-tile">
+                    <p class="aura-diag-tile-label"><span data-lang="en">Engine / Model</span><span data-lang="es">Motor / Modelo</span></p>
+                    <p class="aura-diag-tile-value" id="handshake-engine">—</p>
+                  </div>
+                </div>
+                <p id="handshake-result" class="ephemeral-feedback" role="status" aria-live="polite"></p>
               </div>
             </fieldset>
 
@@ -336,7 +379,7 @@ $lly_is_super_admin = ($_SESSION['lly_role'] ?? '') === 'super_admin';
 
               <div class="pgai-settings-field">
                 <label for="pgai-wa-phone-id">Phone Number ID</label>
-                <input type="text" id="pgai-wa-phone-id" data-setting-key="WHATSAPP_PHONE_NUMBER_ID" />
+                <input type="text" id="pgai-wa-phone-id" data-setting-key="WHATSAPP_PHONE_NUMBER_ID" autocomplete="off" />
               </div>
               <div class="pgai-settings-field">
                 <label for="pgai-wa-access-token">
@@ -349,7 +392,7 @@ $lly_is_super_admin = ($_SESSION['lly_role'] ?? '') === 'super_admin';
                 <label for="pgai-wa-verify-token">
                   <span data-lang="en">Verify Token</span><span data-lang="es">Token de Verificación</span>
                 </label>
-                <input type="text" id="pgai-wa-verify-token" data-setting-key="WHATSAPP_VERIFY_TOKEN" />
+                <input type="text" id="pgai-wa-verify-token" data-setting-key="WHATSAPP_VERIFY_TOKEN" autocomplete="off" />
               </div>
               <div class="pgai-settings-field">
                 <label for="pgai-wa-app-secret">
@@ -361,10 +404,10 @@ $lly_is_super_admin = ($_SESSION['lly_role'] ?? '') === 'super_admin';
             </fieldset>
 
             <fieldset class="pgai-settings-fieldset">
-              <legend><span data-lang="en">OpenAI Fallback — Route 3 (Fase 2 / Pausada)</span><span data-lang="es">Respaldo OpenAI — Ruta 3 (Fase 2 / Pausada)</span></legend>
+              <legend><span data-lang="en">OpenAI Direct</span><span data-lang="es">OpenAI Directo</span></legend>
               <p class="section-desc">
-                <span data-lang="en">Used only if both AURA routes (LAN + WAN) fail. Paused/deprioritized while the direct AURA channel is the validated primary — see docs/02_SYSTEM_CODEX_REGISTRY.md.</span>
-                <span data-lang="es">Se usa solo si ambas rutas de AURA (LAN + WAN) fallan. Pausada/despriorizada mientras el canal directo con AURA sea el principal validado — ver docs/02_SYSTEM_CODEX_REGISTRY.md.</span>
+                <span data-lang="en">Tried first when "Active AI Engine" above is set to OpenAI Direct and a key is configured; otherwise it's the automatic fallback if AURA fails. See docs/02_SYSTEM_CODEX_REGISTRY.md.</span>
+                <span data-lang="es">Se prueba primero cuando "Motor de Inferencia Activo" arriba está en OpenAI Directo y hay una llave configurada; si no, es el respaldo automático si AURA falla. Ver docs/02_SYSTEM_CODEX_REGISTRY.md.</span>
               </p>
 
               <div class="pgai-settings-field">
@@ -379,10 +422,32 @@ $lly_is_super_admin = ($_SESSION['lly_role'] ?? '') === 'super_admin';
                   <span data-lang="en">Model</span><span data-lang="es">Modelo</span>
                 </label>
                 <select id="pgai-openai-model" data-setting-key="FALLBACK_AI_PROVIDER_MODEL">
-                  <option value="gpt-4o-mini">gpt-4o-mini</option>
-                  <option value="gpt-4o">gpt-4o</option>
+                  <option value="gpt-4o-mini">gpt-4o-mini (recommended — speed &amp; cost / recomendado — velocidad y costo)</option>
+                  <option value="gpt-4o">gpt-4o (max reasoning / máximo razonamiento)</option>
                   <option value="gpt-4.1-mini">gpt-4.1-mini</option>
                 </select>
+              </div>
+
+              <div class="pgai-settings-field pgai-settings-field--wide">
+                <button type="button" id="openai-test-btn" class="dash-card-btn dash-card-btn--secondary">
+                  <span data-lang="en">🧪 Test OpenAI Connection</span>
+                  <span data-lang="es">🧪 Probar Conexión OpenAI</span>
+                </button>
+                <div class="aura-diag-telemetry" id="openai-test-telemetry" hidden>
+                  <div class="aura-diag-tile">
+                    <p class="aura-diag-tile-label"><span data-lang="en">Status</span><span data-lang="es">Estado</span></p>
+                    <p class="aura-diag-tile-value" id="openai-test-status">—</p>
+                  </div>
+                  <div class="aura-diag-tile">
+                    <p class="aura-diag-tile-label"><span data-lang="en">Latency</span><span data-lang="es">Latencia</span></p>
+                    <p class="aura-diag-tile-value" id="openai-test-latency">—</p>
+                  </div>
+                  <div class="aura-diag-tile">
+                    <p class="aura-diag-tile-label"><span data-lang="en">Active Model</span><span data-lang="es">Modelo Activo</span></p>
+                    <p class="aura-diag-tile-value" id="openai-test-model">—</p>
+                  </div>
+                </div>
+                <p id="openai-test-response" class="ephemeral-feedback" role="status" aria-live="polite"></p>
               </div>
             </fieldset>
 
@@ -397,32 +462,25 @@ $lly_is_super_admin = ($_SESSION['lly_role'] ?? '') === 'super_admin';
     </section>
 
     <!-- ═══════════════════════════════════════════════════════════════
-         SECTION 5 — M2M HANDSHAKE TEST PANEL (super_admin ONLY)
+         SECTION 5 — M2M DIAGNOSTIC SANDBOX (super_admin ONLY)
+         Quick tests moved into their own fieldsets in Section 4
+         (2026-08-18) — this stays as the entry point to the full
+         latency/token telemetry sandbox (aura_diagnostic.php).
     ═══════════════════════════════════════════════════════════════ -->
     <section class="section" id="pgcfg-section-handshake" aria-labelledby="pgcfg-handshake-title">
       <div class="container">
         <h2 class="section-title" id="pgcfg-handshake-title">
-          <span data-lang="en">📡 M2M Handshake Test</span>
-          <span data-lang="es">📡 Prueba de Handshake M2M</span>
+          <span data-lang="en">📡 Full Diagnostic Sandbox</span>
+          <span data-lang="es">📡 Sandbox Completo de Diagnóstico</span>
         </h2>
         <p class="section-desc">
-          <span data-lang="en">One-click connectivity check against the real AURA server (api/aura_diagnostic.php — same endpoint the full diagnostic sandbox uses). For the complete latency/token telemetry sandbox, open the dedicated diagnostic page.</span>
-          <span data-lang="es">Verificación de conectividad de un clic contra el servidor AURA real (api/aura_diagnostic.php — mismo endpoint que usa el sandbox completo de diagnóstico). Para la telemetría completa de latencia/tokens, abre la página dedicada de diagnóstico.</span>
+          <span data-lang="en">The quick "Test" buttons above (AURA and OpenAI fieldsets) cover a one-click connectivity check. For custom prompts and the complete latency/token telemetry view against AURA, open the dedicated sandbox.</span>
+          <span data-lang="es">Los botones rápidos de "Probar" arriba (fieldsets de AURA y OpenAI) cubren una verificación de conectividad de un clic. Para prompts personalizados y la vista completa de telemetría de latencia/tokens contra AURA, abre el sandbox dedicado.</span>
         </p>
-        <input type="hidden" id="handshake-csrf-field" value="<?= $lly_csrf ?>">
-        <div class="ephemeral-panel">
-          <div class="ephemeral-form-row ephemeral-form-row--inline">
-            <button type="button" id="handshake-test-btn" class="dash-card-btn">
-              <span data-lang="en">📡 Test AURA Handshake</span>
-              <span data-lang="es">📡 Probar Handshake AURA</span>
-            </button>
-            <a class="dash-card-btn dash-card-btn--secondary" href="aura_diagnostic.php">
-              <span data-lang="en">Open Full Diagnostic Sandbox</span>
-              <span data-lang="es">Abrir Sandbox Completo de Diagnóstico</span>
-            </a>
-          </div>
-          <p id="handshake-result" class="ephemeral-feedback" role="status" aria-live="polite"></p>
-        </div>
+        <a class="dash-card-btn dash-card-btn--secondary" href="aura_diagnostic.php">
+          <span data-lang="en">Open Full Diagnostic Sandbox</span>
+          <span data-lang="es">Abrir Sandbox Completo de Diagnóstico</span>
+        </a>
       </div>
     </section>
 

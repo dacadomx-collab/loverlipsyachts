@@ -21,7 +21,7 @@ declare(strict_types=1);
  */
 
 require __DIR__ . '/../../core/ProxyBridge.php';
-require __DIR__ . '/../../core/OmnichannelRepository.php';
+require_once __DIR__ . '/../../core/OmnichannelRepository.php'; // ProxyBridge.php now also require_once's this (2026-08-18, conversation-history lookup) — require_once here too, or a fatal "class already declared" follows
 require __DIR__ . '/../../core/PgAiActionProcessor.php';
 require __DIR__ . '/../../core/EphemeralLinkManager.php';
 require __DIR__ . '/../../core/pgai_templates.php';

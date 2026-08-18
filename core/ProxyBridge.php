@@ -21,6 +21,7 @@ require_once __DIR__ . '/../api/conexion.php';
 require_once __DIR__ . '/EnvSettingsStore.php';
 require_once __DIR__ . '/AuraSatelliteClient.php';
 require_once __DIR__ . '/OpenAiFallbackClient.php';
+require_once __DIR__ . '/OmnichannelRepository.php';
 
 final class ProxyBridge
 {
@@ -34,6 +35,7 @@ final class ProxyBridge
         private readonly string $tenantId,
         private readonly string $sharedSecret,
         private readonly ?string $knowledgeMdPath = null,
+        private readonly string $primaryProvider = 'openai',
     ) {
     }
 
@@ -50,11 +52,18 @@ final class ProxyBridge
         // marketing/governance material the chatbot has no reason to see.
         $knowledgePath = __DIR__ . '/prompts/pg_ai_lester_master.md';
 
+        // PRIMARY_AI_PROVIDER (core/.env, editable from pg_ai_config.php's
+        // "Active AI Engine" switch) — which route forward() tries first.
+        // Any value other than the literal 'aura' (including unset) keeps
+        // the 2026-08-15 default of OpenAI-first.
+        $primaryProvider = strtolower(trim($env['PRIMARY_AI_PROVIDER'] ?? '')) === 'aura' ? 'aura' : 'openai';
+
         return new self(
             gatewayUrl: $env['AI_GATEWAY_URL']   ?? '',
             tenantId: $env['AI_TENANT_ID']       ?? '',
             sharedSecret: $env['AI_SHARED_SECRET'] ?? '',
             knowledgeMdPath: is_readable($knowledgePath) ? $knowledgePath : null,
+            primaryProvider: $primaryProvider,
         );
     }
 
@@ -102,6 +111,12 @@ final class ProxyBridge
      * FALLBACK_AI_PROVIDER_KEY remains unset — OpenAiFallbackClient::
      * isConfigured() gates it, so an unconfigured key falls straight
      * through to AURA exactly as before.)
+     *
+     * (2026-08-18: PRIMARY_AI_PROVIDER, editable from pg_ai_config.php's
+     * "Active AI Engine" switch, now decides which of steps 1/2 goes
+     * first — set to 'aura' to try AURA before OpenAI. Either way, the
+     * other route stays as the automatic fallback; this switch only
+     * reorders, it never disables a configured route.)
      */
     public function forward(array $ocmcMessage): array
     {
@@ -112,14 +127,23 @@ final class ProxyBridge
             error_log('[PG-AI · ProxyBridge] Knowledge base read failed — ' . $e::class . ': ' . $e->getMessage());
         }
 
-        $openAiReply = $this->dispatchViaOpenAiFallback($knowledge, $ocmcMessage);
-        if ($openAiReply !== null) {
-            return $openAiReply;
+        $tryOpenAiFirst = $this->primaryProvider !== 'aura';
+
+        $first  = $tryOpenAiFirst
+            ? fn () => $this->dispatchViaOpenAiFallback($knowledge, $ocmcMessage)
+            : fn () => $this->dispatchViaAura($ocmcMessage);
+        $second = $tryOpenAiFirst
+            ? fn () => $this->dispatchViaAura($ocmcMessage)
+            : fn () => $this->dispatchViaOpenAiFallback($knowledge, $ocmcMessage);
+
+        $reply = $first();
+        if ($reply !== null) {
+            return $reply;
         }
 
-        $auraReply = $this->dispatchViaAura($ocmcMessage);
-        if ($auraReply !== null) {
-            return $auraReply;
+        $reply = $second();
+        if ($reply !== null) {
+            return $reply;
         }
 
         if ($this->tenantId === '' || $this->sharedSecret === '' || $this->gatewayUrl === '') {
@@ -164,7 +188,9 @@ final class ProxyBridge
         }
 
         $guestMessage = (string) ($ocmcMessage['message']['text'] ?? '');
-        $result       = $client->dispatch($knowledge, $guestMessage);
+        $sessionUuid  = (string) ($ocmcMessage['session_id'] ?? '');
+        $history      = $this->buildOpenAiHistoryMessages($sessionUuid);
+        $result       = $client->dispatch($knowledge, $guestMessage, $history);
 
         if (!$result['success'] || $result['response'] === null) {
             error_log('[PG-AI · ProxyBridge] OpenAI fallback did not produce a usable reply — ' . ($result['errorMessage'] ?? 'unknown error'));
@@ -172,6 +198,53 @@ final class ProxyBridge
         }
 
         return ['status' => 'success', 'reply' => (string) $result['response']];
+    }
+
+    /**
+     * Conversation memory (2026-08-18) — session memory that lives in
+     * AURA/AXON's own server-side context has been confirmed unreliable
+     * across multiple independent tests (docs/02_SYSTEM_CODEX_REGISTRY.md,
+     * 2026-08-15: two separate multi-turn quote flows where the model
+     * ignored data given in an earlier turn of the SAME session_id). This
+     * pulls the actual prior turns from omnichannel_messages — the source
+     * of truth this project already persists on every message — instead of
+     * trusting either provider's own memory. Best-effort: a DB hiccup here
+     * degrades to "no history for this turn," never a failed reply.
+     */
+    private const HISTORY_MAX_TURNS = 6; // 6 messages ≈ last 3 exchanges
+
+    private function getRecentHistoryTurns(string $sessionUuid, int $maxMessages): array
+    {
+        if ($sessionUuid === '') {
+            return [];
+        }
+        try {
+            return OmnichannelRepository::getMessagesBySessionUuid(Conexion::getConnection(), $sessionUuid, $maxMessages);
+        } catch (\Throwable $e) {
+            error_log('[PG-AI · ProxyBridge] History lookup skipped — ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * OpenAI's Chat Completions API is built for exactly this — real
+     * alternating user/assistant turns, not a text blob — so unlike AURA's
+     * bounded recap below, this isn't constrained by the WAN 502 payload
+     * lesson (that was AURA/AXON-specific). Still bounded to
+     * HISTORY_MAX_TURNS so a very long-running session doesn't grow the
+     * request unbounded.
+     */
+    private function buildOpenAiHistoryMessages(string $sessionUuid): array
+    {
+        $rows = $this->getRecentHistoryTurns($sessionUuid, self::HISTORY_MAX_TURNS);
+
+        return array_map(
+            static fn (array $row) => [
+                'role'    => $row['direction'] === 'inbound' ? 'user' : 'assistant',
+                'content' => (string) $row['content'],
+            ],
+            $rows,
+        );
     }
 
     /**
@@ -203,6 +276,46 @@ final class ProxyBridge
      * full prompt — see the WAN 502 history above first.
      */
     private const LANGUAGE_LOCK_DIRECTIVE = "[LANGUAGE LOCK: Reply strictly in the same language as the user message below — do not translate or switch languages, regardless of earlier turns in this conversation.]\n\n";
+
+    /**
+     * AURA's WAN path measured real 502s off a ~10KB per-message payload
+     * (2026-08-03, see dispatchViaAura()'s docblock below) — so unlike
+     * OpenAI's proper messages[] array, this stays a short, hard-capped,
+     * fixed-cost text block: at most 3 exchanges, each turn truncated to
+     * 140 chars, whole recap capped at ~500 bytes. Same spirit as
+     * LANGUAGE_LOCK_DIRECTIVE — small enough to be unlikely to trip the
+     * same size-related instability. Returns '' (never throws) when there's
+     * no history yet, so a first message carries zero extra bytes.
+     */
+    private const AURA_HISTORY_MAX_TURNS  = 3; // 3 exchanges = 6 messages
+    private const AURA_HISTORY_CHAR_BUDGET = 500;
+    private const AURA_HISTORY_LINE_MAXLEN = 140;
+
+    private function buildAuraHistoryRecap(string $sessionUuid): string
+    {
+        $rows = $this->getRecentHistoryTurns($sessionUuid, self::AURA_HISTORY_MAX_TURNS * 2);
+        if (!$rows) {
+            return '';
+        }
+
+        $lines  = [];
+        $budget = self::AURA_HISTORY_CHAR_BUDGET;
+        foreach ($rows as $row) {
+            $label = $row['direction'] === 'inbound' ? 'Guest' : 'Concierge';
+            $line  = $label . ': ' . mb_substr((string) $row['content'], 0, self::AURA_HISTORY_LINE_MAXLEN);
+            $budget -= mb_strlen($line) + 1;
+            if ($budget < 0) {
+                break;
+            }
+            $lines[] = $line;
+        }
+
+        if (!$lines) {
+            return '';
+        }
+
+        return "[CONVERSATION HISTORY — for context only, do not repeat verbatim]\n" . implode("\n", $lines) . "\n\n";
+    }
 
     /**
      * Dispatches through the AURA M2M satellite (core/AuraSatelliteClient.php,
@@ -246,7 +359,8 @@ final class ProxyBridge
         // (and therefore what gets persisted to omnichannel_messages and
         // shown in any leads view) keeps the guest's original, undecorated
         // text. See LANGUAGE_LOCK_DIRECTIVE above for why this exists.
-        $result = $client->dispatch($agentId, $sessionId, self::LANGUAGE_LOCK_DIRECTIVE . $guestMessage);
+        $historyRecap = $this->buildAuraHistoryRecap($sessionId);
+        $result = $client->dispatch($agentId, $sessionId, $historyRecap . self::LANGUAGE_LOCK_DIRECTIVE . $guestMessage);
 
         if (!$result['success'] || $result['response'] === null || trim((string) $result['response']) === '') {
             // See core/AuraSatelliteClient.php's own '[PG-AI · AuraSatelliteClient] RAW' log

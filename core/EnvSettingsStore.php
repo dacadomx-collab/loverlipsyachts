@@ -34,6 +34,11 @@ final class EnvSettingsStore
         // works if OPENAI_API_KEY is what gets pasted in. See
         // OpenAiFallbackClient::fromEnv() for the read-order.
         'OPENAI_API_KEY',
+        // Which route core/ProxyBridge.php::forward() tries first —
+        // 'openai' or 'aura'; the other stays as the automatic fallback
+        // either way (see ProxyBridge::forward()'s docblock). Not a
+        // secret — plain routing config.
+        'PRIMARY_AI_PROVIDER',
     ];
 
     /** Keys whose value is never echoed back in full — only a masked tail. */

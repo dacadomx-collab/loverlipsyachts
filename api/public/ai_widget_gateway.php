@@ -20,7 +20,7 @@ declare(strict_types=1);
  */
 
 require __DIR__ . '/../../core/ProxyBridge.php';
-require __DIR__ . '/../../core/OmnichannelRepository.php';
+require_once __DIR__ . '/../../core/OmnichannelRepository.php'; // ProxyBridge.php now also require_once's this (2026-08-18, conversation-history lookup) — require_once here too, or a fatal "class already declared" follows
 require __DIR__ . '/../../core/PgAiActionProcessor.php';
 require __DIR__ . '/../../core/EphemeralLinkManager.php';
 require __DIR__ . '/../../core/pgai_templates.php';
@@ -48,7 +48,29 @@ const EMPTY_MESSAGE_COPY = [
     'es' => 'Por favor escribe un mensaje primero.',
 ];
 
-/* ── Method guard ────────────────────────────────────────────────── */
+/* ── GET ?action=history — read-only, no LLM dispatch involved.
+   Lets chat-lab.php / the public widget re-render a returning visitor's
+   prior turns after a reload (session_id in localStorage, unguessable
+   random UUID — same trust model as an ephemeral link token). Best-effort:
+   a DB outage degrades to an empty transcript, never a 500. ───────────── */
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($_GET['action'] ?? '') === 'history') {
+    $historySessionId = trim((string) ($_GET['session_id'] ?? ''));
+    $messages = [];
+
+    if (preg_match('/^[a-zA-Z0-9\-]{8,64}$/', $historySessionId)) {
+        try {
+            $messages = OmnichannelRepository::getMessagesBySessionUuid(Conexion::getConnection(), $historySessionId, 50);
+        } catch (\Throwable $e) {
+            error_log('[PG-AI · ai_widget_gateway] history lookup skipped — ' . $e->getMessage());
+        }
+    }
+
+    http_response_code(200);
+    echo json_encode(['status' => 'success', 'messages' => $messages], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+/* ── Method guard (POST-only past this point) ───────────────────────── */
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     lly_widget_json('error', 'Method not allowed.', 405);
 }
@@ -134,7 +156,10 @@ if (($response['status'] ?? '') === 'success' && !empty($response['reply'])) {
 }
 
 /* ── Persist inbound/outbound into omnichannel_* (Fase 2) ─────────
-   Best-effort: a DB outage must never block the chat reply. */
+   Best-effort: a DB outage must never block the chat reply. Lead
+   extraction runs last, after both turns are safely in the DB, so its
+   re-scan of the session's history (core/PgAiActionProcessor.php) sees
+   the message that was just sent — see that method's docblock. */
 try {
     $pdo       = Conexion::getConnection();
     $sessionPk = OmnichannelRepository::persistInbound($pdo, $bridge->getTenantId(), $ocmc);
@@ -142,6 +167,8 @@ try {
     if (($response['status'] ?? '') === 'success' && !empty($response['reply'])) {
         OmnichannelRepository::persistOutbound($pdo, $bridge->getTenantId(), $sessionPk, (string) $response['reply']);
     }
+
+    PgAiActionProcessor::extractAndSummarizeLead($pdo, $sessionPk);
 } catch (\Throwable $e) {
     error_log('[PG-AI · ai_widget_gateway] Omnichannel persistence skipped — ' . $e->getMessage());
 }
