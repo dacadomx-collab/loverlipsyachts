@@ -18,15 +18,22 @@ declare(strict_types=1);
  * template) relies on to hide one language had nothing hiding either one
  * — both rendered at once, unstyled, which is what actually looked like
  * "English and Spanish mixed on one line." The template content itself
- * (core/pgai_templates.php) was never broken. Now reads APP_URL
- * (core/.env) for every asset path, adds the page chrome (gradient header,
- * language toggle, security badge, WhatsApp CTA) around whatever
- * payload_html this link carries — quote or plain owner-typed content.
+ * (core/pgai_templates.php) was never broken. Reads APP_URL_LOCAL/
+ * APP_COCKPIT_URL (core/.env) for every asset path, adds the page chrome
+ * (gradient header, language toggle, security badge, WhatsApp CTA) around
+ * whatever payload_html this link carries — quote or plain owner-typed
+ * content.
  *
- * Usage: /api/public/l.php?t=<token>
+ * Usage:
+ *   /api/public/l.php?t=<token>              real, self-destructing link
+ *   /api/public/l.php?sample=balandra|espiritu_santo   stable demo preview,
+ *     never expires, no DB/token involved — for owners sharing "what a
+ *     quote looks like" without burning a real link's view count.
  */
 
 require __DIR__ . '/../../core/EphemeralLinkManager.php';
+require __DIR__ . '/../../core/pgai_templates.php';
+require_once __DIR__ . '/../../core/PgAiActionProcessor.php';
 require __DIR__ . '/../conexion.php';
 
 header('Content-Type: text/html; charset=utf-8');
@@ -96,6 +103,63 @@ function lly_l_page(string $title, string $bodyEn, string $bodyEs, int $code = 2
     exit;
 }
 
+/** Shared by the real (self-destructing) path and the ?sample= preview path — same chrome (header, lang toggle, WhatsApp CTA), only the security-badge text and payload differ. */
+function lly_l_render_quote_page(string $title, string $payloadHtml, string $badgeHtml): never
+{
+    $base      = lly_l_asset_base();
+    $safeTitle = htmlspecialchars($title, ENT_QUOTES);
+    $waText    = rawurlencode('Hi! I\'d like to confirm my reservation — ' . $title);
+    $waHref    = 'https://wa.me/' . LLY_WHATSAPP_CONTACT . '?text=' . $waText;
+
+    echo '<!DOCTYPE html><html lang="en" data-theme="light"><head><meta charset="UTF-8">'
+        . '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
+        . '<meta name="robots" content="noindex, nofollow">'
+        . '<title>' . $safeTitle . ' · Lover Lips Yachts</title>'
+        . '<link rel="stylesheet" href="' . $base . '/assets/css/style.css?v=' . filemtime(__DIR__ . '/../../assets/css/style.css') . '">'
+        . '<link rel="icon" type="image/png" href="' . $base . '/assets/img/logo.png"></head>'
+        . '<body data-active-lang="en"><main class="quote-page">'
+
+        . '<header class="quote-page-header">'
+        . '<img class="quote-page-logo" src="' . $base . '/assets/img/logo.png" alt="Lover Lips Yachts" />'
+        . '<div class="lang-toggle quote-page-lang" role="group" aria-label="Language / Idioma">'
+        . '<button type="button" class="lang-btn active" id="btn-en" aria-pressed="true">EN</button>'
+        . '<button type="button" class="lang-btn" id="btn-es" aria-pressed="false">ES</button>'
+        . '</div>'
+        . '<p class="quote-page-eyebrow"><span data-lang="en">Concierge IA Lover Lips · Private Quote</span><span data-lang="es">Concierge IA Lover Lips · Cotización Privada</span></p>'
+        . '<h1>' . $safeTitle . '</h1>'
+        . '</header>'
+
+        . '<div class="container quote-page-body">'
+        . $badgeHtml
+        . '<div class="quote-card-grid">' . $payloadHtml . '</div>'
+        . '<a class="quote-whatsapp-cta" href="' . htmlspecialchars($waHref, ENT_QUOTES) . '" target="_blank" rel="noopener noreferrer">'
+        . '<span data-lang="en">💬 Confirm Reservation via WhatsApp</span>'
+        . '<span data-lang="es">💬 Confirmar Reserva por WhatsApp</span>'
+        . '</a>'
+        . '</div>'
+        . '</main>'
+        . '<script src="' . $base . '/assets/js/main.js" defer></script>'
+        . '</body></html>';
+    exit;
+}
+
+/* ── ?sample= preview mode — no DB, no token, never expires ──────────── */
+$sampleRoute = trim((string) ($_GET['sample'] ?? ''));
+if ($sampleRoute !== '') {
+    $templates = lly_pgai_quote_templates();
+    if (!isset($templates[$sampleRoute])) {
+        $sampleRoute = 'balandra'; // unknown/typo'd route — fall back to a valid demo rather than 404 a "sample" link
+    }
+    $template = $templates[$sampleRoute];
+
+    $badge = '<p class="quote-security-badge quote-security-badge--sample">🎓 '
+        . '<span data-lang="en">Sample quote — for demonstration only, not a real reservation.</span>'
+        . '<span data-lang="es">Cotización de muestra — solo para demostración, no es una reserva real.</span>'
+        . '</p>';
+
+    lly_l_render_quote_page($template['title_internal'], PgAiActionProcessor::buildQuotePayloadHtml($template), $badge);
+}
+
 $token = trim((string) ($_GET['t'] ?? ''));
 if ($token === '' || !preg_match('/^[A-Za-z0-9\-_]{20,64}$/', $token)) {
     lly_l_page(
@@ -134,44 +198,10 @@ if (!empty($link['target_url'])) {
     exit;
 }
 
-$remaining  = max(0, (int) $link['max_views'] - (int) $link['view_count']);
-$base       = lly_l_asset_base();
-$safeTitle  = htmlspecialchars($link['title'], ENT_QUOTES);
-$waText     = rawurlencode('Hi! I\'d like to confirm my reservation — ' . $link['title']);
-$waHref     = 'https://wa.me/' . LLY_WHATSAPP_CONTACT . '?text=' . $waText;
-
-echo '<!DOCTYPE html><html lang="en" data-theme="light"><head><meta charset="UTF-8">'
-    . '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
-    . '<meta name="robots" content="noindex, nofollow">'
-    . '<title>' . $safeTitle . ' · Lover Lips Yachts</title>'
-    . '<link rel="stylesheet" href="' . $base . '/assets/css/style.css?v=' . filemtime(__DIR__ . '/../../assets/css/style.css') . '">'
-    . '<link rel="icon" type="image/png" href="' . $base . '/assets/img/logo.png"></head>'
-    . '<body data-active-lang="en"><main class="quote-page">'
-
-    . '<header class="quote-page-header">'
-    . '<img class="quote-page-logo" src="' . $base . '/assets/img/logo.png" alt="Lover Lips Yachts" />'
-    . '<div class="lang-toggle quote-page-lang" role="group" aria-label="Language / Idioma">'
-    . '<button type="button" class="lang-btn active" id="btn-en" aria-pressed="true">EN</button>'
-    . '<button type="button" class="lang-btn" id="btn-es" aria-pressed="false">ES</button>'
-    . '</div>'
-    . '<p class="quote-page-eyebrow"><span data-lang="en">Concierge IA Lover Lips · Private Quote</span><span data-lang="es">Concierge IA Lover Lips · Cotización Privada</span></p>'
-    . '<h1>' . $safeTitle . '</h1>'
-    . '</header>'
-
-    . '<div class="container quote-page-body">'
-    . '<p class="quote-security-badge">🔒 '
+$remaining = max(0, (int) $link['max_views'] - (int) $link['view_count']);
+$badge = '<p class="quote-security-badge">🔒 '
     . '<span data-lang="en">Private link — ' . $remaining . ' view(s) left before it self-destructs.</span>'
     . '<span data-lang="es">Enlace privado — ' . $remaining . ' vista(s) restante(s) antes de autodestruirse.</span>'
-    . '</p>'
+    . '</p>';
 
-    . '<div class="quote-card-grid">' . $link['payload_html'] . '</div>'
-
-    . '<a class="quote-whatsapp-cta" href="' . htmlspecialchars($waHref, ENT_QUOTES) . '" target="_blank" rel="noopener noreferrer">'
-    . '<span data-lang="en">💬 Confirm Reservation via WhatsApp</span>'
-    . '<span data-lang="es">💬 Confirmar Reserva por WhatsApp</span>'
-    . '</a>'
-    . '</div>'
-
-    . '</main>'
-    . '<script src="' . $base . '/assets/js/main.js" defer></script>'
-    . '</body></html>';
+lly_l_render_quote_page($link['title'], $link['payload_html'], $badge);

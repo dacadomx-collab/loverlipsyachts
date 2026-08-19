@@ -60,8 +60,8 @@ $lly_csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
 
         <div class="topbar-actions">
           <a href="pg_ai_hub.php" class="topbar-back-btn">
-            <span data-lang="en">⬅️ Back to PG-AI Hub</span>
-            <span data-lang="es">⬅️ Regresar al Hub PG-AI</span>
+            <span data-lang="en">⬅️ Back to Hub</span>
+            <span data-lang="es">⬅️ Regresar al Hub</span>
           </a>
           <button class="theme-toggle" id="theme-toggle" aria-label="Switch to Night Mode" aria-pressed="false">
             <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

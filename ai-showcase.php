@@ -10,16 +10,20 @@ declare(strict_types=1);
  * link (not an include), validates its own session like every other
  * Cockpit page.
  *
- * Content note: the AI concierge speaks in first person AS Lester
- * (core/prompts/pg_ai_lester_master.md, section 1 — "hablando en primera
- * persona en nombre de Lester Keizer"), not as a separate named persona —
- * this page's copy reflects that real identity, not an invented one.
+ * Content note: the concierge is named "Concierge IA Lover Lips"
+ * (core/prompts/pg_ai_lester_master.md, section 1, 2026-08-18) — it draws
+ * its tone/warmth from Lester Keizer's own hospitality voice, but doesn't
+ * claim to literally be him. This page's copy reflects that real identity.
  *
  * Links to the other Cockpit pages are relative (chat-lab.php, not
  * https://loverlipsyachts.com/cockpit/chat-lab.php) so this page works
  * identically on XAMPP and production — see core/PgAiActionProcessor.php
  * ::publicUrl()'s docblock for the hardcoded-domain bug this deliberately
- * avoids repeating.
+ * avoids repeating. The one exception is the "Copy Direct Link" button
+ * per card (2026-08-18) — a link copied to a clipboard has to be absolute
+ * to mean anything once pasted into WhatsApp, so $lly_showcaseBaseUrl
+ * below builds one from APP_URL_LOCAL/APP_COCKPIT_URL, same env pair
+ * api/public/l.php already reads.
  */
 
 require __DIR__ . '/api/conexion.php';
@@ -30,6 +34,39 @@ if (!lly_is_authenticated()) {
     header('Location: index.php');
     exit;
 }
+
+function lly_showcase_base_url(): string
+{
+    $path = __DIR__ . '/core/.env';
+    $env  = [];
+    if (is_readable($path)) {
+        foreach (file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+            $line = trim($line);
+            if ($line === '' || $line[0] === '#' || $line[0] === ';' || !str_contains($line, '=')) {
+                continue;
+            }
+            [$k, $v] = explode('=', $line, 2);
+            $env[trim($k)] = trim($v, " \t\"'");
+        }
+    }
+
+    $httpHost   = (string) ($_SERVER['HTTP_HOST']   ?? '');
+    $serverAddr = (string) ($_SERVER['SERVER_ADDR'] ?? '');
+    $remoteAddr = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+    $isLocal    = in_array($httpHost, ['localhost', '127.0.0.1'], true)
+        || str_starts_with($httpHost, 'localhost:') || str_starts_with($httpHost, '127.0.0.1:')
+        || in_array($serverAddr, ['127.0.0.1', '::1'], true)
+        || in_array($remoteAddr, ['127.0.0.1', '::1'], true);
+
+    $base = $isLocal ? ($env['APP_URL_LOCAL'] ?? '') : rtrim($env['APP_COCKPIT_URL'] ?? '', '/');
+    if ($base !== '') {
+        return rtrim($base, '/');
+    }
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    return $scheme . '://' . ($httpHost ?: 'localhost');
+}
+
+$lly_showcaseBaseUrl = lly_showcase_base_url();
 ?><!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
@@ -188,21 +225,55 @@ if (!lly_is_authenticated()) {
       </h2>
 
       <div class="showcase-cta-grid">
-        <a href="chat-lab.php" class="showcase-cta-card reveal">
-          <p class="showcase-cta-icon">🛥️</p>
-          <h3><span data-lang="en">Test Live AI Concierge</span><span data-lang="es">Probar el Concierge IA en Vivo</span></h3>
-          <p class="showcase-cta-arrow">→</p>
-        </a>
-        <a href="pg_ai_hub.php" class="showcase-cta-card reveal" style="--reveal-delay:.1s">
-          <p class="showcase-cta-icon">📋</p>
-          <h3><span data-lang="en">Open Live Leads CRM</span><span data-lang="es">Abrir CRM de Leads en Vivo</span></h3>
-          <p class="showcase-cta-arrow">→</p>
-        </a>
-        <a href="agenda.php" class="showcase-cta-card reveal" style="--reveal-delay:.2s">
-          <p class="showcase-cta-icon">📅</p>
-          <h3><span data-lang="en">Open Booking Calendar</span><span data-lang="es">Abrir Calendario de Reservas</span></h3>
-          <p class="showcase-cta-arrow">→</p>
-        </a>
+
+        <div class="showcase-cta-card reveal" data-copy-url="<?= htmlspecialchars($lly_showcaseBaseUrl . '/chat-lab.php', ENT_QUOTES) ?>">
+          <a href="chat-lab.php" class="showcase-cta-link">
+            <p class="showcase-cta-icon">🛥️</p>
+            <h3><span data-lang="en">Test Live AI Concierge</span><span data-lang="es">Probar el Concierge IA en Vivo</span></h3>
+            <p class="showcase-cta-telemetry"><span class="showcase-telemetry-dot showcase-telemetry-dot--green"></span><span data-lang="en">Online — ~1.3s</span><span data-lang="es">En línea — ~1.3s</span></p>
+            <p class="showcase-cta-arrow">→</p>
+          </a>
+          <button type="button" class="showcase-cta-copy-btn">
+            <span data-lang="en">🔗 Copy Direct Link</span><span data-lang="es">🔗 Copiar Enlace Directo</span>
+          </button>
+        </div>
+
+        <div class="showcase-cta-card reveal" style="--reveal-delay:.1s" data-copy-url="<?= htmlspecialchars($lly_showcaseBaseUrl . '/leads.php', ENT_QUOTES) ?>">
+          <a href="leads.php" class="showcase-cta-link">
+            <p class="showcase-cta-icon">📋</p>
+            <h3><span data-lang="en">Open Live Leads CRM</span><span data-lang="es">Abrir CRM de Leads en Vivo</span></h3>
+            <p class="showcase-cta-telemetry"><span class="showcase-telemetry-dot showcase-telemetry-dot--gold"></span><span data-lang="en">CRM Sync</span><span data-lang="es">Sincronización CRM</span></p>
+            <p class="showcase-cta-arrow">→</p>
+          </a>
+          <button type="button" class="showcase-cta-copy-btn">
+            <span data-lang="en">🔗 Copy Direct Link</span><span data-lang="es">🔗 Copiar Enlace Directo</span>
+          </button>
+        </div>
+
+        <div class="showcase-cta-card reveal" style="--reveal-delay:.2s" data-copy-url="<?= htmlspecialchars($lly_showcaseBaseUrl . '/agenda.php', ENT_QUOTES) ?>">
+          <a href="agenda.php" class="showcase-cta-link">
+            <p class="showcase-cta-icon">📅</p>
+            <h3><span data-lang="en">Open Booking Calendar</span><span data-lang="es">Abrir Calendario de Reservas</span></h3>
+            <p class="showcase-cta-telemetry"><span class="showcase-telemetry-dot showcase-telemetry-dot--green"></span><span data-lang="en">Real-Time</span><span data-lang="es">Tiempo Real</span></p>
+            <p class="showcase-cta-arrow">→</p>
+          </a>
+          <button type="button" class="showcase-cta-copy-btn">
+            <span data-lang="en">🔗 Copy Direct Link</span><span data-lang="es">🔗 Copiar Enlace Directo</span>
+          </button>
+        </div>
+
+        <div class="showcase-cta-card reveal" style="--reveal-delay:.3s" data-copy-url="<?= htmlspecialchars($lly_showcaseBaseUrl . '/api/public/l.php?sample=balandra', ENT_QUOTES) ?>">
+          <a href="api/public/l.php?sample=balandra" class="showcase-cta-link" target="_blank" rel="noopener noreferrer">
+            <p class="showcase-cta-icon">🔒</p>
+            <h3><span data-lang="en">View Sample VIP Quote</span><span data-lang="es">Ver Cotización VIP de Muestra</span></h3>
+            <p class="showcase-cta-telemetry"><span class="showcase-telemetry-dot showcase-telemetry-dot--gold"></span><span data-lang="en">Always Available</span><span data-lang="es">Siempre Disponible</span></p>
+            <p class="showcase-cta-arrow">→</p>
+          </a>
+          <button type="button" class="showcase-cta-copy-btn">
+            <span data-lang="en">🔗 Copy Direct Link</span><span data-lang="es">🔗 Copiar Enlace Directo</span>
+          </button>
+        </div>
+
       </div>
     </section>
 
@@ -211,16 +282,17 @@ if (!lly_is_authenticated()) {
   <footer class="showcase-footer">
     <p>
       <strong>Lover Lips Yachts</strong> &nbsp;·&nbsp;
-      <span data-lang="en">PG-AI Pink Glove AI · Confidential · Owner Only</span>
-      <span data-lang="es">PG-AI Pink Glove AI · Confidencial · Solo Propietario</span>
+      <span data-lang="en">Concierge IA Lover Lips · Confidential · Owner Only</span>
+      <span data-lang="es">Concierge IA Lover Lips · Confidencial · Solo Propietario</span>
     </p>
   </footer>
 
   <script src="assets/js/main.js" defer></script>
 
-  <!-- Page-specific inline script — scroll-reveal only, same "independent
-       and modular" convention as agenda.php/chat-lab.php (this animation
-       has no reason to live in the shared main.js bundle). -->
+  <!-- Page-specific inline script — scroll-reveal + the "Copy Direct
+       Link" buttons, same "independent and modular" convention as
+       agenda.php/chat-lab.php (neither has a reason to live in the
+       shared main.js bundle). -->
   <script>
   (function () {
     var items = document.querySelectorAll('.reveal');
@@ -241,6 +313,53 @@ if (!lly_is_authenticated()) {
     }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
 
     items.forEach(function (el) { observer.observe(el); });
+
+    function currentLang() {
+      return (document.body && document.body.dataset.activeLang === 'es') ? 'es' : 'en';
+    }
+
+    // "Copy Direct Link" — same clipboard pattern as chat-lab.php's quote
+    // links. Event-delegated on the grid, not per-button, so this stays
+    // correct even if cards are ever added/removed without touching JS.
+    var ctaGrid = document.querySelector('.showcase-cta-grid');
+    if (ctaGrid) {
+      ctaGrid.addEventListener('click', function (e) {
+        var btn = e.target.closest('.showcase-cta-copy-btn');
+        if (!btn) return;
+        e.preventDefault();
+
+        var card = btn.closest('.showcase-cta-card');
+        var url = card ? card.getAttribute('data-copy-url') : null;
+        if (!url) return;
+
+        var restoreHtml = btn.innerHTML;
+        var copiedLabel = currentLang() === 'es' ? '✅ ¡Copiado!' : '✅ Copied!';
+
+        var afterCopy = function () {
+          btn.textContent = copiedLabel;
+          btn.classList.add('showcase-cta-copy-btn--copied');
+          setTimeout(function () {
+            btn.innerHTML = restoreHtml;
+            btn.classList.remove('showcase-cta-copy-btn--copied');
+          }, 2000);
+        };
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(afterCopy).catch(function () {
+            btn.textContent = currentLang() === 'es' ? '❌ Error' : '❌ Error';
+          });
+        } else {
+          var tmp = document.createElement('textarea');
+          tmp.value = url;
+          tmp.style.position = 'fixed';
+          tmp.style.opacity = '0';
+          document.body.appendChild(tmp);
+          tmp.select();
+          try { document.execCommand('copy'); afterCopy(); } catch (err) { /* give up silently */ }
+          document.body.removeChild(tmp);
+        }
+      });
+    }
   }());
   </script>
 

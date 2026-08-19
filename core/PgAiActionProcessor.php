@@ -96,8 +96,14 @@ final class PgAiActionProcessor
      * link, quote or not. `.quote-card-*` classes only style content that
      * opts into them, so a plain owner-typed ephemeral link (api/ephemeral_
      * links.php) still renders as ordinary prose, unaffected.
+     *
+     * Public (2026-08-18): api/public/l.php's `?sample=` preview mode calls
+     * this directly, to render the same card markup for a demo quote that
+     * was never actually created as a real (self-destructing) ephemeral
+     * link — a stable, always-available link an owner can share to show
+     * off the product without it dying after a few views.
      */
-    private static function buildQuotePayloadHtml(array $template): string
+    public static function buildQuotePayloadHtml(array $template): string
     {
         $h = static fn (string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 
