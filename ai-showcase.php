@@ -31,15 +31,16 @@ if (!lly_is_authenticated()) {
     exit;
 }
 ?><!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Lover Lips Yachts — PG-AI Executive Showcase" />
+  <meta name="description" content="Lover Lips Yachts — Concierge IA Lover Lips Executive Showcase" />
   <meta name="robots" content="noindex, nofollow" />
-  <title>Lover Lips Yachts · PG-AI Showcase</title>
+  <title>Lover Lips Yachts · Concierge IA Showcase</title>
   <link rel="stylesheet" href="assets/css/style.css?v=<?= filemtime(__DIR__ . '/assets/css/style.css') ?>" />
   <link rel="icon" type="image/png" href="assets/img/logo.png" />
+  <script src="assets/js/theme-init.js"></script>
 </head>
 
 <body class="showcase-page" data-active-lang="en">
@@ -53,9 +54,19 @@ if (!lly_is_authenticated()) {
       <span data-lang="en">⬅️ Back to Hub</span>
       <span data-lang="es">⬅️ Regresar al Hub</span>
     </a>
-    <div class="lang-toggle showcase-microheader-lang" role="group" aria-label="Language / Idioma">
-      <button type="button" class="lang-btn active" id="btn-en" aria-pressed="true">EN</button>
-      <button type="button" class="lang-btn"        id="btn-es" aria-pressed="false">ES</button>
+    <div class="showcase-microheader-actions">
+      <button class="theme-toggle" id="theme-toggle" aria-label="Switch to Night Mode" aria-pressed="false">
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+        </svg>
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m8.66-9h-1M4.34 12h-1m15.07-6.07l-.71.71M6.34 17.66l-.71.71m12.73 0l-.71-.71M6.34 6.34l-.71-.71M12 5a7 7 0 100 14A7 7 0 0012 5z"/>
+        </svg>
+      </button>
+      <div class="lang-toggle showcase-microheader-lang" role="group" aria-label="Language / Idioma">
+        <button type="button" class="lang-btn active" id="btn-en" aria-pressed="true">EN</button>
+        <button type="button" class="lang-btn"        id="btn-es" aria-pressed="false">ES</button>
+      </div>
     </div>
   </header>
 
@@ -77,8 +88,8 @@ if (!lly_is_authenticated()) {
       </p>
 
       <h1 class="showcase-hero-title reveal" style="--reveal-delay:.2s">
-        <span data-lang="en">Meet Lester's AI Concierge —<br /><em>Your 24/7 Digital Luxury Host</em></span>
-        <span data-lang="es">Conoce al Concierge IA de Lester —<br /><em>Tu Anfitrión Digital de Lujo, 24/7</em></span>
+        <span data-lang="en">Meet the Concierge IA Lover Lips —<br /><em>Your 24/7 Digital Luxury Host</em></span>
+        <span data-lang="es">Conoce al Concierge IA Lover Lips —<br /><em>Tu Anfitrión Digital de Lujo, 24/7</em></span>
       </h1>
 
       <p class="showcase-hero-subtitle reveal" style="--reveal-delay:.3s">
@@ -205,7 +216,6 @@ if (!lly_is_authenticated()) {
     </p>
   </footer>
 
-  <script src="assets/js/theme-init.js"></script>
   <script src="assets/js/main.js" defer></script>
 
   <!-- Page-specific inline script — scroll-reveal only, same "independent

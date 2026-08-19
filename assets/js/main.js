@@ -451,13 +451,22 @@ function leadsRenderRows(leads) {
   tbody.innerHTML = rows;
 }
 
+/** Full unfiltered result of the last successful fetch — the search box filters this client-side instead of re-fetching per keystroke; date range still goes server-side (api/leads.php), it changes the actual row set, not just what's visible. */
+var lly_leadsAllRows = [];
+
 function leadsLoadList() {
   var tbody = document.getElementById('leads-tbody');
   if (!tbody) return;
-  var csrfField = document.getElementById('leads-csrf-field');
+  var csrfField  = document.getElementById('leads-csrf-field');
+  var dateFromEl = document.getElementById('leads-date-from');
+  var dateToEl   = document.getElementById('leads-date-to');
+
   var body = new URLSearchParams();
   body.set('action', 'list');
   body.set('csrf_token', csrfField ? csrfField.value : '');
+  if (dateFromEl && dateFromEl.value) { body.set('date_from', dateFromEl.value); }
+  if (dateToEl && dateToEl.value) { body.set('date_to', dateToEl.value); }
+
   fetch('api/leads.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -465,20 +474,59 @@ function leadsLoadList() {
   }).then(function (res) { return res.json(); }).then(function (data) {
     if (data.status !== 'success') return;
     llySyncCsrfFields(data.csrf_token);
-    leadsRenderRows(data.leads || []);
+    lly_leadsAllRows = data.leads || [];
+    leadsApplySearchFilter();
   }).catch(function () { /* degrade silently — panel just keeps its loading row */ });
+}
+
+/** Client-side filter over the already-fetched rows — name/phone/email substring match, case-insensitive. */
+function leadsApplySearchFilter() {
+  var searchEl = document.getElementById('leads-search-input');
+  var query = searchEl ? searchEl.value.trim().toLowerCase() : '';
+
+  if (!query) {
+    leadsRenderRows(lly_leadsAllRows);
+    return;
+  }
+
+  var filtered = lly_leadsAllRows.filter(function (l) {
+    var haystack = [l.lead_name, l.lead_contact, l.display_name, l.lead_phone, l.lead_email]
+      .filter(Boolean).join(' ').toLowerCase();
+    return haystack.indexOf(query) !== -1;
+  });
+  leadsRenderRows(filtered);
 }
 
 function initLeadsPanel() {
   var table = document.getElementById('leads-table');
-  if (!table) return; /* only pg_ai_hub.php Section A ships this panel */
+  if (!table) return; /* only leads.php ships this panel */
   leadsLoadList();
 }
 
+function initLeadsFilters() {
+  var searchEl   = document.getElementById('leads-search-input');
+  var dateFromEl = document.getElementById('leads-date-from');
+  var dateToEl   = document.getElementById('leads-date-to');
+  var clearBtn   = document.getElementById('leads-filter-clear');
+  if (!searchEl && !dateFromEl && !dateToEl) return; /* only leads.php ships these filters */
+
+  if (searchEl) { searchEl.addEventListener('input', leadsApplySearchFilter); }
+  if (dateFromEl) { dateFromEl.addEventListener('change', leadsLoadList); }
+  if (dateToEl) { dateToEl.addEventListener('change', leadsLoadList); }
+  if (clearBtn) {
+    clearBtn.addEventListener('click', function () {
+      if (searchEl) { searchEl.value = ''; }
+      if (dateFromEl) { dateFromEl.value = ''; }
+      if (dateToEl) { dateToEl.value = ''; }
+      leadsLoadList();
+    });
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════════════
-   9a2. LEAD DETAIL MODAL — "👁️ Ver Resumen y Charla" (pg_ai_hub.php
-   Section A — guards on #lead-detail-dialog absence). Event-delegated
-   on #leads-tbody so newly-rendered rows (after every leadsLoadList()
+   9a2. LEAD DETAIL MODAL — "👁️ Ver Resumen y Charla" (leads.php —
+   guards on #lead-detail-dialog absence). Event-delegated on
+   #leads-tbody so newly-rendered rows (after every leadsLoadList()
    refresh) never need their own listener rebound.
    ═══════════════════════════════════════════════════════════════════ */
 
@@ -739,7 +787,45 @@ function ephemeralLoadList() {
   });
 }
 
-/** Reads dashboard.php's #lly-pgai-quote-templates-data JSON — PG-AI "PINK LIPS Experience" quick-fill templates. */
+/**
+ * Mirrors core/PgAiActionProcessor.php::buildQuotePayloadHtml() — same
+ * "Clear Luxury / Pink Glove" quote-card markup, built client-side so an
+ * owner quick-filling a manual ephemeral link (below) sees/edits the exact
+ * HTML that a chatbot-generated quote link would have gotten automatically.
+ * Kept in sync by hand (2026-08-18, core/pgai_templates.php restructure) —
+ * there's no shared-across-languages template engine in this project.
+ */
+function buildQuoteCardHtml(tpl) {
+  function esc(s) { return leadsEscape(s); }
+  var inclusions = (tpl.inclusions || []).map(function (item) {
+    return '<li><span class="quote-card-inclusion-icon">' + esc(item.icon) + '</span>'
+      + '<span data-lang="en">' + esc(item.en) + '</span><span data-lang="es">' + esc(item.es) + '</span></li>';
+  }).join('');
+  var policies = (tpl.policies || []).map(function (item) {
+    return '<li><span data-lang="en">' + esc(item.en) + '</span><span data-lang="es">' + esc(item.es) + '</span></li>';
+  }).join('');
+  var rate = Number(tpl.rate_mxn || 0).toLocaleString('en-US');
+
+  return '<div class="quote-card">'
+    + '<p class="quote-card-eyebrow">🛥️ <span data-lang="en">Experience</span><span data-lang="es">Experiencia</span></p>'
+    + '<h3><span data-lang="en">' + esc(tpl.title.en) + '</span><span data-lang="es">' + esc(tpl.title.es) + '</span></h3>'
+    + '<p class="quote-card-description"><span data-lang="en">' + esc(tpl.description.en) + '</span><span data-lang="es">' + esc(tpl.description.es) + '</span></p>'
+    + '</div>'
+    + '<div class="quote-card quote-card--rate">'
+    + '<p class="quote-card-eyebrow">💎 <span data-lang="en">Official Rate</span><span data-lang="es">Tarifa Oficial</span></p>'
+    + '<p class="quote-card-rate">$' + rate + ' <span class="quote-card-rate-currency">MXN</span></p>'
+    + '</div>'
+    + '<div class="quote-card">'
+    + '<p class="quote-card-eyebrow">✨ <span data-lang="en">VIP Inclusions</span><span data-lang="es">Inclusiones VIP</span></p>'
+    + '<ul class="quote-card-list">' + inclusions + '</ul>'
+    + '</div>'
+    + '<div class="quote-card">'
+    + '<p class="quote-card-eyebrow">📋 <span data-lang="en">Booking Policies</span><span data-lang="es">Políticas de Reserva</span></p>'
+    + '<ul class="quote-card-list quote-card-list--policies">' + policies + '</ul>'
+    + '</div>';
+}
+
+/** Reads pg_ai_hub.php's #lly-pgai-quote-templates-data JSON — PG-AI "PINK LIPS Experience" quick-fill templates. */
 function initEphemeralQuoteTemplates() {
   var select = document.getElementById('ephemeral-quote-template');
   var dataEl = document.getElementById('lly-pgai-quote-templates-data');
@@ -755,7 +841,7 @@ function initEphemeralQuoteTemplates() {
     var payloadField = document.getElementById('ephemeral-payload');
     var typeField = document.getElementById('ephemeral-resource-type');
     if (titleField && !titleField.value) { titleField.value = tpl.title_internal; }
-    if (payloadField) { payloadField.value = tpl.html; }
+    if (payloadField) { payloadField.value = buildQuoteCardHtml(tpl); }
     if (typeField) { typeField.value = 'quote'; }
   });
 }
@@ -1316,6 +1402,7 @@ function llyInitAll() {
   llySafeInit(initBackToTop);      /* #back-to-top → scrollTo(0)                   */
   llySafeInit(initEphemeralLinksPanel); /* #ephemeral-links-table → create/list/revoke */
   llySafeInit(initLeadsPanel);          /* #leads-table → list recent WhatsApp/Web leads */
+  llySafeInit(initLeadsFilters);        /* #leads-search-input / #leads-date-from / #leads-date-to → filter the leads list */
   llySafeInit(initLeadDetailModal);     /* #lead-detail-dialog → "Ver Resumen y Charla" per-row modal */
   llySafeInit(initPgaiSettingsPanel);   /* #pgai-settings-form → get/save AURA+WhatsApp config */
   llySafeInit(initFleetCatalogPanel);   /* #fleet-catalog-table → create/list/update/delete vessels */

@@ -192,13 +192,73 @@ if (!lly_is_authenticated()) {
       attributeFilter: ['data-active-lang'],
     });
 
+    function escapeHtml(str) {
+      var div = document.createElement('div');
+      div.textContent = str == null ? '' : str;
+      return div.innerHTML;
+    }
+
+    /* Quote links (api/public/l.php?t=...) come back as plain text inside
+       the model's reply — turn them into a real clickable link plus a
+       one-tap copy button, so sending the quote over WhatsApp doesn't
+       require selecting text by hand. Escapes the WHOLE message first,
+       then only re-injects markup for the URL substrings it matched
+       itself — never trusts the message text as HTML wholesale. */
+    function linkifyQuoteUrls(escapedText) {
+      var pattern = /(https?:\/\/[^\s&"'<]+\/api\/public\/l\.php\?t=[A-Za-z0-9_-]+)/g;
+      return escapedText.replace(pattern, function (url) {
+        var copyLabel = currentLang() === 'es' ? '📋 Copiar Enlace' : '📋 Copy Link';
+        return '<a href="' + url + '" target="_blank" rel="noopener noreferrer" class="lly-chat-link">' + url + '</a>'
+          + '<button type="button" class="lly-chat-copy-btn" data-copy-url="' + url + '">' + copyLabel + '</button>';
+      });
+    }
+
     function addMessage(text, who) {
       var el = document.createElement('div');
       el.className = 'lly-ai-widget-msg lly-ai-widget-msg--' + who;
-      el.textContent = text;
+      if (who === 'bot') {
+        el.innerHTML = linkifyQuoteUrls(escapeHtml(text));
+      } else {
+        el.textContent = text;
+      }
       thread.appendChild(el);
       thread.scrollTop = thread.scrollHeight;
     }
+
+    thread.addEventListener('click', function (e) {
+      var btn = e.target.closest('.lly-chat-copy-btn');
+      if (!btn) return;
+      var url = btn.getAttribute('data-copy-url');
+      if (!url) return;
+
+      var restoreLabel = btn.textContent;
+      var copiedLabel = currentLang() === 'es' ? '✅ ¡Copiado!' : '✅ Copied!';
+
+      var afterCopy = function () {
+        btn.textContent = copiedLabel;
+        btn.classList.add('lly-chat-copy-btn--copied');
+        setTimeout(function () {
+          btn.textContent = restoreLabel;
+          btn.classList.remove('lly-chat-copy-btn--copied');
+        }, 2000);
+      };
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(afterCopy).catch(function () {
+          btn.textContent = currentLang() === 'es' ? '❌ Error' : '❌ Error';
+        });
+      } else {
+        // Fallback for browsers without the async Clipboard API.
+        var tmp = document.createElement('textarea');
+        tmp.value = url;
+        tmp.style.position = 'fixed';
+        tmp.style.opacity = '0';
+        document.body.appendChild(tmp);
+        tmp.select();
+        try { document.execCommand('copy'); afterCopy(); } catch (err) { /* give up silently */ }
+        document.body.removeChild(tmp);
+      }
+    });
 
     function showTyping() {
       if (document.getElementById('chatlab-typing-indicator')) return;

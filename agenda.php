@@ -376,7 +376,7 @@ $lly_csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
 
         var sessionForChat = isLead ? b.id : (data.booking.session_id || null);
         if (sessionForChat) {
-          chatBtn.href = 'pg_ai_hub.php?open_lead=' + encodeURIComponent(sessionForChat);
+          chatBtn.href = 'leads.php?open_lead=' + encodeURIComponent(sessionForChat);
           chatBtn.hidden = false;
         }
       }).catch(function () {

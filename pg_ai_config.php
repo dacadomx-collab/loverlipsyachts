@@ -39,9 +39,9 @@ $lly_is_super_admin = ($_SESSION['lly_role'] ?? '') === 'super_admin';
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Lover Lips Yachts — PG-AI Configuration" />
+  <meta name="description" content="Lover Lips Yachts — Concierge IA Configuration" />
   <meta name="robots" content="noindex, nofollow" />
-  <title>Lover Lips Yachts · PG-AI Config</title>
+  <title>Lover Lips Yachts · Concierge IA Config</title>
   <link rel="stylesheet" href="assets/css/style.css?v=<?= filemtime(__DIR__ . '/assets/css/style.css') ?>" />
   <link rel="icon" type="image/png" href="assets/img/logo.png" />
   <script src="assets/js/theme-init.js"></script>
@@ -61,7 +61,7 @@ $lly_is_super_admin = ($_SESSION['lly_role'] ?? '') === 'super_admin';
           <img class="logo-night" src="assets/img/logo2.png" alt="Lover Lips Yachts" />
           <div class="topbar-brand">
             Lover Lips Yachts
-            <span>PG-AI Config · Confidential</span>
+            <span>Concierge IA Lover Lips · Config</span>
           </div>
         </a>
 
@@ -525,8 +525,8 @@ $lly_is_super_admin = ($_SESSION['lly_role'] ?? '') === 'super_admin';
       </div>
       <p>
         <strong>Lover Lips Yachts</strong> &nbsp;·&nbsp;
-        <span data-lang="en">PG-AI Config · Confidential · Owner Only</span>
-        <span data-lang="es">Configuración PG-AI · Confidencial · Solo Propietario</span>
+        <span data-lang="en">Concierge IA Lover Lips · Config · Confidential · Owner Only</span>
+        <span data-lang="es">Concierge IA Lover Lips · Configuración · Confidencial · Solo Propietario</span>
       </p>
     </div>
   </footer>

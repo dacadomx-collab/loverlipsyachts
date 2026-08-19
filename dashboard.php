@@ -200,24 +200,41 @@ $lly_pagos_trade_total = array_sum(array_column($lly_pagos, 'trade'));
       <div class="container">
         <div class="dash-grid">
 
-          <!-- ── CARD 1 — 🎯 PG-AI LEADS & EPHEMERAL QUOTES ──────────── -->
-          <article class="dash-card dash-card--pink">
-            <div class="dash-card-icon">🎯</div>
+          <!-- ── MASTER CARD — 🤖 CONCIERGE IA LOVER LIPS ─────────────────
+               Full-width, first position (2026-08-18 directive) — the
+               single entry point to the whole AI system: config, live
+               leads, booking calendar, and the chat testbed. ─────────── -->
+          <article class="dash-card dash-card--pink dash-card--featured">
+            <div class="dash-card-icon">🤖</div>
             <h2 class="dash-card-title">
-              <span data-lang="en">PG-AI Leads &amp; Ephemeral Quotes</span>
-              <span data-lang="es">PG-AI · Leads y Cotizaciones Efímeras</span>
+              <span data-lang="en">Concierge IA Lover Lips</span>
+              <span data-lang="es">Concierge IA Lover Lips</span>
             </h2>
             <p class="dash-card-body">
-              <span data-lang="en">Central hub for live WhatsApp &amp; Website leads, PG-AI chatbot configuration, official system prompt, and self-destructing quote templates.</span>
-              <span data-lang="es">Centro de control para leads en vivo de WhatsApp y el sitio web, configuración del chatbot PG-AI, prompt oficial del sistema, y plantillas de cotización autodestruibles.</span>
+              <span data-lang="en">The 24/7 AI concierge that answers guests, captures leads, generates quotes, and now syncs straight into the booking calendar — everything in one place.</span>
+              <span data-lang="es">El concierge de IA 24/7 que responde a los huéspedes, captura leads, genera cotizaciones, y ahora se sincroniza directo con el calendario de reservas — todo en un solo lugar.</span>
             </p>
-            <a class="dash-card-btn" href="pg_ai_hub.php">
-              <span data-lang="en">🎯 Open PG-AI Hub</span>
-              <span data-lang="es">🎯 Abrir Centro PG-AI</span>
-            </a>
-            <a class="dash-card-btn dash-card-btn--secondary" href="pg_ai_config.php">
-              <span data-lang="en">⚙️ Open PG-AI Config</span>
-              <span data-lang="es">⚙️ Abrir Configuración PG-AI</span>
+            <div class="dash-card-btn-grid">
+              <a class="dash-card-btn" href="pg_ai_config.php">
+                <span data-lang="en">⚙️ Configuration</span>
+                <span data-lang="es">⚙️ Configuración</span>
+              </a>
+              <a class="dash-card-btn" href="leads.php">
+                <span data-lang="en">📋 Live Leads</span>
+                <span data-lang="es">📋 Leads en Vivo</span>
+              </a>
+              <a class="dash-card-btn" href="agenda.php">
+                <span data-lang="en">📅 Calendar &amp; Agenda</span>
+                <span data-lang="es">📅 Calendario y Agenda</span>
+              </a>
+              <a class="dash-card-btn" href="chat-lab.php">
+                <span data-lang="en">💬 Test Chatbot</span>
+                <span data-lang="es">💬 Probar Chatbot</span>
+              </a>
+            </div>
+            <a class="dash-card-btn dash-card-btn--secondary u-mt-xs" href="pg_ai_hub.php">
+              <span data-lang="en">🎯 Open Concierge IA Hub</span>
+              <span data-lang="es">🎯 Abrir Hub Concierge IA</span>
             </a>
           </article>
 

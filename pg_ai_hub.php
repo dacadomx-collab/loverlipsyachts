@@ -43,7 +43,7 @@ $lly_csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Lover Lips Yachts — PG-AI Pink Glove AI Hub" />
   <meta name="robots" content="noindex, nofollow" />
-  <title>Lover Lips Yachts · PG-AI Hub</title>
+  <title>Lover Lips Yachts · Concierge IA Hub</title>
   <link rel="stylesheet" href="assets/css/style.css?v=<?= filemtime(__DIR__ . '/assets/css/style.css') ?>" />
   <link rel="icon" type="image/png" href="assets/img/logo.png" />
   <script src="assets/js/theme-init.js"></script>
@@ -63,11 +63,15 @@ $lly_csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
           <img class="logo-night" src="assets/img/logo2.png" alt="Lover Lips Yachts" />
           <div class="topbar-brand">
             Lover Lips Yachts
-            <span>PG-AI Hub · Confidential</span>
+            <span>Concierge IA Lover Lips · Hub</span>
           </div>
         </a>
 
         <div class="topbar-actions">
+          <a href="leads.php" class="topbar-back-btn">
+            <span data-lang="en">💬 Leads</span>
+            <span data-lang="es">💬 Leads</span>
+          </a>
           <a href="agenda.php" class="topbar-back-btn">
             <span data-lang="en">📅 Agenda</span>
             <span data-lang="es">📅 Agenda</span>
@@ -123,63 +127,26 @@ $lly_csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
     </section>
 
     <!-- ═══════════════════════════════════════════════════════════════
-         SECTION A — OMNICHANNEL LEADS VIEWER
+         LEADS LINK — moved to its own page, leads.php (2026-08-18
+         directive — Live Leads no longer shares a screen with templates/
+         config). Section letter "A" retired along with it.
     ═══════════════════════════════════════════════════════════════ -->
-    <section class="section" id="pgai-section-a" aria-labelledby="pgai-leads-title">
+    <section class="section" id="pgai-section-leads-link" aria-labelledby="pgai-leads-link-title">
       <div class="container">
-        <h2 class="section-title" id="pgai-leads-title">
-          <span data-lang="en">💬 A. Live Leads</span>
-          <span data-lang="es">💬 A. Leads en Vivo</span>
+        <h2 class="section-title" id="pgai-leads-link-title">
+          <span data-lang="en">💬 Live Leads</span>
+          <span data-lang="es">💬 Leads en Vivo</span>
         </h2>
         <p class="section-desc">
-          <span data-lang="en">Every conversation captured from the Website Widget and WhatsApp Business, in one unified thread per contact.</span>
-          <span data-lang="es">Cada conversación capturada desde el Widget Web y WhatsApp Business, en un solo hilo unificado por contacto.</span>
+          <span data-lang="en">Every conversation captured from the Website Widget and WhatsApp Business — client table, date filters, and the full chat transcript per lead — now lives on its own dedicated page.</span>
+          <span data-lang="es">Cada conversación capturada desde el Widget Web y WhatsApp Business — tabla de clientes, filtros por fecha, y la transcripción completa por lead — ahora vive en su propia página dedicada.</span>
         </p>
-        <input type="hidden" id="leads-csrf-field" value="<?= $lly_csrf ?>">
-        <div class="ephemeral-panel">
-          <div class="table-wrap">
-            <table class="data-table" id="leads-table">
-              <thead>
-                <tr>
-                  <th><span data-lang="en">Client Name</span><span data-lang="es">Nombre del Cliente</span></th>
-                  <th><span data-lang="en">Date / Time</span><span data-lang="es">Fecha / Hora</span></th>
-                  <th><span data-lang="en">Phone / WhatsApp</span><span data-lang="es">Teléfono/WhatsApp</span></th>
-                  <th>Email</th>
-                  <th><span data-lang="en">Status</span><span data-lang="es">Estado</span></th>
-                  <th><span data-lang="en">Actions</span><span data-lang="es">Acciones</span></th>
-                </tr>
-              </thead>
-              <tbody id="leads-tbody">
-                <tr><td colspan="6"><span data-lang="en">Loading…</span><span data-lang="es">Cargando…</span></td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <a class="dash-card-btn" href="leads.php">
+          <span data-lang="en">💬 Open Live Leads</span>
+          <span data-lang="es">💬 Abrir Leads en Vivo</span>
+        </a>
       </div>
     </section>
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         LEAD DETAIL DIALOG — opens from a Live Leads row's
-         "👁️ Ver Resumen y Charla" button (Section A)
-    ═══════════════════════════════════════════════════════════════ -->
-    <dialog class="chapter-dialog" id="lead-detail-dialog" aria-labelledby="lead-detail-dialog-title">
-      <div class="chapter-dialog-inner">
-        <button type="button" class="chapter-dialog-close" id="lead-detail-close" aria-label="Close">✕</button>
-        <p class="chapter-dialog-eyebrow" id="lead-detail-eyebrow"></p>
-        <h2 class="chapter-dialog-title" id="lead-detail-dialog-title"></h2>
-        <div class="chapter-dialog-body">
-          <h3 class="lead-detail-block-title">
-            <span data-lang="en">📋 Executive Summary</span><span data-lang="es">📋 Resumen Ejecutivo</span>
-          </h3>
-          <p id="lead-detail-summary" class="lead-detail-summary"></p>
-
-          <h3 class="lead-detail-block-title">
-            <span data-lang="en">💬 Full Transcript</span><span data-lang="es">💬 Transcripción Completa</span>
-          </h3>
-          <div class="lly-ai-widget-messages lead-detail-transcript" id="lead-detail-transcript"></div>
-        </div>
-      </div>
-    </dialog>
 
     <!-- ═══════════════════════════════════════════════════════════════
          CONFIG LINK — AURA/WhatsApp credentials, Master Prompt, Fleet
@@ -334,8 +301,8 @@ $lly_csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
       </div>
       <p>
         <strong>Lover Lips Yachts</strong> &nbsp;·&nbsp;
-        <span data-lang="en">PG-AI Hub · Confidential · Owner Only</span>
-        <span data-lang="es">Centro PG-AI · Confidencial · Solo Propietario</span>
+        <span data-lang="en">Concierge IA Lover Lips · Hub · Confidential · Owner Only</span>
+        <span data-lang="es">Concierge IA Lover Lips · Hub · Confidencial · Solo Propietario</span>
       </p>
     </div>
   </footer>

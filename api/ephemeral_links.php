@@ -71,14 +71,15 @@ $userId = (int) ($_SESSION['lly_user_id'] ?? 0);
 /**
  * Renders a public URL for a token. (2026-08-18) Was HTTP_HOST-derived
  * only, which silently dropped this project's subfolder (/loverlipsyachts/
- * locally, /cockpit/ on production) — prefers APP_URL from core/.env
- * (per-environment, not git-tracked) and only falls back to the
- * host-derived guess if APP_URL isn't configured yet. See
+ * locally, /cockpit/ on production) — now reads the APP_URL_LOCAL/
+ * APP_COCKPIT_URL pair already provisioned in core/.env (project scaffolding,
+ * 2026-05-30), picked via the same local-vs-production detection
+ * api/conexion.php::isLocalRequest() uses for DB_HOST_LOCAL. See
  * core/PgAiActionProcessor.php::publicUrl() for the sibling copy of this fix.
  */
 function lly_el_public_url(string $token): string
 {
-    $appUrl = lly_el_read_app_url();
+    $appUrl = lly_el_read_app_base_url();
     if ($appUrl !== '') {
         return rtrim($appUrl, '/') . '/api/public/l.php?t=' . rawurlencode($token);
     }
@@ -88,22 +89,47 @@ function lly_el_public_url(string $token): string
     return "{$scheme}://{$host}/api/public/l.php?t=" . rawurlencode($token);
 }
 
-function lly_el_read_app_url(): string
+function lly_el_read_app_base_url(): string
+{
+    $env = lly_el_read_env_file();
+
+    if (lly_el_is_local_request()) {
+        return $env['APP_URL_LOCAL'] ?? '';
+    }
+    return rtrim($env['APP_COCKPIT_URL'] ?? '', '/');
+}
+
+function lly_el_is_local_request(): bool
+{
+    $httpHost   = (string) ($_SERVER['HTTP_HOST']   ?? '');
+    $serverAddr = (string) ($_SERVER['SERVER_ADDR'] ?? '');
+    $remoteAddr = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+
+    if (in_array($httpHost, ['localhost', '127.0.0.1'], true) || str_starts_with($httpHost, 'localhost:') || str_starts_with($httpHost, '127.0.0.1:')) {
+        return true;
+    }
+    if (in_array($serverAddr, ['127.0.0.1', '::1'], true)) {
+        return true;
+    }
+    return in_array($remoteAddr, ['127.0.0.1', '::1'], true);
+}
+
+function lly_el_read_env_file(): array
 {
     $path = __DIR__ . '/../core/.env';
+    $vars = [];
     if (!is_readable($path)) {
-        return '';
+        return $vars;
     }
     foreach (file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
         $line = trim($line);
-        if ($line === '' || $line[0] === '#' || !str_starts_with($line, 'APP_URL')) {
+        if ($line === '' || $line[0] === '#' || $line[0] === ';' || !str_contains($line, '=')) {
             continue;
         }
-        if (preg_match('/^APP_URL\s*=\s*(.*)$/', $line, $m)) {
-            return trim($m[1], " \t\"'");
-        }
+        [$k, $v] = explode('=', $line, 2);
+        $vars[trim($k)] = trim($v, " \t\"'");
     }
-    return '';
+    return $vars;
 }
 
 try {

@@ -76,7 +76,7 @@ final class PgAiActionProcessor
                 self::SYSTEM_CREATED_BY,
                 $title,
                 'quote',
-                $templates[$route]['html'],
+                self::buildQuotePayloadHtml($templates[$route]),
                 null,
                 null, // null max_views → EphemeralLinkManager applies the owner's configured default (3)
             );
@@ -86,6 +86,51 @@ final class PgAiActionProcessor
         }
 
         return str_replace($sentinel, self::publicUrl((string) $link['token']), $replyText);
+    }
+
+    /**
+     * Renders the structured template (core/pgai_templates.php, restructured
+     * 2026-08-18) into the "Clear Luxury / Pink Glove" quote card markup —
+     * api/public/l.php wraps this with the page chrome (header, language
+     * toggle, security badge, WhatsApp CTA) that applies to every ephemeral
+     * link, quote or not. `.quote-card-*` classes only style content that
+     * opts into them, so a plain owner-typed ephemeral link (api/ephemeral_
+     * links.php) still renders as ordinary prose, unaffected.
+     */
+    private static function buildQuotePayloadHtml(array $template): string
+    {
+        $h = static fn (string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
+
+        $inclusionsHtml = '';
+        foreach ($template['inclusions'] as $item) {
+            $inclusionsHtml .= '<li><span class="quote-card-inclusion-icon">' . $h($item['icon']) . '</span>'
+                . '<span data-lang="en">' . $h($item['en']) . '</span><span data-lang="es">' . $h($item['es']) . '</span></li>';
+        }
+
+        $policiesHtml = '';
+        foreach ($template['policies'] as $item) {
+            $policiesHtml .= '<li><span data-lang="en">' . $h($item['en']) . '</span><span data-lang="es">' . $h($item['es']) . '</span></li>';
+        }
+
+        $rate = number_format((float) $template['rate_mxn'], 0, '.', ',');
+
+        return '<div class="quote-card">'
+            . '<p class="quote-card-eyebrow">🛥️ <span data-lang="en">Experience</span><span data-lang="es">Experiencia</span></p>'
+            . '<h3>' . '<span data-lang="en">' . $h($template['title']['en']) . '</span><span data-lang="es">' . $h($template['title']['es']) . '</span></h3>'
+            . '<p class="quote-card-description"><span data-lang="en">' . $h($template['description']['en']) . '</span><span data-lang="es">' . $h($template['description']['es']) . '</span></p>'
+            . '</div>'
+            . '<div class="quote-card quote-card--rate">'
+            . '<p class="quote-card-eyebrow">💎 <span data-lang="en">Official Rate</span><span data-lang="es">Tarifa Oficial</span></p>'
+            . '<p class="quote-card-rate">$' . $rate . ' <span class="quote-card-rate-currency">MXN</span></p>'
+            . '</div>'
+            . '<div class="quote-card">'
+            . '<p class="quote-card-eyebrow">✨ <span data-lang="en">VIP Inclusions</span><span data-lang="es">Inclusiones VIP</span></p>'
+            . '<ul class="quote-card-list">' . $inclusionsHtml . '</ul>'
+            . '</div>'
+            . '<div class="quote-card">'
+            . '<p class="quote-card-eyebrow">📋 <span data-lang="en">Booking Policies</span><span data-lang="es">Políticas de Reserva</span></p>'
+            . '<ul class="quote-card-list quote-card-list--policies">' . $policiesHtml . '</ul>'
+            . '</div>';
     }
 
     /**
@@ -102,34 +147,68 @@ final class PgAiActionProcessor
      */
     private static function publicUrl(string $token): string
     {
-        $appUrl = self::readAppUrl();
+        $appUrl = self::readAppBaseUrl();
         if ($appUrl !== '') {
             return rtrim($appUrl, '/') . '/api/public/l.php?t=' . rawurlencode($token);
         }
 
-        // Fallback only — used if APP_URL isn't set in core/.env yet. May
-        // produce a wrong path on any deployment mounted under a subfolder.
+        // Fallback only — used if neither APP_URL_LOCAL nor APP_COCKPIT_URL
+        // is set in core/.env yet. May produce a wrong path on any
+        // deployment mounted under a subfolder.
         $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
         $host   = $_SERVER['HTTP_HOST'] ?? 'localhost';
         return "{$scheme}://{$host}/api/public/l.php?t=" . rawurlencode($token);
     }
 
-    private static function readAppUrl(): string
+    /**
+     * (2026-08-18) Reads the APP_URL_LOCAL/APP_COCKPIT_URL pair that was
+     * already provisioned in core/.env from the original project scaffolding
+     * (dated 2026-05-30) — an earlier version of this fix added a new,
+     * redundant APP_URL key instead of noticing these two already existed;
+     * corrected to use them instead, same env-detection signals
+     * api/conexion.php::isLocalRequest() already uses for DB_HOST_LOCAL.
+     */
+    private static function readAppBaseUrl(): string
+    {
+        $env = self::readEnvFile();
+
+        if (self::isLocalRequest()) {
+            return $env['APP_URL_LOCAL'] ?? '';
+        }
+        return rtrim($env['APP_COCKPIT_URL'] ?? '', '/');
+    }
+
+    private static function isLocalRequest(): bool
+    {
+        $httpHost   = (string) ($_SERVER['HTTP_HOST']   ?? '');
+        $serverAddr = (string) ($_SERVER['SERVER_ADDR'] ?? '');
+        $remoteAddr = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+
+        if (in_array($httpHost, ['localhost', '127.0.0.1'], true) || str_starts_with($httpHost, 'localhost:') || str_starts_with($httpHost, '127.0.0.1:')) {
+            return true;
+        }
+        if (in_array($serverAddr, ['127.0.0.1', '::1'], true)) {
+            return true;
+        }
+        return in_array($remoteAddr, ['127.0.0.1', '::1'], true);
+    }
+
+    private static function readEnvFile(): array
     {
         $path = __DIR__ . '/.env';
+        $vars = [];
         if (!is_readable($path)) {
-            return '';
+            return $vars;
         }
         foreach (file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
             $line = trim($line);
-            if ($line === '' || $line[0] === '#' || !str_starts_with($line, 'APP_URL')) {
+            if ($line === '' || $line[0] === '#' || $line[0] === ';' || !str_contains($line, '=')) {
                 continue;
             }
-            if (preg_match('/^APP_URL\s*=\s*(.*)$/', $line, $m)) {
-                return trim($m[1], " \t\"'");
-            }
+            [$k, $v] = explode('=', $line, 2);
+            $vars[trim($k)] = trim($v, " \t\"'");
         }
-        return '';
+        return $vars;
     }
 
     /* ═══════════════════════════════════════════════════════════════════
@@ -320,8 +399,17 @@ final class PgAiActionProcessor
         // because the capture group required an already-capitalized word.
         // The stopword guard below is what now does the false-positive
         // filtering that capitalization used to do.
-        $pattern = '/\b(?:soy|me llamo|mi nombre es|i am|i\'m|my name is)\s+'
-            . '([a-zà-öø-ÿ]+(?:\s+[a-zà-öø-ÿ]+){0,2})/iu';
+        //
+        // Real bug found live the same day: $text here is every inbound
+        // message of the session joined with "\n" (see caller) — \s+
+        // between captured words matches a newline too, so a name at the
+        // very end of one message ("...mi nombre es david cabrera") kept
+        // eating into the FIRST word of the guest's next message ("mi
+        // correo es...") as if it were a third name word, producing
+        // "David Cabrera\nMi". [^\S\n] (whitespace, but never \n) keeps
+        // every word of the captured name on the one message it came from.
+        $pattern = '/\b(?:soy|me llamo|mi nombre es|i am|i\'m|my name is)[^\S\n]+'
+            . '([a-zà-öø-ÿ]+(?:[^\S\n]+[a-zà-öø-ÿ]+){0,2})/iu';
 
         if (!preg_match($pattern, $text, $m)) {
             return null;

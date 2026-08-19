@@ -62,8 +62,13 @@ $action = (string) ($_POST['action'] ?? '');
 
 switch ($action) {
     case 'list':
+        $dateFrom = trim((string) ($_POST['date_from'] ?? ''));
+        $dateTo   = trim((string) ($_POST['date_to'] ?? ''));
+        $dateFrom = preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom) ? $dateFrom : null;
+        $dateTo   = preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo) ? $dateTo : null;
+
         lly_leads_json('success', [
-            'leads'      => lly_leads_list($pdo, 30),
+            'leads'      => lly_leads_list($pdo, 100, $dateFrom, $dateTo),
             'csrf_token' => $rotatedCsrf,
         ]);
         // no break — lly_leads_json exits
@@ -90,15 +95,16 @@ switch ($action) {
  * empty list (never a 500) if sql/003_create_omnichannel_schema.sql
  * (or sql/009, for the lead_name/lead_phone/lead_email/summary columns)
  * has not been run yet on this environment — the panel still renders,
- * just with a "no leads yet" state.
+ * just with a "no leads yet" state. $dateFrom/$dateTo (Y-m-d, already
+ * format-validated by the caller) filter on last_activity_at — "when the
+ * conversation happened," the natural way to browse leads.php by date.
  */
-function lly_leads_list(PDO $pdo, int $limit): array
+function lly_leads_list(PDO $pdo, int $limit, ?string $dateFrom = null, ?string $dateTo = null): array
 {
     $limit = max(1, min(100, $limit));
 
     try {
-        $stmt = $pdo->query(
-            "SELECT
+        $sql = "SELECT
                 s.id, s.session_uuid, s.lead_date, s.lead_pax, s.lead_route, s.lead_contact,
                 s.lead_name, s.lead_phone, s.lead_email, s.summary,
                 s.status, s.last_activity_at,
@@ -114,9 +120,22 @@ function lly_leads_list(PDO $pdo, int $limit): array
              FROM omnichannel_sessions s
              JOIN omnichannel_contacts c ON c.id = s.contact_id
              JOIN omnichannel_channels ch ON ch.id = s.channel_id
-             ORDER BY s.last_activity_at DESC
-             LIMIT {$limit}"
-        );
+             WHERE 1=1";
+        $params = [];
+
+        if ($dateFrom !== null) {
+            $sql .= ' AND DATE(s.last_activity_at) >= :date_from';
+            $params['date_from'] = $dateFrom;
+        }
+        if ($dateTo !== null) {
+            $sql .= ' AND DATE(s.last_activity_at) <= :date_to';
+            $params['date_to'] = $dateTo;
+        }
+
+        $sql .= " ORDER BY s.last_activity_at DESC LIMIT {$limit}";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
 
         return $stmt->fetchAll();
     } catch (\PDOException $e) {
