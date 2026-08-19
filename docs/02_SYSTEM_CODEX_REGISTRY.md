@@ -1107,3 +1107,27 @@ Sin acceso a `gh` (mismo límite de este entorno documentado en hitos anteriores
 
 ### Verificación técnica
 Comparación directa producción-vs-local del CSS público (sin autenticación, decisivo) en vez de asumir por tiempo de espera. `ai_widget_gateway.php` usado como control para descartar un problema de directorio. Ningún secreto expuesto.
+
+## 📌 REGISTRO FORMAL — `MOD_CONCIERGE_COGNITIVO_OMNICANAL.md` Actualizado a v2.5 + Rutas Oficiales del Ecosistema Concierge IA Lover Lips (vigente, 2026-08-18)
+
+### Corrección de versión — v2.5, no v2.3 como pedía la directiva
+La directiva de este hito pedía promover el molde a "v2.3" — confirmado por `grep "^version:"` antes de tocar nada que el archivo ya estaba en **v2.4** (el hito anterior, "`MOD_CONCIERGE_COGNITIVO_OMNICANAL.md` Actualizado a v2.4", arriba). Tres de los seis puntos pedidos (esquema de la sección 6.1, Context Stacking de la 4.1, regla de oro de la Fase 8.5) ya estaban aplicados desde v2.3/v2.4 — confirmado por grep antes de reescribirlos, no se tocaron de nuevo. Se subió a **v2.5** (no v2.3, que habría sido un retroceso de número de versión) con únicamente lo genuinamente nuevo de este hito.
+
+### Sección 8.8 (nueva) — Vista Previa Estática / Static Preview Bypass
+Generaliza el patrón `?sample=[slug]` de `api/public/l.php` (ya construido en el hito "Modo de Cotización de Muestra", arriba) al molde agnóstico: mismo endpoint público que la redención real, sin BD/token/expiración, badge visualmente distinto que nunca se confunde con un enlace privado, slug inválido degrada a una plantilla válida en vez de dar 404. Se añadió también, dentro de la sección 8.7 ya existente, la segunda causa conocida (validada en este proyecto) del síntoma de mezcla EN/ES: ruta de CSS absoluta rota en un proyecto que no vive en la raíz del dominio — complementa, no reemplaza, la causa de saneamiento ya documentada ahí.
+
+### Sección 9 (nueva) — Módulo de Agenda y Disponibilidad Híbrida
+Generaliza el calendario de dos niveles (`agenda.php` + `api/bookings.php`, construido en el hito "Fix de Extracción de Nombre... y Módulo de Agenda", arriba): nivel 🟡 leído en vivo de `omnichannel_sessions` sin tabla propia, nivel 🟢 en una tabla de reservas formales propia con exclusión automática por consulta (`LEFT JOIN ... WHERE b.id IS NULL` en este proyecto). Incluye DDL de referencia agnóstico y reglas de UX (calendario mensual, filtros server-side, modal de detalle). **Desviación deliberada de la directiva:** se pidió como subsección "8.9" (bajo Enlaces Efímeros); se implementó como sección de primer nivel (9) porque el contenido — disponibilidad y reservas — no pertenece semánticamente bajo el módulo de enlaces autodestructivos de la sección 8. La antigua sección 9 (Notas de Gobernanza) se renumeró a 10; las 5 referencias cruzadas internas a "sección 9" se corrigieron a "sección 10" en el mismo hito (verificado con `grep -n "sección 9\b"` → cero coincidencias sueltas tras el fix).
+
+### Rutas oficiales del ecosistema (referencia consolidada — antes solo dispersa cronológicamente en este registro)
+Nombre comercial homologado: **Concierge IA Lover Lips** (ver hito "Nombre Oficial...", arriba — reemplaza definitivamente "PG-AI"/"Pink Glove AI"/cualquier nombre propio fabricado). Rutas reales de este proyecto, repo-root → `/cockpit/` vía `deploy.yml` (nunca existe una carpeta literal `cockpit/` en el repo):
+
+| Página/endpoint | Ruta en repo | URL de producción |
+|---|---|---|
+| Leads CRM | `leads.php` | `https://loverlipsyachts.com/cockpit/leads.php` |
+| Agenda/Calendario | `agenda.php` | `https://loverlipsyachts.com/cockpit/agenda.php` |
+| Showcase ejecutivo | `ai-showcase.php` | `https://loverlipsyachts.com/cockpit/ai-showcase.php` |
+| Cotización de muestra (sin auth) | `api/public/l.php?sample=balandra\|espiritu_santo` | `https://loverlipsyachts.com/cockpit/api/public/l.php?sample=balandra` |
+
+### Verificación técnica
+Ningún archivo `.php` fue modificado en este hito — solo `modulos/MOD_CONCIERGE_COGNITIVO_OMNICANAL.md` y este registro; `php -l` no aplica (no hay PHP tocado) y se confirma explícitamente que no hace falta correrlo. Escaneo dirigido (`grep -i`) sobre el molde actualizado confirma cero menciones de `loverlipsyachts`, `Lester`, `Balandra`, `Espíritu Santo`, `Keizer`, el número de WhatsApp real, o el dominio de AURA — disciplina agnóstica intacta. Balance de encabezados `## ` confirmado 1→10 secuencial sin huecos ni duplicados tras la renumeración. Ningún secreto expuesto.

@@ -5,7 +5,7 @@ tipo: Blueprint de Construcción — Checklist Táctico + System Prompt Portable
 alcance: Genérico / Agnóstico de Stack Cliente (WordPress, HTML puro, React, o cualquier lenguaje) y de Proveedor LLM (Gemini, Claude, GPT o equivalente)
 nucleo_inferencia: PHP 8.x / MariaDB (servidor central) — prompt agnóstico de modelo
 clasificacion: Molde Reutilizable — Santuario_Genesis
-version: 2.4
+version: 2.5
 fecha: 2026-08-18
 autoridad: Arquitecto (DCD LABS)
 tono: Calma Ejecutiva (Executive Calm)
@@ -18,7 +18,7 @@ fuentes_consolidadas:
 
 > Este documento es la fuente de verdad única para construir, desde cero, el módulo de Concierge Cognitivo Omnicanal en cualquier proyecto clonado del Santuario_Genesis. Fusiona dos capas que antes vivían en documentos separados y corrían el riesgo de divergir con el tiempo: **(1)** el **AI Runtime Operator** — el motor de inferencia, el contrato de datos y la infraestructura de aislamiento de IP — y **(2)** el **Prompt Maestro Portable** — la personalidad, el motor lingüístico y los cerrojos de negocio que gobiernan cómo ese motor conversa. No es un chatbot: es un operador de hospitalidad digital de ultra-lujo que atiende múltiples canales de entrada (WhatsApp, Telegram, Widget Web) bajo un único contrato de datos y una única personalidad coherente, sin exponer nunca la lógica de negocio, las llaves de API ni el prompt del sistema al servidor del cliente ni al usuario final.
 >
-> **Relación con sus dos fuentes:** este archivo consolida y sustituye, como referencia canónica hacia adelante, tanto al blueprint de infraestructura como a la plantilla de prompt portable que existían por separado. Ningún hecho de negocio de un cliente o tenant concreto vive aquí — sigue siendo, igual que sus dos fuentes, un **molde 100% agnóstico** (Mandato de Sincronización Génesis, ver sección 9).
+> **Relación con sus dos fuentes:** este archivo consolida y sustituye, como referencia canónica hacia adelante, tanto al blueprint de infraestructura como a la plantilla de prompt portable que existían por separado. Ningún hecho de negocio de un cliente o tenant concreto vive aquí — sigue siendo, igual que sus dos fuentes, un **molde 100% agnóstico** (Mandato de Sincronización Génesis, ver sección 10).
 
 ---
 
@@ -206,7 +206,7 @@ Estas variables son agnósticas de plataforma: se resuelven por simple reemplazo
                          archivo, para que la fecha/hora sea siempre la vigente)
 ```
 
-Instanciar esta plantilla para un proyecto concreto significa: copiarla, sustituir los tres marcadores, y añadir la personalidad/tono específico de esa marca (sección 2.1) — el resultado es el único archivo de Prompt Maestro de ese proyecto (Capa A, sección 1.4), que vive **fuera de este molde agnóstico**, en el repositorio del proyecto concreto (ej. `core/prompts/` o equivalente). Ningún nombre de marca real, persona, ni tono de negocio específico se incorpora aquí — eso violaría el Mandato de Sincronización Génesis (sección 9) que este documento se impone a sí mismo.
+Instanciar esta plantilla para un proyecto concreto significa: copiarla, sustituir los tres marcadores, y añadir la personalidad/tono específico de esa marca (sección 2.1) — el resultado es el único archivo de Prompt Maestro de ese proyecto (Capa A, sección 1.4), que vive **fuera de este molde agnóstico**, en el repositorio del proyecto concreto (ej. `core/prompts/` o equivalente). Ningún nombre de marca real, persona, ni tono de negocio específico se incorpora aquí — eso violaría el Mandato de Sincronización Génesis (sección 10) que este documento se impone a sí mismo.
 
 ### 2.6 Límites Duros (nunca los cruces)
 
@@ -286,7 +286,7 @@ El Prompt Maestro (sección 2) nunca ejecuta una acción por sí mismo — cuand
 
 ### 3.5 Consent Gate — Consentimiento Informado para Captura de Datos (⚠️ Propuesto, no validado en producción)
 
-> **Nota de honestidad editorial, distinta al resto de este documento:** a diferencia de cada otra sección de este molde — que generaliza un hallazgo ya estabilizado en un proyecto concreto (Protocolo de Actualización Secuencial en Cascada, sección 9) — esta sección **no** tiene todavía esa base. Es un patrón de diseño recomendado, no una implementación ya construida ni probada en vivo en ningún proyecto que use este molde. Se documenta aquí como propuesta explícitamente marcada, no como regla validada, precisamente para no romper la disciplina que el resto de este documento sí sigue. Promuévase a texto sin esta advertencia solo después de estabilizarse en un proyecto concreto real, como cualquier otra sección.
+> **Nota de honestidad editorial, distinta al resto de este documento:** a diferencia de cada otra sección de este molde — que generaliza un hallazgo ya estabilizado en un proyecto concreto (Protocolo de Actualización Secuencial en Cascada, sección 10) — esta sección **no** tiene todavía esa base. Es un patrón de diseño recomendado, no una implementación ya construida ni probada en vivo en ningún proyecto que use este molde. Se documenta aquí como propuesta explícitamente marcada, no como regla validada, precisamente para no romper la disciplina que el resto de este documento sí sigue. Promuévase a texto sin esta advertencia solo después de estabilizarse en un proyecto concreto real, como cualquier otra sección.
 
 Este molde captura datos personales identificables (nombre, teléfono, correo — secciones 4.4/6.7) de forma orgánica, en el propio flujo conversacional. Eso no exime a un proyecto concreto de las obligaciones de privacidad de su jurisdicción — el patrón propuesto:
 
@@ -1297,11 +1297,70 @@ Cuando el recurso protegido es contenido estructurado y repetitivo (una tarifa d
 
 Dos requisitos no negociables si se implementa esta extensión:
 - **Saneamiento de contenido más permisivo, no menos seguro:** si las plantillas incluyen el patrón de bilingüismo de par de nodos (ver Regla de Oro del proyecto que consuma este molde), el sanitizador del lado servidor debe permitir explícitamente el elemento contenedor que transporta el atributo de idioma — omitirlo de la lista blanca aplana ambos idiomas en un solo bloque de texto y rompe el contrato bilingüe en tiempo de render, no en tiempo de guardado (el error es silencioso hasta que alguien abre el enlace).
-- **Ninguna plantilla vive en este documento agnóstico:** el contenido real de cualquier plantilla (tarifas, nombres de rutas/paquetes, condiciones comerciales) es propiedad exclusiva del proyecto concreto que la usa y se registra en el Codex de ese proyecto — nunca aquí (Mandato de Sincronización Génesis, ver sección 9).
+  - **Segunda causa conocida del mismo síntoma (validada en vivo, 2026-08-18):** el aplanamiento EN/ES también ocurre, sin que el saneamiento tenga nada que ver, si la hoja de estilos que oculta el idioma inactivo se referencia con una ruta absoluta a la raíz del dominio (ej. `/assets/estilo.css`) en un proyecto que **no** vive en la raíz del dominio (mounted bajo una subcarpeta, como casi cualquier despliegue real de este molde) — la hoja de estilos da 404, y sin CSS ambos idiomas quedan visibles a la vez. Antes de asumir un problema de saneamiento, confirmar primero que la hoja de estilos de la página que renderiza el enlace efímero resuelve con `HTTP 200` real.
+- **Ninguna plantilla vive en este documento agnóstico:** el contenido real de cualquier plantilla (tarifas, nombres de rutas/paquetes, condiciones comerciales) es propiedad exclusiva del proyecto concreto que la usa y se registra en el Codex de ese proyecto — nunca aquí (Mandato de Sincronización Génesis, ver sección 10).
+
+### 8.8 Vista Previa Estática / Static Preview Bypass (opcional)
+
+Un enlace efímero real (secciones 8.1–8.3) se autodestruye por diseño después de un número fijo de vistas — el comportamiento correcto para una cotización real dirigida a un cliente específico, pero el comportamiento incorrecto para un enlace de **demostración** que un proyecto quiera mostrar de forma repetida y estable (ej. en un showcase de ventas, en material de marketing, o para que el propietario le enseñe el producto a colaboradores). Generar un enlace efímero real solo para ese propósito significa que se agotará solo, después de un puñado de clics, sin ninguna acción maliciosa de por medio — un enlace de demostración roto se ve mal precisamente en el contexto (percepción de marca) donde más importa que no se vea mal.
+
+**Patrón:** el mismo endpoint público de redención de enlaces (sección 8.1) acepta un parámetro alterno de vista previa (ej. `?sample=[recurso_slug]`) que renderiza la plantilla del recurso solicitado **directamente desde el catálogo de plantillas** (sección 8.7) — sin tocar la base de datos, sin token, sin contador de vistas, nunca expira. Reglas del patrón:
+
+- **Nunca comparte código de ruta con la redención real.** El bloque de render de la página (cabecera, badge de seguridad/estado, tarjetas de contenido, cualquier llamada a la acción) se extrae a una función compartida que ambos caminos invocan — la ÚNICA diferencia entre ambos es de dónde viene el contenido (una fila real de la base de datos vs. una entrada del catálogo de plantillas) y qué badge se muestra.
+- **El badge de estado es visualmente distinto y dice la verdad.** Nunca debe poder confundirse con un enlace privado real — un texto y tratamiento visual explícitos ("vista de muestra, no es una reserva real") en vez del badge normal de "N vistas restantes".
+- **Un slug de recurso inválido o desconocido degrada a una plantilla válida por defecto, nunca a un error 404.** Un enlace de demostración roto por un typo en la URL es peor que mostrar el ejemplo equivocado — a diferencia de un token real inválido (sección 8.1), donde un 404 sí es la respuesta correcta (un token es un secreto, un slug de demostración no lo es).
+- **Sigue siendo un endpoint público, sin autenticación** — mismo modelo de confianza que el resto del módulo (sección 8.1): el valor de este patrón depende de que el enlace se pueda compartir libremente (ej. por WhatsApp) sin pedirle a quien lo recibe que inicie sesión en ningún panel.
 
 ---
 
-## 9. Notas de Gobernanza
+## 9. Módulo de Agenda y Disponibilidad Híbrida (Two-Tier Availability Calendar)
+
+> Complementa la Fase 2 (memoria de sesión/leads, sección 6.1) y la Fase 8 (Cockpit, sección 5) — un calendario de disponibilidad estilo "panel de anfitrión" que unifica, en una sola vista, leads capturados orgánicamente por el concierge (sección 4.4) con reservas formales ya confirmadas, sin nunca duplicar el mismo dato en dos tablas.
+
+### 9.1 Modelo de dos niveles — leído en vivo, nunca copiado
+
+- **Nivel "interesado" (🟡):** se lee **directamente** de `omnichannel_sessions` (sección 6.1) — cualquier sesión con una fecha y una ruta/experiencia ya capturadas por la extracción determinística (sección 4.4), que todavía no se haya formalizado en una reserva. Este nivel nunca tiene su propia tabla ni su propia fila — es una vista derivada del mismo dato que ya vive en Fase 2, filtrada por "tiene fecha + ruta" y "no tiene reserva formal vinculada".
+- **Nivel "confirmado" (🟢):** vive en una tabla de reservas formales propia (`bookings` o equivalente del proyecto concreto) — creada por un humano (o por una automatización explícita) una vez que un lead se convierte, nunca por el concierge directamente. Incluye lo que el nivel "interesado" no tiene: balance de pago, estado de servicios validados, y un enlace opcional de vuelta a la sesión de origen (`session_id` opcional, referenciando la Fase 2) para que el operador pueda abrir la conversación completa que originó esa reserva.
+- **Un lead que se convierte deja de aparecer en el nivel 🟡 automáticamente** — el filtro que arma ese nivel (arriba) excluye cualquier sesión que ya tenga una reserva formal vinculada, así que el mismo cliente nunca aparece duplicado en ambos niveles. No hace falta ninguna limpieza manual ni un job de sincronización — es una consecuencia directa de cómo está armada la consulta, no un proceso aparte.
+
+### 9.2 Esquema de referencia (agnóstico) — tabla de reservas formales
+
+```sql
+CREATE TABLE IF NOT EXISTS bookings (
+    id                 BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    session_id         BIGINT UNSIGNED NULL COMMENT 'omnichannel_sessions.id de origen, si lo hay — nunca obligatorio, una reserva se puede crear a mano',
+    resource_name      VARCHAR(190)    NOT NULL COMMENT 'unidad/recurso reservado — nombre concreto del proyecto (vocabulario libre)',
+    guest_name         VARCHAR(190)    NULL,
+    guest_phone        VARCHAR(60)     NULL,
+    guest_email        VARCHAR(190)    NULL,
+    scheduled_date     DATE            NOT NULL,
+    time_slot          VARCHAR(60)     NULL COMMENT 'vocabulario libre por proyecto (ej. mañana/tarde/día completo)',
+    party_size         SMALLINT UNSIGNED NULL,
+    route_destination  VARCHAR(190)    NULL,
+    status             ENUM('interested','quote_sent','confirmed','completed','cancelled') NOT NULL DEFAULT 'interested',
+    total_price        DECIMAL(10,2)   NULL,
+    deposit_paid       DECIMAL(10,2)   NULL,
+    payment_status     ENUM('pending','partial','paid') NOT NULL DEFAULT 'pending',
+    created_at         DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at         DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_scheduled_date (scheduled_date),
+    INDEX idx_booking_status (status),
+    CONSTRAINT fk_booking_session FOREIGN KEY (session_id)
+        REFERENCES omnichannel_sessions(id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+`ON DELETE SET NULL` en `session_id` es deliberado — si la sesión de origen se purga (ej. un script de limpieza de datos de prueba, ver la disciplina de purga manual de la sección 5), la reserva formal sigue existiendo, solo pierde el enlace de vuelta a una conversación que ya no está. Nunca `ON DELETE CASCADE` aquí — borrar el hilo de chat de origen no debe borrar una reserva real.
+
+### 9.3 Interfaz — reglas de UX (agnósticas de framework)
+
+- **Vista de calendario mensual, no de lista** — cada celda de día muestra un indicador visual (ej. un punto de color) por cada elemento de cualquiera de los dos niveles que caiga en esa fecha, con un color distinto por nivel (🟡/🟢) y un tercer tratamiento visual neutro para estados terminales (completado/cancelado) que no deben competir visualmente con lo que sigue activo.
+- **Filtros que reducen el conjunto de datos consultado, no solo lo que se muestra** — un filtro por recurso/unidad o por rango de tamaño de grupo debe viajar como parámetro de la consulta al servidor, no aplicarse solo en JavaScript sobre un conjunto ya cargado; el filtro de nivel "interesado" en particular nunca debería cargar, de entrada, la transcripción completa de cada sesión solo para pintar un punto en el calendario.
+- **Detalle por elemento vía modal, nunca navegación a otra página** — mismo principio que la sección 8.5: un clic sobre el indicador de un día abre el detalle (datos del cliente, balance de pago si es nivel 🟢, ruta) en el sitio, con un enlace de salida opcional hacia el CRM de leads (sección 8.5) si ese elemento tiene una sesión de origen vinculada.
+
+---
+
+## 10. Notas de Gobernanza
 
 - Este documento vive en `knowledge/Santuario_Genesis/modulos/` como **molde agnóstico** — ningún dato real de un cliente o tenant específico debe incorporarse aquí (Mandato de Sincronización Génesis, Ley de Fricción Cero). Esta disciplina cubre ahora también la Capa A (sección 2): ningún nombre de marca, persona, tono de negocio específico, ni cerrojo con nombre propio de un proyecto concreto se incorpora a la plantilla — solo el patrón portable y sus variables (sección 2.5).
 - Cualquier mejora futura a este módulo debe seguir el Protocolo de Actualización Secuencial en Cascada: primero estabilización operativa real, después propagación genérica al Santuario, después compilación monolítica del proyecto que lo consuma.
@@ -1326,5 +1385,10 @@ Dos requisitos no negociables si se implementa esta extensión:
   - **4.1:** nombrada explícitamente la convención de encabezado fijo `[CONVERSATION HISTORY]` para el bloque de historial reinyectado (Context Stacking local) — una señal estructural para el modelo y para cualquier humano inspeccionando un log de despacho, distinguiendo contexto pasado del mensaje real del turno actual.
   - **6.7 (nuevo):** artefacto de referencia `DeterministicLeadExtractor`, generalizando en código ilustrativo el patrón ya descrito en prosa en la sección 4.4. **Mismo aviso de nomenclatura que la entrada v2.2:** es un nombre de clase ilustrativo de este documento agnóstico, no el nombre real de ninguna clase de un proyecto concreto que ya haya sembrado este molde.
   - **Fase 8.5 (checklist):** formalizada como regla de oro la vista de leads de una sola fila por sesión (nunca por mensaje) más el patrón de modal de dos bloques (Resumen Ejecutivo / Transcripción Completa) para el detalle por fila — generalizado de la misma implementación concreta que validó 4.1/4.4 en este mismo hito.
-  - **3.5 (nueva, marcada ⚠️ propuesta):** un patrón de Consent Gate para captura de datos personales en canales de mensajería, **explícitamente NO validado en ningún proyecto concreto** — a diferencia de cada otra entrada de este changelog, esta sección rompe deliberadamente el Protocolo de Actualización Secuencial en Cascada (sección 9) porque el Arquitecto solicitó incorporarla antes de esa estabilización real. Se documentó con una advertencia explícita en la sección misma en vez de omitirse, para no comprometer la disciplina de honestidad de este documento — no debe tratarse como regla probada hasta que un proyecto concreto la implemente y su Codex registre esa validación.
+  - **3.5 (nueva, marcada ⚠️ propuesta):** un patrón de Consent Gate para captura de datos personales en canales de mensajería, **explícitamente NO validado en ningún proyecto concreto** — a diferencia de cada otra entrada de este changelog, esta sección rompe deliberadamente el Protocolo de Actualización Secuencial en Cascada (sección 10) porque el Arquitecto solicitó incorporarla antes de esa estabilización real. Se documentó con una advertencia explícita en la sección misma en vez de omitirse, para no comprometer la disciplina de honestidad de este documento — no debe tratarse como regla probada hasta que un proyecto concreto la implemente y su Codex registre esa validación.
+  - Ningún nombre de marca, ruta comercial, ni dato de un tenant real se incorporó en este proceso.
+- **(2026-08-18, v2.5)** Dos adiciones nuevas, ambas generalizadas de un mismo hito de estabilización real; el resto de lo solicitado en ese hito (esquema de la sección 6.1, Context Stacking de la sección 4.1, regla de oro de la Fase 8.5) ya había quedado incorporado en v2.3/v2.4 y no se repite aquí.
+  - **8.8 (nueva):** patrón de Vista Previa Estática / Static Preview Bypass — un modo de lectura del mismo endpoint público de redención de enlaces efímeros (sección 8.1) que sirve una plantilla del catálogo (sección 8.7) directamente por slug, sin base de datos, sin token y sin expiración, para uso en material de demostración/showcase. Generalizado de un hallazgo real: un enlace efímero genuino no es apto para ese uso porque se autodestruye por diseño (sección 8.1) tras un puñado de vistas, incluso sin ninguna acción maliciosa de por medio.
+  - **9 (nueva, sección completa):** Módulo de Agenda y Disponibilidad Híbrida (Two-Tier Availability Calendar) — modelo de dos niveles donde "interesado" (🟡) se lee en vivo desde `omnichannel_sessions` (sección 6.1) sin tabla propia, y "confirmado" (🟢) vive en una tabla de reservas formales propia con exclusión automática por consulta (nunca duplicación manual). Incluye esquema de referencia agnóstico (9.2) y reglas de UX de calendario/modal (9.3). Se ubicó como sección de primer nivel — no como subsección de la 8 (Enlaces Efímeros) — porque gobierna disponibilidad y reservas, un dominio distinto al de enlaces autodestructivos que la sección 8 ya cubre; anidarla ahí habría sido incoherente semánticamente pese a que la solicitud original la nombraba como subsección de esa sección.
+  - La antigua sección 9 (Notas de Gobernanza) se renumeró a la 10 — todas las referencias cruzadas internas a "sección 9" en el resto del documento se actualizaron a "sección 10" en el mismo hito.
   - Ningún nombre de marca, ruta comercial, ni dato de un tenant real se incorporó en este proceso.
