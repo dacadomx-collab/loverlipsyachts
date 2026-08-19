@@ -1094,3 +1094,16 @@ Búsqueda dirigida de "PG-AI" restante en superficie visible (no comentarios de 
 
 ### Verificación técnica
 `php -l` limpio en `api/public/l.php`, `core/PgAiActionProcessor.php`, `ai-showcase.php`, `agenda.php`. `node --check` limpio en el script inline de `ai-showcase.php` (extraído a archivo real, no solo inspeccionado) — este chequeo fue el que encontró el bug de la sección 4, `php -l` no lo detectó. Balance de llaves de `style.css` confirmado (891/891). Modo `?sample=` probado en vivo: 3 llamadas consecutivas sin expirar, más una ruta inválida degradando correctamente. Ningún secreto expuesto.
+
+## 📌 REGISTRO FORMAL — 404 de `l.php?sample=` en Producción: No Era un Bug de Ruta, Fue un Deploy que Nunca Terminó (vigente, 2026-08-19)
+
+### Auditoría de ruta — sin hallazgos, la ruta ya era correcta
+Confirmado antes de tocar nada: `api/public/l.php` es la ubicación física real en el repositorio (única coincidencia de `find -iname "l.php"`). `ai-showcase.php` ya enlazaba correctamente con ruta relativa `api/public/l.php?sample=balandra` (correcto porque `ai-showcase.php` vive en la raíz del repo → `/cockpit/ai-showcase.php`, así que esa ruta relativa resuelve exactamente a `/cockpit/api/public/l.php?sample=balandra`, la URL canónica pedida) — mismo criterio para el atributo `data-copy-url` del botón de copiar. **No había ninguna referencia rota a `cockpit/l.php` sin el prefijo `api/public/`** — la hipótesis del hito anterior de que fuera un problema de ruta era incorrecta.
+
+### Causa raíz real, encontrada con evidencia directa
+Petición fresca a `https://loverlipsyachts.com/cockpit/api/public/l.php?sample=balandra` seguía devolviendo `404` — pero el **cuerpo de esa respuesta 404 era literalmente la salida de `lly_l_page()` de este mismo archivo** (`<title>Link not found · Lover Lips Yachts</title>`, con el `href` del CSS ya construido correctamente vía `$base` con el prefijo `/cockpit/`) — es decir, producción **sí** estaba ejecutando código de un hito anterior de este mismo archivo (el fix de `APP_URL_LOCAL`/`APP_COCKPIT_URL`), solo que sin la rama `?sample=` del hito más reciente. Confirmado de forma decisiva comparando el CSS público servido en producción contra el local: faltaban las tres clases más nuevas (`quote-security-badge--sample`, `showcase-cta-copy-btn`, `showcase-telemetry-dot`) y el archivo pesaba ~2 KB menos que el local — **el commit `9984ed1` nunca terminó de desplegarse**, mientras que el commit anterior (`93fbbce`) sí lo había hecho. Se descartó que fuera un problema de acceso al directorio `api/public/` en general — `ai_widget_gateway.php` (mismo directorio) respondió `HTTP 400` normal, no `404`.
+
+Sin acceso a `gh` (mismo límite de este entorno documentado en hitos anteriores) no se pudo inspeccionar el log real del run de GitHub Actions para saber por qué se detuvo — el `deploy.yml` de este proyecto ya documenta FTPS a Hostinger como propenso a fallos de handshake lentos. Remediación aplicada: un nuevo commit (este mismo registro) para volver a disparar `on: push` y darle al deploy una oportunidad limpia.
+
+### Verificación técnica
+Comparación directa producción-vs-local del CSS público (sin autenticación, decisivo) en vez de asumir por tiempo de espera. `ai_widget_gateway.php` usado como control para descartar un problema de directorio. Ningún secreto expuesto.
