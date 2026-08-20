@@ -1131,3 +1131,43 @@ Nombre comercial homologado: **Concierge IA Lover Lips** (ver hito "Nombre Ofici
 
 ### Verificación técnica
 Ningún archivo `.php` fue modificado en este hito — solo `modulos/MOD_CONCIERGE_COGNITIVO_OMNICANAL.md` y este registro; `php -l` no aplica (no hay PHP tocado) y se confirma explícitamente que no hace falta correrlo. Escaneo dirigido (`grep -i`) sobre el molde actualizado confirma cero menciones de `loverlipsyachts`, `Lester`, `Balandra`, `Espíritu Santo`, `Keizer`, el número de WhatsApp real, o el dominio de AURA — disciplina agnóstica intacta. Balance de encabezados `## ` confirmado 1→10 secuencial sin huecos ni duplicados tras la renumeración. Ningún secreto expuesto.
+
+## 📌 REGISTRO FORMAL — `invitation.php`: Landing Page VIP de Invitación al Lanzamiento de "Nine Lives. One True Love" (vigente, 2026-08-20)
+
+### Contexto
+El Arquitecto pidió una landing page de invitación VIP de alta gama para el evento de lanzamiento del libro de Lester Keizer (ya #1 en Amazon New Releases, categoría Organ Transplants), con copy exacto provisto, estética "negros profundos, blancos puros y acentos en dorado/champagne", toggle día/noche, bilingüe nativo, imagen `assets/img/HotNewRelease.jpeg`, video de YouTube incrustado, botón RSVP, mobile-first, y registro obligatorio aquí.
+
+### Descubrimiento previo — este proyecto YA tenía la infraestructura exacta para esto
+Antes de escribir código: `book.php` (servido también en `https://loverlipsyachts.com/my-book/` vía el wrapper `my-book/index.php`) ya es la página pública de "Nine Lives. One True Love" — mismo libro, mismos anfitriones (Fabiola y Lester Keizer). Se reutilizó exactamente ese mismo patrón de dos archivos en vez de inventar uno nuevo:
+- **`invitation.php`** (nuevo, raíz del repo) — la página real, calcula `$baseAssetsUrl` con la misma detección local-vs-producción que `book.php`. 100% estática (sin `Conexion`/DB) — es un evento de una sola noche, no necesita panel de edición CMS.
+- **`my-book/invitation.php`** (nuevo) — wrapper delgado que hace `require` de `invitation.php` con la misma resolución de ruta producción/local que `my-book/index.php` ya usaba. URL pública: `https://loverlipsyachts.com/my-book/invitation.php`.
+- **`my-book/.htaccess`**: whitelist de `<FilesMatch>` ampliada de `^index\.php$` a `^(index|invitation)\.php$`.
+- **`.htaccess`** (raíz/cockpit): `invitation` añadido a la whitelist de PHP permitidos — mismo patrón de "olvidar esto rompe todo con 403" ya documentado en hitos anteriores, no se repitió el olvido esta vez.
+
+### Diseño — reutilización deliberada del sistema de diseño existente, no una paleta nueva
+La estética "negro + dorado, alto contraste" pedida **ya existe** en este proyecto: el tema oscuro (`[data-theme="dark"]`) ya usa `#0b0b0e` de fondo y los tokens `--gold`/`--gold-10`/`--gold-20`; `.pull-quote-vip` (creada para `book.php`) ya es exactamente un marco "Champagne Gold". Se reutilizaron sin cambios: `.book-authority-badge`/`.book-authority-ribbon` (badge "#1 Amazon"), `.pull-quote-vip` (cita YODO™️), `.chapter-dialog`/`::backdrop` (shell del modal de video), `.back-to-top`, topbar/footer/toggle de idioma y tema — cero reinvención de componentes que ya existían.
+
+**Único elemento verdaderamente nuevo:** la sección `.invite-hero` se fuerza a fondo oscuro **siempre**, independientemente del toggle día/noche — decisión deliberada de diseño (una invitación de gala no debería volverse "clara" en modo día; el resto de la página sí responde al toggle con los tokens normales `--surface`/`--bg`). Se añadió una sección nueva y numerada (31) al final de `assets/css/style.css` seguiendo la convención de secciones ya establecida en el archivo.
+
+### Corrección de copy aplicada — un typo, no una decisión editorial
+El texto provisto decía "NINE LIVE. ONE TRUE LOVE." (sin la "S") — se corrigió a "**Nine Lives**. One True Love." para que coincida exactamente con el título real del libro ya usado en cada otra página de este proyecto (`book.php`, meta tags, Amazon). Se documenta aquí porque es una desviación silenciosa del texto literal recibido, no porque cambie el significado.
+
+### RSVP — decisión sin dato explícito del Arquitecto
+La directiva pedía un botón RSVP "tipo mailto: o que conecte al flujo de atención predeterminado" pero no dio una dirección de correo real. Se usó el **flujo de atención predeterminado real de este proyecto**: WhatsApp (`https://wa.me/17022048894`, el mismo `LLY_WHATSAPP_CONTACT` ya publicado y usado en `api/public/l.php`), con un mensaje pre-rellenado bilingüe vía `rawurlencode()` en PHP ("✅ YES — I'd love to attend... Party of: ___ / ¡Hola! Sí, me encantaría asistir..."). Se prefirió esto sobre un `mailto:` a una dirección inventada, que habría fallado silenciosamente o abierto un cliente de correo sin destinatario real.
+
+### Video — YouTube incrustado de forma perezosa (lazy), no en carga de página
+`https://youtu.be/e4Y9dNy83Dc` → ID `e4Y9dNy83Dc`. La tarjeta minimalista muestra solo la miniatura pública de YouTube (`img.youtube.com/vi/.../hqdefault.jpg`, sin API key) con un botón de play superpuesto; el `<iframe>` de `youtube-nocookie.com` (dominio de privacidad reforzada de YouTube) solo se crea en el DOM al hacer clic — cero solicitudes a YouTube ni cookies de seguimiento en la carga inicial de la página. Al cerrar el modal, el iframe se destruye (`frame.innerHTML = ''`) para detener la reproducción de inmediato, no solo ocultar el modal.
+
+### Validación ejecutada
+- `php -l` limpio en `invitation.php` y `my-book/invitation.php` (binario `C:\xampp\php\php.exe`, `php` no está en el `PATH` de este entorno bash).
+- Balance de llaves/paréntesis de `assets/css/style.css` completo confirmado 934/934 y 1449/1449 tras la adición.
+- Prueba en vivo contra XAMPP local: `invitation.php` y `my-book/invitation.php` responden `HTTP 200`; el cuerpo de `my-book/invitation.php` contiene el contenido real (confirmado que NO cayó en la rama de fallback `503` del wrapper).
+- 25/25 pares `data-lang="en"`/`data-lang="es"` balanceados en el HTML ya renderizado por PHP. 6/6 `<section>`/`</section>` balanceados.
+- El script inline de la página (patrón "script propio, no se agrega a `main.js`", mismo criterio que `agenda.php`/`chat-lab.php`) se extrajo del **HTML ya renderizado** (no del código fuente `.php`, que aún contiene la sintaxis `<?= ?>` sin interpolar) y pasó `node --check` limpio — incluyendo la verificación de que `json_encode(..., JSON_HEX_TAG | JSON_HEX_AMP)` interpola la URL del embed de forma segura dentro del `<script>`.
+- El enlace RSVP de WhatsApp se verificó ya renderizado: `rawurlencode()` codificó correctamente el emoji, el `&` de "Fabiola & Lester" y los acentos/¡signos de apertura del texto en español.
+- **Auditoría con Prettier (pedida explícitamente):** no hay `package.json`/config de Prettier en este proyecto — se ejecutó vía `npx prettier@3 --check` de todas formas. Resultado honesto: Prettier marca la práctica totalidad de `style.css` (las 4864 líneas preexistentes, no solo lo nuevo) porque el archivo entero usa convenciones deliberadamente distintas a las de Prettier (`.72rem` sin cero inicial, `rgba(255,0,127,.08)` sin espacios, comillas simples, reglas de una sola línea para selectores simples) — el mismo estilo que esta sesión igualó a propósito en el CSS nuevo para no introducir inconsistencia dentro del mismo archivo. Aplicar `--write` habría significado reformatear ~4864 líneas ajenas a este hito (diff masivo e injustificado) o desalinear el bloque nuevo del resto del archivo. Se optó por honrar la convención ya establecida del proyecto en vez de aplicar Prettier a ciegas; no se ejecutó `--write` en ningún archivo.
+- **No se pudo verificar visualmente en un navegador real** (sin herramienta de automatización de navegador disponible en este entorno) — toda la validación de esta página fue estructural (`php -l`, balance de llaves/etiquetas, HTTP 200, contenido del body, `node --check` sobre el JS ya renderizado). Se declara esto explícitamente en vez de reportar éxito sin haberlo comprobado visualmente.
+- Ningún secreto ni credencial nueva se introdujo — el número de WhatsApp ya era público (mismo usado en `l.php`), sin llaves de API para el embed de YouTube (miniatura pública + `youtube-nocookie.com`, ambos sin autenticación).
+
+### Pendiente de acción humana — no se pudo verificar
+El botón "🎓 View Sample" u otras páginas no se tocaron. **No se ejecutó ningún commit/push todavía en el momento de escribir esta entrada** — ver el cierre de hito posterior en este mismo registro para el resultado real del deploy a `https://loverlipsyachts.com/my-book/invitation.php`.

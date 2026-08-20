@@ -11,7 +11,7 @@ Options -Indexes
 <FilesMatch "\.php$">
     Require all denied
 </FilesMatch>
-<FilesMatch "^index\.php$">
+<FilesMatch "^(index|invitation)\.php$">
     Require all granted
 </FilesMatch>
 

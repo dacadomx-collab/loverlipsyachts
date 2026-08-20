@@ -4862,3 +4862,227 @@ body.chatlab-page {
   font-weight: 600;
   color: var(--ink-60);
 }
+
+/* =====================================================================
+   31. VIP INVITATION PAGE — invitation.php (Nine Lives Book Launch Event)
+   Hero is deliberately always-dark (black + gold) regardless of the theme
+   toggle — the high-contrast "black-tie invitation" look is the design
+   intent, not a light/dark variant. Everything below the hero uses the
+   normal --surface/--bg tokens and DOES respond to the toggle.
+   ===================================================================== */
+
+.invite-hero {
+  position: relative;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(212,175,55,.14), transparent 55%),
+    linear-gradient(160deg, #0b0b0e 0%, #16130a 60%, #0b0b0e 100%);
+  padding-block: 3.5rem 3rem;
+  text-align: center;
+  overflow: hidden;
+}
+.invite-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-top: 1px solid rgba(212,175,55,.25);
+  border-bottom: 1px solid rgba(212,175,55,.25);
+  pointer-events: none;
+}
+.invite-hero .container { position: relative; }
+
+.invite-eyebrow {
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: .5rem;
+}
+.invite-kicker {
+  font-size: .82rem;
+  font-weight: 600;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.55);
+  margin-bottom: 1.75rem;
+}
+.invite-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 6vw, 3rem);
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.15;
+  margin-bottom: 1.5rem;
+}
+.invite-hosts {
+  max-width: 560px;
+  margin: 0 auto 1.75rem;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: rgba(255,255,255,.78);
+}
+.invite-booktitle {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.35rem, 4.5vw, 2.1rem);
+  letter-spacing: .01em;
+  background: linear-gradient(135deg, var(--gold), #f4e5b0);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin-bottom: 1.25rem;
+}
+.invite-hero .book-authority-ribbon { justify-content: center; margin-bottom: 1.5rem; }
+
+.invite-hero-frame {
+  max-width: 320px;
+  margin: 0 auto;
+  padding: .6rem;
+  border-radius: var(--r-xl);
+  background: linear-gradient(160deg, rgba(212,175,55,.18), rgba(212,175,55,.02));
+  border: 1px solid rgba(212,175,55,.3);
+}
+.invite-hero-frame img {
+  width: 100%;
+  border-radius: calc(var(--r-xl) - .4rem);
+  box-shadow: 0 30px 60px -15px rgba(0,0,0,.55);
+}
+
+/* ── Event details — ticket stub ── */
+.invite-ticket {
+  max-width: 520px;
+  margin: 0 auto;
+  background: var(--surface);
+  border: 1.5px solid var(--gold-20);
+  border-radius: var(--r-xl);
+  padding: 2rem 1.75rem;
+  box-shadow: var(--sh-card);
+  text-align: center;
+}
+.invite-ticket-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .65rem;
+  font-size: .95rem;
+  font-weight: 600;
+  color: var(--ink);
+  padding-block: .6rem;
+  flex-wrap: wrap;
+}
+.invite-ticket-row + .invite-ticket-row { border-top: 1px dashed var(--ink-10); }
+.invite-ticket-icon { font-size: 1.1rem; flex-shrink: 0; }
+.invite-ticket-tagline {
+  margin-top: 1.5rem;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.02rem;
+  color: var(--gold);
+}
+
+/* ── Celebration paragraph ── */
+.invite-celebration { text-align: center; }
+.invite-celebration p {
+  max-width: 640px;
+  margin: 0 auto;
+  font-size: 1.02rem;
+  line-height: 1.8;
+  color: var(--ink-60);
+}
+
+/* ── Mini concert ── */
+.invite-concert { text-align: center; }
+.invite-concert-bio {
+  max-width: 640px;
+  margin: 0 auto 1rem;
+  font-size: .96rem;
+  line-height: 1.8;
+  color: var(--ink-60);
+}
+.invite-concert-highlight { color: var(--ink); font-weight: 700; }
+
+/* ── Podcast / video ── */
+.invite-podcast { text-align: center; }
+.invite-video-card {
+  display: block;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  border: 1px solid var(--ink-10);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: var(--sh-card);
+  cursor: pointer;
+  padding: 0;
+  transition: transform var(--ease), box-shadow var(--ease);
+  text-align: left;
+}
+.invite-video-card:hover { transform: translateY(-4px); box-shadow: var(--sh-hover); }
+.invite-video-thumb { position: relative; aspect-ratio: 16 / 9; background: #000; display: block; }
+.invite-video-thumb img { width: 100%; height: 100%; object-fit: cover; opacity: .85; }
+.invite-video-play { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.invite-video-play span {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(212,175,55,.92);
+  color: #1a1305;
+  box-shadow: 0 8px 32px rgba(0,0,0,.4);
+}
+.invite-video-play svg { width: 22px; height: 22px; margin-left: 3px; }
+.invite-video-caption {
+  display: block;
+  padding: 1.1rem 1.25rem;
+  font-size: .85rem;
+  color: var(--ink-60);
+  line-height: 1.6;
+}
+.invite-video-caption strong { color: var(--ink); }
+
+.invite-video-dialog .chapter-dialog-inner { padding: 1rem; max-height: 90vh; }
+.invite-video-frame { position: relative; aspect-ratio: 16 / 9; border-radius: var(--r-md); overflow: hidden; background: #000; }
+.invite-video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+/* ── RSVP ── */
+.invite-rsvp { text-align: center; }
+.invite-rsvp-lead {
+  max-width: 520px;
+  margin: 0 auto 1.75rem;
+  font-size: 1rem;
+  color: var(--ink-60);
+}
+.invite-rsvp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .65rem;
+  padding: 1.05rem 2.25rem;
+  border-radius: var(--r-full);
+  background: linear-gradient(135deg, var(--gold), #b8933f);
+  color: #1a1305;
+  font-size: .82rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  box-shadow: var(--sh-gold);
+  transition: var(--ease);
+}
+.invite-rsvp-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 40px rgba(212,175,55,.45); color: #1a1305; }
+.invite-rsvp-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
+
+.invite-signoff {
+  margin-top: 2.25rem;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1rem;
+  color: var(--ink-60);
+}
+.invite-signoff strong { color: var(--ink); font-style: normal; }
+
+@media (min-width: 640px) {
+  .invite-ticket-row { font-size: 1.02rem; }
+}
