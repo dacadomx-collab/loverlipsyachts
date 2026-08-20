@@ -1,14 +1,20 @@
 # 🧬 07 — ROADMAP Y CHECKLIST DE IMPLEMENTACIÓN COGNITIVA
 
-> **Clasificación:** Documento Operativo — Plantilla Universal VECTOR_CERO
-> **Versión:** 2.0 (Genérica)
-> **Uso:** Adaptar los componentes marcados con `[PLACEHOLDER]` al contexto del proyecto.
+> **Clasificación:** Documento Operativo — adaptado de la Plantilla Universal VECTOR_CERO v2.0 al proyecto real Lover Lips Yachts (2026-08-20).
+> **Estado real (2026-08-20):** este checklist describe el estado objetivo/roadmap. Ninguna de las casillas de abajo refleja código construido todavía — el estado real de cada pieza ya construida vive en `docs/02_SYSTEM_CODEX_REGISTRY.md` (hitos fechados y verificados), no aquí. Este documento es la intención futura, no el registro de lo hecho.
 
 ---
 
 ## 🎯 OBJETIVO GENERAL DEL ROADMAP
 
-Este documento establece las fases lógicas de desarrollo, los criterios mínimos de aceptación técnicos y las reglas de piedra conceptuales para guiar la construcción del **[NOMBRE_DEL_MOTOR_COGNITIVO] v1.0**. Ningún hito de programación se considerará cerrado si no se satisfacen los requerimientos descritos en este checklist.
+Este documento establece las fases lógicas de desarrollo, los criterios mínimos de aceptación técnicos y las reglas de piedra conceptuales para guiar la construcción del **Concierge IA Lover Lips v1.0** (el operador cognitivo omnicanal ya parcialmente en producción — ver `modulos/MOD_CONCIERGE_COGNITIVO_OMNICANAL.md`). Ningún hito de programación se considerará cerrado si no se satisfacen los requerimientos descritos en este checklist.
+
+### Anclaje contra el estado real ya construido — evita duplicar o contradecir lo que ya existe
+- **Consent Gate (P0 en la tabla de abajo):** ya existe como **propuesta explícitamente marcada "no validada"** en `modulos/MOD_CONCIERGE_COGNITIVO_OMNICANAL.md` sección 3.5 (v2.4) — este proyecto (`loverlipsyachts.com`) **no tiene implementado** ningún mecanismo de consent gate todavía. La Fase A de abajo describe el mismo trabajo pendiente; no se ha empezado.
+- **Human Handoff (P0):** el marcador `[[PGAI_ESCALATE]]` que resolvería esto **ya existe en el código** (`core/PgAiActionProcessor.php`) pero una auditoría en vivo (`docs/02_SYSTEM_CODEX_REGISTRY.md`, hito "Auditoría en Vivo Post-Sync") encontró que el modelo **no lo emite de forma confiable** — el mecanismo de post-procesamiento está construido, el disparo confiable a 0.75 de confianza descrito en la Fase C de abajo no.
+- **Normalización Ontológica de Ingesta / Dataset de Flota (P1):** ya existe una tabla real, `ll_fleet_catalog` (`sql/005_create_ll_fleet_catalog.sql`, `core/FleetCatalogRepository.php`), con columnas `vessel_name`/`vessel_slug`/`role_label_en/es`/`max_pax`/`rate_note_en/es`/`status_pill`/`verification_status` — **no** `yacht_id`/`length_ft`/`amenities` como a veces se ha nombrado informalmente; cualquier expansión debe partir de este esquema real o migrarlo explícitamente, nunca asumir columnas que no existen (Mandamiento 4). Estado real de datos: **3 de 42 embarcaciones** de la flota total tienen `verification_status = 'verified'` — el resto son huecos de captura pendientes, no un error.
+
+Las demás filas del cuadro de priorización (Motor de Riesgo del Dominio, Scoring Multidimensional, Deduplicación Omnicanal, Twin Engine, Persona Adaptativa, Retención Invisible) **no tienen ningún trabajo real iniciado todavía** en este proyecto — son roadmap puro, sin anclaje que corregir.
 
 ---
 
