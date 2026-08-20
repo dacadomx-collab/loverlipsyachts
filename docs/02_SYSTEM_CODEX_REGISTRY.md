@@ -1169,5 +1169,18 @@ La directiva pedía un botón RSVP "tipo mailto: o que conecte al flujo de atenc
 - **No se pudo verificar visualmente en un navegador real** (sin herramienta de automatización de navegador disponible en este entorno) — toda la validación de esta página fue estructural (`php -l`, balance de llaves/etiquetas, HTTP 200, contenido del body, `node --check` sobre el JS ya renderizado). Se declara esto explícitamente en vez de reportar éxito sin haberlo comprobado visualmente.
 - Ningún secreto ni credencial nueva se introdujo — el número de WhatsApp ya era público (mismo usado en `l.php`), sin llaves de API para el embed de YouTube (miniatura pública + `youtube-nocookie.com`, ambos sin autenticación).
 
-### Pendiente de acción humana — no se pudo verificar
-El botón "🎓 View Sample" u otras páginas no se tocaron. **No se ejecutó ningún commit/push todavía en el momento de escribir esta entrada** — ver el cierre de hito posterior en este mismo registro para el resultado real del deploy a `https://loverlipsyachts.com/my-book/invitation.php`.
+### Alcance sin cambio
+Ninguna otra página (`book.php`, `ai-showcase.php`, etc.) fue tocada en este hito.
+
+## 🏁 CIERRE DE HITO — `invitation.php` Confirmado en Vivo en Producción (2026-08-20)
+
+Commit `6d8be57` empujado a `main`. A diferencia del hito de `l.php?sample=` (donde un deploy silencioso a medio terminar produjo falsos positivos por varios minutos), aquí la verificación fue directa y decisiva porque `invitation.php`/`my-book/invitation.php` son rutas que **no existían en absoluto** antes de este commit — un `HTTP 200` en ellas no puede ser una versión vieja en caché, solo puede ser este despliegue.
+
+**Verificado en producción real, no solo por código de estado:**
+- `https://loverlipsyachts.com/cockpit/invitation.php` → `200`.
+- `https://loverlipsyachts.com/my-book/invitation.php` → `200`, cuerpo confirmado con el contenido real ("Request for Invitation", "RSVP", "Nine Lives", "The Curvy Bean" — no la rama de fallback del wrapper).
+- `https://loverlipsyachts.com/cockpit/assets/css/style.css` → contiene las clases nuevas (`.invite-hero`, `.invite-rsvp-btn`), confirmando que el CSS actualizado sí se desplegó, no solo el HTML.
+- `https://loverlipsyachts.com/cockpit/assets/img/HotNewRelease.jpeg` → `200`.
+- El botón RSVP en la página ya en producción resuelve a un `href="https://wa.me/17022048894?text=..."` correctamente codificado.
+
+**Link en vivo para el cliente:** `https://loverlipsyachts.com/my-book/invitation.php`
