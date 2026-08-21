@@ -147,7 +147,7 @@ if (!lly_is_authenticated()) {
 
   </main>
 
-  <script src="assets/js/main.js" defer></script>
+  <script src="assets/js/main.js?v=<?= filemtime(__DIR__ . '/assets/js/main.js') ?>" defer></script>
 
   <!-- Page-specific inline script — same pattern as pg_ai_hub.php's
        Section B testbed (only reuses the endpoint + CSS classes, adds

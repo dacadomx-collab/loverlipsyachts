@@ -574,7 +574,7 @@ $currentCover = htmlspecialchars($currentCover, ENT_QUOTES, 'UTF-8');
 
   <div class="lly-toast" id="lly-toast" role="alert" aria-live="assertive"></div>
 
-  <script src="assets/js/main.js" defer></script>
+  <script src="assets/js/main.js?v=<?= filemtime(__DIR__ . '/assets/js/main.js') ?>" defer></script>
 
   <script>
   (function () {

@@ -609,7 +609,7 @@ $lly_csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
   })();
   </script>
 
-  <script src="assets/js/main.js" defer></script>
+  <script src="assets/js/main.js?v=<?= filemtime(__DIR__ . '/assets/js/main.js') ?>" defer></script>
 
 </body>
 </html>

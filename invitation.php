@@ -275,7 +275,7 @@ $ytEmbed = 'https://www.youtube-nocookie.com/embed/' . LLY_INVITE_YT_ID . '?auto
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
   </button>
 
-  <script src="<?= $baseAssetsUrl ?>js/main.js" defer></script>
+  <script src="<?= $baseAssetsUrl ?>js/main.js?v=<?= filemtime(__DIR__ . '/assets/js/main.js') ?>" defer></script>
 
   <!-- Page-specific script — same convention as agenda.php/chat-lab.php:
        small inline behaviors never joined into the shared main.js bundle. -->
