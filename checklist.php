@@ -48,6 +48,9 @@ $lly_csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
 
   .view-switch-wrap { display: flex; justify-content: center; margin-bottom: 1.25rem; }
 
+  .editing-banner { display: flex; align-items: center; gap: .7rem; flex-wrap: wrap; background: var(--gold-10); border: 1px solid var(--gold-20); color: var(--ink); padding: .7rem 1rem; border-radius: var(--r-md); margin-bottom: 1rem; font-size: .85rem; font-weight: 600; }
+  .editing-banner[hidden] { display: none; }
+
   .checklist-summary-bar { position: sticky; top: 0; z-index: 15; background: var(--topbar-bg); backdrop-filter: blur(8px); border-bottom: 1px solid var(--topbar-border); margin: 0 -1rem 1.25rem; padding: .6rem 1rem; }
   .summary-row { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
   .summary-pills { display: flex; gap: .4rem; overflow-x: auto; flex: 1 1 auto; }
@@ -124,6 +127,7 @@ $lly_csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
   .checklist-detail-row { display: flex; justify-content: space-between; gap: .8rem; padding: .5rem 0; border-bottom: 1px solid var(--ink-10); font-size: .88rem; }
   .checklist-detail-row:last-child { border-bottom: none; }
   .checklist-detail-row .k { color: var(--ink-60); }
+  .checklist-row-actions { display: flex; flex-wrap: wrap; gap: .35rem; }
 
   @media print {
     .topbar, .view-switch-wrap, .checklist-summary-bar, .checklist-tabs, .tab-panel-nav,
@@ -237,6 +241,11 @@ $lly_csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
               </div>
             </div>
           </section>
+
+          <div class="editing-banner" id="checklist-editing-banner" hidden>
+            ✏️ <span data-lang="en">Editing a saved bitácora entry — Save will update it in place.</span><span data-lang="es">Editando una entrada guardada de la bitácora — Guardar la actualizará en su lugar.</span>
+            <button type="button" class="dash-card-btn dash-card-btn--secondary" id="btn-cancel-edit">✕ <span data-lang="en">Cancel / New Checklist</span><span data-lang="es">Cancelar / Nuevo Checklist</span></button>
+          </div>
 
           <div class="checklist-summary-bar" role="status" aria-live="polite">
             <div class="summary-row">

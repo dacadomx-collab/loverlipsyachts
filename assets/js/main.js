@@ -1576,18 +1576,126 @@ function initChecklistForm() {
     if (e.target.closest('#safety-adult-vests .item-count')) { checkLifeVests(); }
   });
 
+  checklistResetForm();
+}
+
+/**
+ * Blanks every item row + header/sign-off field back to defaults (today's
+ * date/time, mode = Before, vessel = NOMADA) and clears edit mode. Called
+ * on initial page load, after a successful Save/Update, and from "Cancel /
+ * New Checklist" in the editing banner.
+ */
+function checklistResetForm() {
+  document.querySelectorAll('#checklist-panels [data-field-id]').forEach(function (el) {
+    el.dataset.status = '';
+    el.querySelectorAll('.status-btn').forEach(function (b) { b.classList.remove('is-active'); });
+    var c = el.querySelector('.item-count');  if (c) { c.value = ''; }
+    var n = el.querySelector('.item-notes');  if (n) { n.value = ''; }
+    var x = el.querySelector('.item-expiry'); if (x) { x.value = ''; }
+    var warn = el.querySelector('.compliance-inline'); if (warn) { warn.remove(); }
+  });
+
+  var setVal = function (id, v) { var el = document.getElementById(id); if (el) { el.value = v; } };
+  setVal('op-vessel', 'NOMADA');
+  setVal('op-guests', '');
+  setVal('op-captain', '');
+  setVal('op-checkedby', '');
+  setVal('final-missing-report', '');
+  setVal('final-actions', '');
+  setVal('captain-signature', '');
+
+  var sigInput = document.getElementById('captain-signature');
+  var sigLabel = document.getElementById('sig-label');
+  if (sigInput) { sigInput.classList.remove('invalid'); }
+  if (sigLabel) { sigLabel.classList.remove('invalid'); }
+
+  var modeBefore = document.getElementById('mode-before');
+  var modeAfter  = document.getElementById('mode-after');
+  if (modeBefore && modeAfter) {
+    modeBefore.classList.add('active'); modeBefore.setAttribute('aria-pressed', 'true');
+    modeAfter.classList.remove('active'); modeAfter.setAttribute('aria-pressed', 'false');
+  }
+
   var now = new Date();
   var pad = function (n) { return String(n).padStart(2, '0'); };
   var todayStr = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate());
-  var sigDate = document.getElementById('sig-date');
-  var sigTime = document.getElementById('sig-time');
-  var opDate  = document.getElementById('op-date');
-  if (sigDate) { sigDate.value = todayStr; }
-  if (sigTime) { sigTime.value = pad(now.getHours()) + ':' + pad(now.getMinutes()); }
-  if (opDate)  { opDate.value = todayStr; }
+  setVal('sig-date', todayStr);
+  setVal('sig-time', pad(now.getHours()) + ':' + pad(now.getMinutes()));
+  setVal('op-date', todayStr);
 
+  lly_checklistEditingId = null;
+  checklistUpdateSaveButtonLabel();
   checklistSyncPlaceholders();
   checklistRecalcSummary();
+}
+
+/** Loads one saved record back into the live form for correction — checklist.php's "Edit" flow. Switches Save into update-mode (see checklistUpdateSaveButtonLabel). */
+function checklistPopulateForm(record) {
+  checklistResetForm();
+
+  var setVal = function (id, v) { var el = document.getElementById(id); if (el) { el.value = v == null ? '' : v; } };
+  setVal('op-vessel', record.vessel_name);
+  setVal('op-date', record.charter_date || '');
+  setVal('op-guests', record.guests_count != null ? record.guests_count : '');
+  setVal('op-captain', record.captain_name || '');
+  setVal('op-checkedby', record.checked_by || '');
+  setVal('final-missing-report', record.missing_report || '');
+  setVal('final-actions', record.required_actions || '');
+  setVal('captain-signature', record.captain_signature || '');
+  if (record.signed_at) {
+    var parts = String(record.signed_at).split(' ');
+    setVal('sig-date', parts[0] || '');
+    setVal('sig-time', (parts[1] || '').substring(0, 5));
+  }
+
+  var modeBefore = document.getElementById('mode-before');
+  var modeAfter  = document.getElementById('mode-after');
+  if (modeBefore && modeAfter) {
+    var isAfter = record.inspection_mode === 'after';
+    modeBefore.classList.toggle('active', !isAfter); modeBefore.setAttribute('aria-pressed', String(!isAfter));
+    modeAfter.classList.toggle('active', isAfter);   modeAfter.setAttribute('aria-pressed', String(isAfter));
+  }
+
+  var payload = record.payload || {};
+  Object.keys(payload).forEach(function (fieldId) {
+    if (!/^[a-zA-Z0-9_-]+$/.test(fieldId)) { return; } // ids are our own scheme, but never trust DB content in a selector
+    var el = document.querySelector('#checklist-panels [data-field-id="' + fieldId + '"]');
+    if (!el) { return; }
+    var entry = payload[fieldId] || {};
+    el.dataset.status = entry.status || '';
+    if (entry.status) {
+      var btn = el.querySelector('.status-btn[data-value="' + entry.status + '"]');
+      if (btn) { btn.classList.add('is-active'); }
+    }
+    var c = el.querySelector('.item-count');  if (c && entry.count)  { c.value = entry.count; }
+    var n = el.querySelector('.item-notes');  if (n && entry.notes)  { n.value = entry.notes; }
+    var x = el.querySelector('.item-expiry'); if (x && entry.expiry) { x.value = entry.expiry; }
+  });
+
+  lly_checklistEditingId = record.id;
+  checklistUpdateSaveButtonLabel();
+  checklistSyncPlaceholders();
+  checklistRecalcSummary();
+}
+
+/** Currently-open bitácora entry id while editing, or null for a fresh checklist. */
+var lly_checklistEditingId = null;
+
+function checklistUpdateSaveButtonLabel() {
+  var saveBtn = document.getElementById('btn-save');
+  var banner  = document.getElementById('checklist-editing-banner');
+  if (saveBtn) {
+    saveBtn.innerHTML = lly_checklistEditingId
+      ? ('💾 <span data-lang="en">Update Entry #' + lly_checklistEditingId + '</span><span data-lang="es">Actualizar Entrada #' + lly_checklistEditingId + '</span>')
+      : '💾 <span data-lang="en">Save to Log</span><span data-lang="es">Guardar en Bitácora</span>';
+  }
+  if (banner) { banner.hidden = !lly_checklistEditingId; }
+}
+
+function initChecklistCancelEdit() {
+  var btn = document.getElementById('btn-cancel-edit');
+  if (!btn) return;
+  btn.addEventListener('click', checklistResetForm);
 }
 
 /** Walks every rendered row, keeping only ones the crew actually touched — an untouched item-row (default blank state) doesn't need to round-trip to the DB. */
@@ -1641,9 +1749,11 @@ function initChecklistSave() {
     var modeAfter = document.getElementById('mode-after');
     var sigDate = val('sig-date');
     var sigTime = val('sig-time');
+    var isEdit = !!lly_checklistEditingId;
 
     var body = new URLSearchParams();
-    body.set('action', 'save');
+    body.set('action', isEdit ? 'update' : 'save');
+    if (isEdit) { body.set('id', lly_checklistEditingId); }
     body.set('csrf_token', val('checklist-csrf-field'));
     body.set('vessel_name', val('op-vessel'));
     body.set('charter_date', val('op-date'));
@@ -1669,7 +1779,10 @@ function initChecklistSave() {
         checklistShowToast(data.message || (lang === 'es' ? 'No se pudo guardar.' : 'Could not save.'), true);
         return;
       }
-      checklistShowToast(lang === 'es' ? ('✅ Guardado — bitácora #' + data.id) : ('✅ Saved — log #' + data.id), false);
+      checklistShowToast(isEdit
+        ? (lang === 'es' ? ('✅ Actualizado — bitácora #' + data.id) : ('✅ Updated — log #' + data.id))
+        : (lang === 'es' ? ('✅ Guardado — bitácora #' + data.id) : ('✅ Saved — log #' + data.id)), false);
+      checklistResetForm();
     }).catch(function () {
       var lang = document.body.dataset.activeLang;
       checklistShowToast(lang === 'es' ? 'Error de red.' : 'Network error.', true);
@@ -1732,8 +1845,11 @@ function checklistRenderHistoryRows(rows) {
       '<td>' + (r.captain_name ? checklistEscape(r.captain_name) : '—') + '</td>' +
       '<td>' + (r.guests_count != null ? r.guests_count : '—') + '</td>' +
       '<td>' + flagged + '</td>' +
-      '<td><button type="button" class="dash-card-btn dash-card-btn--secondary checklist-detail-btn" data-id="' + r.id + '">' +
-      '<span data-lang="en">👁️ View</span><span data-lang="es">👁️ Ver</span></button></td>' +
+      '<td class="checklist-row-actions">' +
+      '<button type="button" class="dash-card-btn dash-card-btn--secondary checklist-detail-btn" data-id="' + r.id + '"><span data-lang="en">👁️ View</span><span data-lang="es">👁️ Ver</span></button> ' +
+      '<button type="button" class="dash-card-btn dash-card-btn--secondary checklist-edit-btn" data-id="' + r.id + '"><span data-lang="en">✏️ Edit</span><span data-lang="es">✏️ Editar</span></button> ' +
+      '<button type="button" class="dash-card-btn dash-card-btn--secondary checklist-delete-btn" data-id="' + r.id + '"><span data-lang="en">🗑️ Delete</span><span data-lang="es">🗑️ Borrar</span></button>' +
+      '</td>' +
       '</tr>';
   }).join('');
 }
@@ -1856,46 +1972,103 @@ function checklistRenderDetail(record) {
   bodyEl.innerHTML = html;
 }
 
-function initChecklistDetailModal() {
-  var dialog = document.getElementById('checklist-detail-dialog');
-  var tbody  = document.getElementById('checklist-history-tbody');
-  if (!dialog || !tbody) return;
+/** Shared by View/Edit — fetches one full record (with decoded payload) and resolves it, or null on any failure. */
+function checklistFetchRecord(id) {
+  var csrfField = document.getElementById('checklist-csrf-field');
+  var body = new URLSearchParams();
+  body.set('action', 'get');
+  body.set('id', id);
+  body.set('csrf_token', csrfField ? csrfField.value : '');
+  return fetch('api/inventory_checklists.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+  }).then(function (res) { return res.json(); }).then(function (data) {
+    llySyncCsrfFields(data.csrf_token);
+    return data.status === 'success' ? data.checklist : null;
+  }).catch(function () { return null; });
+}
 
-  var closeBtn = document.getElementById('checklist-detail-close');
-  if (closeBtn) { closeBtn.addEventListener('click', function () { dialog.close(); }); }
+/** Resolves true on success, false on any failure — caller decides what UI follows. */
+function checklistDeleteRecord(id) {
+  var csrfField = document.getElementById('checklist-csrf-field');
+  var body = new URLSearchParams();
+  body.set('action', 'delete');
+  body.set('id', id);
+  body.set('csrf_token', csrfField ? csrfField.value : '');
+  return fetch('api/inventory_checklists.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+  }).then(function (res) { return res.json(); }).then(function (data) {
+    llySyncCsrfFields(data.csrf_token);
+    return data.status === 'success';
+  }).catch(function () { return false; });
+}
+
+/** Historial row actions — View (read-only dialog), Edit (loads the record into the live Checklist form), Delete (window.confirm(), same pattern as api/fleet_catalog.php's vessel delete). All three share one delegated listener on the tbody. */
+function initChecklistHistoryRowActions() {
+  var tbody  = document.getElementById('checklist-history-tbody');
+  var dialog = document.getElementById('checklist-detail-dialog');
+  if (!tbody) return;
+
+  if (dialog) {
+    var closeBtn = document.getElementById('checklist-detail-close');
+    if (closeBtn) { closeBtn.addEventListener('click', function () { dialog.close(); }); }
+  }
 
   tbody.addEventListener('click', function (e) {
-    var btn = e.target.closest('.checklist-detail-btn');
-    if (!btn) return;
-    var id = btn.getAttribute('data-id');
-    var titleEl = document.getElementById('checklist-detail-dialog-title');
-    var bodyEl  = document.getElementById('checklist-detail-body');
-    if (titleEl) { titleEl.textContent = 'Loading…'; }
-    if (bodyEl) { bodyEl.innerHTML = ''; }
-    dialog.showModal();
+    var viewBtn   = e.target.closest('.checklist-detail-btn');
+    var editBtn   = e.target.closest('.checklist-edit-btn');
+    var deleteBtn = e.target.closest('.checklist-delete-btn');
+    var lang = document.body.dataset.activeLang;
 
-    var csrfField = document.getElementById('checklist-csrf-field');
-    var body = new URLSearchParams();
-    body.set('action', 'get');
-    body.set('id', id);
-    body.set('csrf_token', csrfField ? csrfField.value : '');
+    if (viewBtn && dialog) {
+      var id = viewBtn.getAttribute('data-id');
+      var titleEl = document.getElementById('checklist-detail-dialog-title');
+      var bodyEl  = document.getElementById('checklist-detail-body');
+      if (titleEl) { titleEl.textContent = 'Loading…'; }
+      if (bodyEl) { bodyEl.innerHTML = ''; }
+      dialog.showModal();
+      checklistFetchRecord(id).then(function (record) {
+        if (!record) {
+          if (titleEl) { titleEl.textContent = 'Error'; }
+          if (bodyEl) { bodyEl.textContent = 'Could not load this record.'; }
+          return;
+        }
+        checklistRenderDetail(record);
+      });
+    }
 
-    fetch('api/inventory_checklists.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body.toString(),
-    }).then(function (res) { return res.json(); }).then(function (data) {
-      llySyncCsrfFields(data.csrf_token);
-      if (data.status !== 'success') {
-        if (titleEl) { titleEl.textContent = 'Error'; }
-        if (bodyEl) { bodyEl.textContent = data.message || 'Could not load this record.'; }
-        return;
-      }
-      checklistRenderDetail(data.checklist);
-    }).catch(function () {
-      if (titleEl) { titleEl.textContent = 'Error'; }
-      if (bodyEl) { bodyEl.textContent = 'Network error — check your connection.'; }
-    });
+    if (editBtn) {
+      checklistFetchRecord(editBtn.getAttribute('data-id')).then(function (record) {
+        if (!record) {
+          checklistShowToast(lang === 'es' ? 'No se pudo cargar este registro.' : 'Could not load this record.', true);
+          return;
+        }
+        checklistPopulateForm(record);
+        var switcher = document.getElementById('view-btn-checklist');
+        if (switcher) { switcher.click(); }
+        checklistShowToast(lang === 'es' ? ('✏️ Editando entrada #' + record.id) : ('✏️ Editing entry #' + record.id), false);
+      });
+    }
+
+    if (deleteBtn) {
+      var deleteId = deleteBtn.getAttribute('data-id');
+      var msg = lang === 'es'
+        ? '¿Borrar esta entrada de la bitácora? Esta acción no se puede deshacer.'
+        : 'Delete this bitácora entry? This cannot be undone.';
+      if (!window.confirm(msg)) return;
+      checklistDeleteRecord(deleteId).then(function (ok) {
+        if (!ok) {
+          checklistShowToast(lang === 'es' ? 'No se pudo borrar.' : 'Could not delete.', true);
+          return;
+        }
+        if (lly_checklistEditingId && String(lly_checklistEditingId) === String(deleteId)) { checklistResetForm(); }
+        checklistShowToast(lang === 'es' ? '🗑️ Entrada borrada.' : '🗑️ Entry deleted.', false);
+        checklistLoadHistory();
+      });
+    }
   });
 }
 
@@ -1952,10 +2125,11 @@ function llyInitAll() {
   llySafeInit(initChecklistTabs);            /* #checklist-tabs → show one section panel at a time + Prev/Next */
   llySafeInit(initChecklistForm);            /* #checklist-panels → status buttons, mode toggle, guests-vs-vests check */
   llySafeInit(initChecklistLangSync);        /* #btn-en/#btn-es → re-sync data-ph-en/es placeholders after language switch */
-  llySafeInit(initChecklistSave);            /* #btn-save → serialize + POST api/inventory_checklists.php (save) */
+  llySafeInit(initChecklistSave);            /* #btn-save → serialize + POST api/inventory_checklists.php (save or update) */
+  llySafeInit(initChecklistCancelEdit);      /* #btn-cancel-edit → checklistResetForm(), exits edit mode */
   llySafeInit(initChecklistPrint);           /* #btn-print → validate signature, force panels visible, window.print() */
   llySafeInit(initChecklistHistoryFilters);  /* #checklist-search-input / date filters → checklistLoadHistory() */
-  llySafeInit(initChecklistDetailModal);     /* #checklist-detail-dialog → "View" per-row read-only bitácora entry */
+  llySafeInit(initChecklistHistoryRowActions); /* #checklist-history-tbody → View/Edit/Delete per row */
 }
 
 if (document.readyState === 'loading') {
