@@ -352,6 +352,23 @@ $lly_pagos_trade_total = array_sum(array_column($lly_pagos, 'trade'));
             </a>
           </article>
 
+          <!-- ── CARD 5 — 🛥️ FLEET INVENTORY CHECKLISTS ──────────────── -->
+          <article class="dash-card dash-card--gold">
+            <div class="dash-card-icon">🛥️</div>
+            <h2 class="dash-card-title">
+              <span data-lang="en">Fleet Inventory Checklists</span>
+              <span data-lang="es">Checklists de Inventario de Flota</span>
+            </h2>
+            <p class="dash-card-body">
+              <span data-lang="en">Digital pre/post-charter inspection for NOMADA (extensible to the rest of the fleet) — every save is a permanent bitácora entry, searchable by date, vessel, or captain.</span>
+              <span data-lang="es">Inspección digital pre/post-charter para NOMADA (extensible al resto de la flota) — cada guardado queda como entrada permanente en la bitácora, con búsqueda por fecha, embarcación o capitán.</span>
+            </p>
+            <a class="dash-card-btn" href="checklist.php">
+              <span data-lang="en">📝 Open Checklist</span>
+              <span data-lang="es">📝 Abrir Checklist</span>
+            </a>
+          </article>
+
         </div>
       </div>
     </section>

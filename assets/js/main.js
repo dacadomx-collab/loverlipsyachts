@@ -1363,6 +1363,543 @@ function initOpenAiTestPanel() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   9i. CATAMARAN INVENTORY CHECKLIST (checklist.php — guards on
+   #checklist-tabs/#checklist-panels absence for every other page).
+   checklist.php's own inline script builds the DOM (item catalog is
+   page-specific content, same idea as dashboard.php's inline
+   $lly_reportes/$lly_pagos arrays) and exposes
+   window.LLY_CHECKLIST_FIELD_LABELS / window.LLY_CHECKLIST_TAB_ORDER —
+   everything below is pure behavior, reusing api/inventory_checklists.php.
+   ═══════════════════════════════════════════════════════════════════ */
+
+function checklistEscape(str) {
+  var div = document.createElement('div');
+  div.textContent = str == null ? '' : str;
+  return div.innerHTML;
+}
+
+function checklistShowToast(message, isError) {
+  var toast = document.getElementById('checklist-toast');
+  if (!toast) return;
+  toast.textContent = message;
+  toast.classList.toggle('lly-toast--error', !!isError);
+  toast.classList.toggle('lly-toast--success', !isError);
+  toast.classList.add('lly-toast--visible');
+  clearTimeout(checklistShowToast._t);
+  checklistShowToast._t = setTimeout(function () { toast.classList.remove('lly-toast--visible'); }, 4000);
+}
+
+function checklistShowValidationAlert(message) {
+  var alertBox = document.getElementById('validation-alert');
+  if (!alertBox) return;
+  alertBox.textContent = message;
+  alertBox.classList.add('show');
+  clearTimeout(checklistShowValidationAlert._t);
+  checklistShowValidationAlert._t = setTimeout(function () { alertBox.classList.remove('show'); }, 5000);
+}
+
+/* ── View switch — "📝 Checklist" / "📜 Historial" (only one visible) ── */
+function initChecklistViewSwitch() {
+  var btnChecklist = document.getElementById('view-btn-checklist');
+  var btnHistory   = document.getElementById('view-btn-history');
+  var viewChecklist = document.getElementById('view-checklist');
+  var viewHistory   = document.getElementById('view-history');
+  if (!btnChecklist || !btnHistory || !viewChecklist || !viewHistory) return;
+
+  function showView(view) {
+    var isHistory = view === 'history';
+    viewChecklist.classList.toggle('hidden-view', isHistory);
+    viewHistory.classList.toggle('active', isHistory);
+    btnChecklist.classList.toggle('active', !isHistory);
+    btnChecklist.setAttribute('aria-pressed', String(!isHistory));
+    btnHistory.classList.toggle('active', isHistory);
+    btnHistory.setAttribute('aria-pressed', String(isHistory));
+    if (isHistory) { checklistLoadHistory(); }
+  }
+
+  btnChecklist.addEventListener('click', function () { showView('checklist'); });
+  btnHistory.addEventListener('click', function () { showView('history'); });
+}
+
+/* ── Tab nav — only the active section panel is ever visible ── */
+function initChecklistTabs() {
+  var tabsNav    = document.getElementById('checklist-tabs');
+  var panelsWrap = document.getElementById('checklist-panels');
+  if (!tabsNav || !panelsWrap) return;
+
+  function showTab(id) {
+    panelsWrap.querySelectorAll('.tab-panel').forEach(function (p) {
+      p.hidden = (p.id !== 'panel-' + id);
+    });
+    tabsNav.querySelectorAll('.checklist-tab').forEach(function (t) {
+      t.classList.toggle('active', t.dataset.tabTarget === id);
+    });
+    var activeTab = tabsNav.querySelector('.checklist-tab[data-tab-target="' + id + '"]');
+    if (activeTab) { activeTab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); }
+    var panel = document.getElementById('panel-' + id);
+    if (panel) { panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  }
+
+  tabsNav.addEventListener('click', function (e) {
+    var btn = e.target.closest('.checklist-tab');
+    if (btn) { showTab(btn.dataset.tabTarget); }
+  });
+
+  panelsWrap.addEventListener('click', function (e) {
+    var panel = e.target.closest('.tab-panel');
+    if (!panel) return;
+    var order = window.LLY_CHECKLIST_TAB_ORDER || [];
+    var idx = order.indexOf(panel.dataset.sectionId);
+    if (e.target.closest('.checklist-prev') && idx > 0) { showTab(order[idx - 1]); }
+    if (e.target.closest('.checklist-next') && idx > -1 && idx < order.length - 1) { showTab(order[idx + 1]); }
+  });
+}
+
+/** Tallies every [data-field-id] row's status into the sticky summary pills + per-tab attention badges. */
+function checklistRecalcSummary() {
+  var totals = { good: 0, damaged: 0, missing: 0, replace: 0 };
+  var perSection = {};
+
+  document.querySelectorAll('#checklist-panels [data-field-id]').forEach(function (el) {
+    var s = el.dataset.status;
+    if (s && totals[s] !== undefined) { totals[s]++; }
+    if (s && s !== 'good') {
+      var panel = el.closest('.tab-panel');
+      var sid = panel ? panel.dataset.sectionId : null;
+      if (sid) { perSection[sid] = (perSection[sid] || 0) + 1; }
+    }
+  });
+
+  var pillsEl = document.getElementById('checklist-summary-pills');
+  if (pillsEl) {
+    var flagged = totals.damaged + totals.missing + totals.replace;
+    pillsEl.innerHTML =
+      '<span class="summary-pill total">📋 ' + flagged + '</span>' +
+      '<span class="summary-pill good">✅ ' + totals.good + '</span>' +
+      '<span class="summary-pill damaged">⚠️ ' + totals.damaged + '</span>' +
+      '<span class="summary-pill missing">❌ ' + totals.missing + '</span>' +
+      '<span class="summary-pill replace">🔄 ' + totals.replace + '</span>';
+  }
+
+  document.querySelectorAll('.checklist-tab').forEach(function (tab) {
+    var count = perSection[tab.dataset.tabTarget] || 0;
+    var badge = tab.querySelector('.badge');
+    if (!badge) return;
+    if (count > 0) { badge.hidden = false; badge.textContent = count; } else { badge.hidden = true; }
+  });
+}
+
+/**
+ * Applies the current language to every checklist input's placeholder.
+ * setLang() (main.js §1) only knows about [data-lang] spans/labels — it has
+ * no idea these data-ph-en/data-ph-es attributes exist, so this page-local
+ * sync is called once at init and again from initChecklistLangSync() on
+ * every #btn-en/#btn-es click (registered after initLangToggle in
+ * llyInitAll(), so the site's own toggle has already flipped
+ * body.dataset.activeLang by the time this reads it).
+ */
+function checklistSyncPlaceholders() {
+  var lang = document.body.dataset.activeLang === 'es' ? 'es' : 'en';
+  document.querySelectorAll('#view-checklist [data-ph-en], #view-history [data-placeholder-en]').forEach(function (el) {
+    var enText = el.dataset.phEn || el.dataset.placeholderEn;
+    var esText = el.dataset.phEs || el.dataset.placeholderEs;
+    el.placeholder = lang === 'es' ? esText : enText;
+  });
+}
+
+function initChecklistLangSync() {
+  var panelsWrap = document.getElementById('checklist-panels');
+  if (!panelsWrap) return;
+  var btnEn = document.getElementById('btn-en');
+  var btnEs = document.getElementById('btn-es');
+  if (btnEn) { btnEn.addEventListener('click', checklistSyncPlaceholders); }
+  if (btnEs) { btnEs.addEventListener('click', checklistSyncPlaceholders); }
+}
+
+/* ── Status buttons, Before/After toggle, guests-vs-life-vests check ── */
+function initChecklistForm() {
+  var panelsWrap = document.getElementById('checklist-panels');
+  if (!panelsWrap) return;
+
+  panelsWrap.addEventListener('click', function (e) {
+    var btn = e.target.closest('.status-btn');
+    if (!btn) return;
+    var container = btn.closest('[data-field-id]');
+    var group = btn.closest('.status-group');
+    if (!container || !group) return;
+    var wasActive = btn.classList.contains('is-active');
+    group.querySelectorAll('.status-btn').forEach(function (b) { b.classList.remove('is-active'); });
+    if (wasActive) {
+      container.dataset.status = '';
+    } else {
+      btn.classList.add('is-active');
+      container.dataset.status = btn.dataset.value;
+    }
+    checklistRecalcSummary();
+  });
+
+  var modeBefore = document.getElementById('mode-before');
+  var modeAfter  = document.getElementById('mode-after');
+  if (modeBefore && modeAfter) {
+    [modeBefore, modeAfter].forEach(function (b) {
+      b.addEventListener('click', function () {
+        modeBefore.classList.toggle('active', b === modeBefore);
+        modeBefore.setAttribute('aria-pressed', String(b === modeBefore));
+        modeAfter.classList.toggle('active', b === modeAfter);
+        modeAfter.setAttribute('aria-pressed', String(b === modeAfter));
+      });
+    });
+  }
+
+  var guestsInput = document.getElementById('op-guests');
+  function checkLifeVests() {
+    var vestRow = document.getElementById('safety-adult-vests');
+    if (!vestRow || !guestsInput) return;
+    var countInput = vestRow.querySelector('.item-count');
+    var guests = parseInt(guestsInput.value, 10) || 0;
+    var vests  = parseInt(countInput.value, 10);
+    var existingWarn = vestRow.querySelector('.compliance-inline');
+    if (existingWarn) { existingWarn.remove(); }
+    if (guests > 0 && !isNaN(vests) && vests < guests) {
+      var warn = document.createElement('div');
+      warn.className = 'callout warn compliance-inline';
+      warn.style.margin = '.5rem 0 0';
+      var shortfall = guests - vests;
+      warn.innerHTML = '⚠️ ' +
+        '<span data-lang="en">Only ' + vests + ' vests for ' + guests + ' guests — shortfall of ' + shortfall + '.</span>' +
+        '<span data-lang="es">Solo ' + vests + ' chalecos para ' + guests + ' huéspedes — faltan ' + shortfall + '.</span>';
+      vestRow.querySelector('.item-controls').appendChild(warn);
+    }
+  }
+  if (guestsInput) { guestsInput.addEventListener('input', checkLifeVests); }
+  panelsWrap.addEventListener('input', function (e) {
+    if (e.target.closest('#safety-adult-vests .item-count')) { checkLifeVests(); }
+  });
+
+  var now = new Date();
+  var pad = function (n) { return String(n).padStart(2, '0'); };
+  var todayStr = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate());
+  var sigDate = document.getElementById('sig-date');
+  var sigTime = document.getElementById('sig-time');
+  var opDate  = document.getElementById('op-date');
+  if (sigDate) { sigDate.value = todayStr; }
+  if (sigTime) { sigTime.value = pad(now.getHours()) + ':' + pad(now.getMinutes()); }
+  if (opDate)  { opDate.value = todayStr; }
+
+  checklistSyncPlaceholders();
+  checklistRecalcSummary();
+}
+
+/** Walks every rendered row, keeping only ones the crew actually touched — an untouched item-row (default blank state) doesn't need to round-trip to the DB. */
+function checklistSerializeItems() {
+  var items = {};
+  document.querySelectorAll('#checklist-panels [data-field-id]').forEach(function (el) {
+    var status  = el.dataset.status || '';
+    var countEl = el.querySelector('.item-count');
+    var notesEl = el.querySelector('.item-notes');
+    var expiryEl = el.querySelector('.item-expiry');
+    var count  = countEl ? countEl.value : '';
+    var notes  = notesEl ? notesEl.value : '';
+    var expiry = expiryEl ? expiryEl.value : '';
+    if (!status && !count && !notes && !expiry) return;
+    items[el.dataset.fieldId] = { status: status, count: count, notes: notes, expiry: expiry };
+  });
+  return items;
+}
+
+/** Blocks Save/Print until the Captain signature field is filled — jumps to the Sign-Off tab and highlights it if not. Shared by both actions. */
+function checklistRequireSignature() {
+  var sigInput = document.getElementById('captain-signature');
+  var sigLabel = document.getElementById('sig-label');
+  if (!sigInput) return true;
+  if (sigInput.value.trim()) {
+    sigInput.classList.remove('invalid');
+    if (sigLabel) { sigLabel.classList.remove('invalid'); }
+    return true;
+  }
+  sigInput.classList.add('invalid');
+  if (sigLabel) { sigLabel.classList.add('invalid'); }
+  var signoffTab = document.querySelector('.checklist-tab[data-tab-target="signoff"]');
+  if (signoffTab) { signoffTab.click(); }
+  sigInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  sigInput.focus();
+  var lang = document.body.dataset.activeLang;
+  checklistShowValidationAlert(lang === 'es'
+    ? '⚠️ Se requiere la firma del Capitán antes de continuar.'
+    : '⚠️ Captain signature is required before continuing.');
+  return false;
+}
+
+function initChecklistSave() {
+  var saveBtn = document.getElementById('btn-save');
+  if (!saveBtn) return;
+
+  saveBtn.addEventListener('click', function () {
+    if (!checklistRequireSignature()) return;
+
+    var val = function (id) { var el = document.getElementById(id); return el ? el.value : ''; };
+    var modeAfter = document.getElementById('mode-after');
+    var sigDate = val('sig-date');
+    var sigTime = val('sig-time');
+
+    var body = new URLSearchParams();
+    body.set('action', 'save');
+    body.set('csrf_token', val('checklist-csrf-field'));
+    body.set('vessel_name', val('op-vessel'));
+    body.set('charter_date', val('op-date'));
+    body.set('inspection_mode', modeAfter && modeAfter.classList.contains('active') ? 'after' : 'before');
+    body.set('guests_count', val('op-guests'));
+    body.set('captain_name', val('op-captain'));
+    body.set('checked_by', val('op-checkedby'));
+    body.set('missing_report', val('final-missing-report'));
+    body.set('required_actions', val('final-actions'));
+    body.set('captain_signature', val('captain-signature'));
+    body.set('signed_at', sigDate ? (sigDate + ' ' + (sigTime || '00:00') + ':00') : '');
+    body.set('items_json', JSON.stringify(checklistSerializeItems()));
+
+    saveBtn.disabled = true;
+    fetch('api/inventory_checklists.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    }).then(function (res) { return res.json(); }).then(function (data) {
+      llySyncCsrfFields(data.csrf_token);
+      var lang = document.body.dataset.activeLang;
+      if (data.status !== 'success') {
+        checklistShowToast(data.message || (lang === 'es' ? 'No se pudo guardar.' : 'Could not save.'), true);
+        return;
+      }
+      checklistShowToast(lang === 'es' ? ('✅ Guardado — bitácora #' + data.id) : ('✅ Saved — log #' + data.id), false);
+    }).catch(function () {
+      var lang = document.body.dataset.activeLang;
+      checklistShowToast(lang === 'es' ? 'Error de red.' : 'Network error.', true);
+    }).then(function () { saveBtn.disabled = false; });
+  });
+}
+
+/* ── Print — validate signature, force every tab panel visible, restore after ── */
+function initChecklistPrint() {
+  var printBtn = document.getElementById('btn-print');
+  if (!printBtn) return;
+
+  printBtn.addEventListener('click', function () {
+    if (!checklistRequireSignature()) return;
+
+    var previousHidden = [];
+    document.querySelectorAll('#checklist-panels .tab-panel').forEach(function (p) {
+      previousHidden.push([p, p.hidden]);
+      p.hidden = false;
+    });
+
+    window.print();
+    window.addEventListener('afterprint', function restore() {
+      previousHidden.forEach(function (pair) { pair[0].hidden = pair[1]; });
+      window.removeEventListener('afterprint', restore);
+    });
+  });
+}
+
+/* ── Historial — list + search/date filters (server-side; q hits the
+   FULLTEXT search_blob built in api/inventory_checklists.php) ── */
+var lly_checklistHistoryRows = [];
+
+function checklistPillForCount(icon, count, cls) {
+  return count > 0 ? '<span class="pill pill-' + cls + '">' + icon + ' ' + count + '</span>' : '';
+}
+
+function checklistRenderHistoryRows(rows) {
+  var tbody = document.getElementById('checklist-history-tbody');
+  if (!tbody) return;
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="7">' +
+      '<span data-lang="en">No saved checklists yet.</span><span data-lang="es">Aún no hay checklists guardados.</span></td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(function (r) {
+    var modeLabel = r.inspection_mode === 'after'
+      ? '<span data-lang="en">After</span><span data-lang="es">Después</span>'
+      : '<span data-lang="en">Before</span><span data-lang="es">Antes</span>';
+    var flagged = [
+      checklistPillForCount('⚠️', r.damaged_count, 'orange'),
+      checklistPillForCount('❌', r.missing_count, 'pink'),
+      checklistPillForCount('🔄', r.replace_count, 'gold'),
+    ].filter(Boolean).join(' ') || ('<span class="pill pill-green">✅ ' + r.good_count + '</span>');
+    var dateStr = r.charter_date || (r.created_at ? String(r.created_at).substring(0, 10) : '—');
+    return '<tr>' +
+      '<td>' + checklistEscape(dateStr) + '</td>' +
+      '<td>' + checklistEscape(r.vessel_name) + '</td>' +
+      '<td>' + modeLabel + '</td>' +
+      '<td>' + (r.captain_name ? checklistEscape(r.captain_name) : '—') + '</td>' +
+      '<td>' + (r.guests_count != null ? r.guests_count : '—') + '</td>' +
+      '<td>' + flagged + '</td>' +
+      '<td><button type="button" class="dash-card-btn dash-card-btn--secondary checklist-detail-btn" data-id="' + r.id + '">' +
+      '<span data-lang="en">👁️ View</span><span data-lang="es">👁️ Ver</span></button></td>' +
+      '</tr>';
+  }).join('');
+}
+
+function checklistLoadHistory() {
+  var tbody = document.getElementById('checklist-history-tbody');
+  if (!tbody) return;
+  var csrfField  = document.getElementById('checklist-csrf-field');
+  var searchEl   = document.getElementById('checklist-search-input');
+  var dateFromEl = document.getElementById('checklist-date-from');
+  var dateToEl   = document.getElementById('checklist-date-to');
+
+  var body = new URLSearchParams();
+  body.set('action', 'list');
+  body.set('csrf_token', csrfField ? csrfField.value : '');
+  if (searchEl && searchEl.value.trim()) { body.set('q', searchEl.value.trim()); }
+  if (dateFromEl && dateFromEl.value) { body.set('date_from', dateFromEl.value); }
+  if (dateToEl && dateToEl.value) { body.set('date_to', dateToEl.value); }
+
+  fetch('api/inventory_checklists.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+  }).then(function (res) { return res.json(); }).then(function (data) {
+    if (data.status !== 'success') return;
+    llySyncCsrfFields(data.csrf_token);
+    lly_checklistHistoryRows = data.checklists || [];
+    checklistRenderHistoryRows(lly_checklistHistoryRows);
+  }).catch(function () { /* degrade silently — table just keeps its loading row */ });
+}
+
+function initChecklistHistoryFilters() {
+  var searchEl   = document.getElementById('checklist-search-input');
+  var dateFromEl = document.getElementById('checklist-date-from');
+  var dateToEl   = document.getElementById('checklist-date-to');
+  var clearBtn   = document.getElementById('checklist-filter-clear');
+  if (!searchEl && !dateFromEl && !dateToEl) return;
+
+  var debounceTimer;
+  if (searchEl) {
+    searchEl.addEventListener('input', function () {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(checklistLoadHistory, 350);
+    });
+  }
+  if (dateFromEl) { dateFromEl.addEventListener('change', checklistLoadHistory); }
+  if (dateToEl) { dateToEl.addEventListener('change', checklistLoadHistory); }
+  if (clearBtn) {
+    clearBtn.addEventListener('click', function () {
+      if (searchEl) { searchEl.value = ''; }
+      if (dateFromEl) { dateFromEl.value = ''; }
+      if (dateToEl) { dateToEl.value = ''; }
+      checklistLoadHistory();
+    });
+  }
+}
+
+/* ── Historial detail dialog — read-only "bitácora" entry view; only
+   flagged (non-"good") items are shown, grouped by section, resolved
+   against window.LLY_CHECKLIST_FIELD_LABELS built by checklist.php ── */
+function checklistFormatFieldEntry(fieldId, entry, lang) {
+  var meta = (window.LLY_CHECKLIST_FIELD_LABELS || {})[fieldId];
+  var label = meta ? meta.item[lang] : fieldId;
+  var unitLabel = meta && meta.unit ? (' — ' + meta.unit[lang]) : '';
+  var statusIcons = { good: '✅', damaged: '⚠️', missing: '❌', replace: '🔄' };
+  var icon = statusIcons[entry.status] || '•';
+  var extras = [];
+  if (entry.count)  { extras.push((lang === 'es' ? 'Cant.' : 'Count') + ': ' + checklistEscape(entry.count)); }
+  if (entry.expiry) { extras.push((lang === 'es' ? 'Vence' : 'Expiry') + ': ' + checklistEscape(entry.expiry)); }
+  if (entry.notes)  { extras.push(checklistEscape(entry.notes)); }
+  return '<div class="checklist-detail-row"><span class="k">' + icon + ' ' + checklistEscape(label) + unitLabel + '</span>' +
+    '<span>' + (extras.join(' · ') || '—') + '</span></div>';
+}
+
+function checklistRenderDetail(record) {
+  var lang = document.body.dataset.activeLang === 'es' ? 'es' : 'en';
+  var titleEl   = document.getElementById('checklist-detail-dialog-title');
+  var eyebrowEl = document.getElementById('checklist-detail-eyebrow');
+  var bodyEl    = document.getElementById('checklist-detail-body');
+  if (!bodyEl) return;
+
+  var dateStr = record.charter_date || String(record.created_at || '').substring(0, 10);
+  if (titleEl) { titleEl.textContent = record.vessel_name + ' — ' + dateStr; }
+  if (eyebrowEl) {
+    var modeText = record.inspection_mode === 'after'
+      ? (lang === 'es' ? 'Después del Charter' : 'After Charter')
+      : (lang === 'es' ? 'Antes del Charter' : 'Before Charter');
+    eyebrowEl.textContent = modeText + ' · ' + (record.captain_name || '—');
+  }
+
+  var payload = record.payload || {};
+  var bySection = {};
+  Object.keys(payload).forEach(function (fieldId) {
+    var entry = payload[fieldId];
+    if (!entry || !entry.status || entry.status === 'good') return;
+    var meta = (window.LLY_CHECKLIST_FIELD_LABELS || {})[fieldId];
+    var sectionLabel = meta ? meta.section[lang] : fieldId;
+    if (!bySection[sectionLabel]) { bySection[sectionLabel] = []; }
+    bySection[sectionLabel].push(checklistFormatFieldEntry(fieldId, entry, lang));
+  });
+
+  var html = '';
+  var sectionNames = Object.keys(bySection);
+  if (!sectionNames.length) {
+    html += '<p style="color:var(--ink-60);">' +
+      (lang === 'es' ? 'Todo en buen estado — sin ítems marcados.' : 'Everything in good condition — no flagged items.') + '</p>';
+  } else {
+    sectionNames.forEach(function (name) {
+      html += '<h3 class="checklist-detail-block-title">' + checklistEscape(name) + '</h3>' + bySection[name].join('');
+    });
+  }
+
+  html += '<h3 class="checklist-detail-block-title">' + (lang === 'es' ? 'Cierre' : 'Sign-Off') + '</h3>';
+  html += '<div class="checklist-detail-row"><span class="k">' + (lang === 'es' ? 'Huéspedes' : 'Guests') + '</span><span>' + (record.guests_count != null ? record.guests_count : '—') + '</span></div>';
+  html += '<div class="checklist-detail-row"><span class="k">' + (lang === 'es' ? 'Revisado por' : 'Checked by') + '</span><span>' + checklistEscape(record.checked_by || '—') + '</span></div>';
+  if (record.missing_report) { html += '<div class="checklist-detail-row"><span class="k">' + (lang === 'es' ? 'Reporte de faltantes' : 'Missing report') + '</span><span>' + checklistEscape(record.missing_report) + '</span></div>'; }
+  if (record.required_actions) { html += '<div class="checklist-detail-row"><span class="k">' + (lang === 'es' ? 'Acciones requeridas' : 'Required actions') + '</span><span>' + checklistEscape(record.required_actions) + '</span></div>'; }
+  html += '<div class="checklist-detail-row"><span class="k">' + (lang === 'es' ? 'Firma' : 'Signature') + '</span><span>' + checklistEscape(record.captain_signature || '—') + (record.signed_at ? (' · ' + checklistEscape(record.signed_at)) : '') + '</span></div>';
+
+  bodyEl.innerHTML = html;
+}
+
+function initChecklistDetailModal() {
+  var dialog = document.getElementById('checklist-detail-dialog');
+  var tbody  = document.getElementById('checklist-history-tbody');
+  if (!dialog || !tbody) return;
+
+  var closeBtn = document.getElementById('checklist-detail-close');
+  if (closeBtn) { closeBtn.addEventListener('click', function () { dialog.close(); }); }
+
+  tbody.addEventListener('click', function (e) {
+    var btn = e.target.closest('.checklist-detail-btn');
+    if (!btn) return;
+    var id = btn.getAttribute('data-id');
+    var titleEl = document.getElementById('checklist-detail-dialog-title');
+    var bodyEl  = document.getElementById('checklist-detail-body');
+    if (titleEl) { titleEl.textContent = 'Loading…'; }
+    if (bodyEl) { bodyEl.innerHTML = ''; }
+    dialog.showModal();
+
+    var csrfField = document.getElementById('checklist-csrf-field');
+    var body = new URLSearchParams();
+    body.set('action', 'get');
+    body.set('id', id);
+    body.set('csrf_token', csrfField ? csrfField.value : '');
+
+    fetch('api/inventory_checklists.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    }).then(function (res) { return res.json(); }).then(function (data) {
+      llySyncCsrfFields(data.csrf_token);
+      if (data.status !== 'success') {
+        if (titleEl) { titleEl.textContent = 'Error'; }
+        if (bodyEl) { bodyEl.textContent = data.message || 'Could not load this record.'; }
+        return;
+      }
+      checklistRenderDetail(data.checklist);
+    }).catch(function () {
+      if (titleEl) { titleEl.textContent = 'Error'; }
+      if (bodyEl) { bodyEl.textContent = 'Network error — check your connection.'; }
+    });
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    10. INIT — readyState-aware entry point
    Deferred scripts run after HTML parse; document.readyState is
    already 'interactive' or 'complete' by that time.  Using the
@@ -1411,6 +1948,14 @@ function llyInitAll() {
   llySafeInit(initModuleDocEditorPanel);     /* #moduledoc-editor-textarea → get/save knowledge module doc */
   llySafeInit(initHandshakeTestPanel);       /* #handshake-test-btn → one-click AURA handshake test */
   llySafeInit(initOpenAiTestPanel);          /* #openai-test-btn → one-click OpenAI connection test */
+  llySafeInit(initChecklistViewSwitch);      /* #view-btn-checklist/#view-btn-history → show one view at a time */
+  llySafeInit(initChecklistTabs);            /* #checklist-tabs → show one section panel at a time + Prev/Next */
+  llySafeInit(initChecklistForm);            /* #checklist-panels → status buttons, mode toggle, guests-vs-vests check */
+  llySafeInit(initChecklistLangSync);        /* #btn-en/#btn-es → re-sync data-ph-en/es placeholders after language switch */
+  llySafeInit(initChecklistSave);            /* #btn-save → serialize + POST api/inventory_checklists.php (save) */
+  llySafeInit(initChecklistPrint);           /* #btn-print → validate signature, force panels visible, window.print() */
+  llySafeInit(initChecklistHistoryFilters);  /* #checklist-search-input / date filters → checklistLoadHistory() */
+  llySafeInit(initChecklistDetailModal);     /* #checklist-detail-dialog → "View" per-row read-only bitácora entry */
 }
 
 if (document.readyState === 'loading') {
