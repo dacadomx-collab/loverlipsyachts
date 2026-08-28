@@ -228,7 +228,8 @@ $lly_csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
             <div class="op-grid">
               <div class="op-field">
                 <label><span data-lang="en">Vessel / Catamaran</span><span data-lang="es">Embarcación / Catamarán</span></label>
-                <input type="text" id="op-vessel" value="NOMADA" />
+                <input type="text" id="op-vessel" value="NOMADA" list="op-vessel-list" />
+                <datalist id="op-vessel-list"></datalist>
               </div>
               <div class="op-field">
                 <label><span data-lang="en">Charter Date</span><span data-lang="es">Fecha de Charter</span></label>

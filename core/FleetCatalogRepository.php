@@ -31,6 +31,9 @@ final class FleetCatalogRepository
         'vessel_name', 'vessel_slug', 'role_label_en', 'role_label_es',
         'max_pax', 'length_ft', 'rate_note_en', 'rate_note_es',
         'status_pill', 'verification_status', 'display_order',
+        // Operational specs (sql/014) — consumed by checklist.php, not the AI prompt.
+        'cabins_count', 'bathrooms_count', 'crew_capacity', 'beam_ft', 'year_built',
+        'engine_notes', 'fuel_capacity_gal', 'water_capacity_gal', 'home_marina', 'registration_number',
     ];
 
     /** @return list<array<string, mixed>> Verified vessels, in display order. Empty array (never throws) if the table isn't provisioned yet. */
@@ -100,12 +103,32 @@ final class FleetCatalogRepository
     {
         $stmt = $pdo->query(
             "SELECT id, vessel_name, vessel_slug, role_label_en, role_label_es,
-                    max_pax, length_ft, rate_note_en, rate_note_es, status_pill,
+                    max_pax, length_ft, cabins_count, bathrooms_count, crew_capacity,
+                    beam_ft, year_built, engine_notes, fuel_capacity_gal, water_capacity_gal,
+                    home_marina, registration_number,
+                    rate_note_en, rate_note_es, status_pill,
                     verification_status, display_order
              FROM ll_fleet_catalog
              ORDER BY display_order ASC, vessel_name ASC"
         );
         return $stmt->fetchAll();
+    }
+
+    /**
+     * @return list<string> Every vessel name in the catalog (any
+     * verification_status), in display order — lightweight source for the
+     * Inventory Checklist module's vessel autocomplete (checklist.php),
+     * which scopes its own data by vessel_name string, not this table's id.
+     */
+    public static function listAllVesselNames(PDO $pdo): array
+    {
+        try {
+            $stmt = $pdo->query('SELECT vessel_name FROM ll_fleet_catalog ORDER BY display_order ASC, vessel_name ASC');
+            return array_column($stmt->fetchAll(), 'vessel_name');
+        } catch (\PDOException $e) {
+            error_log('[LLY · FleetCatalogRepository] listAllVesselNames failed: ' . $e->getMessage());
+            return [];
+        }
     }
 
     /** Inserts one vessel from whitelisted fields; returns the new row's id. Caller (api/fleet_catalog.php) validates required fields before calling. */

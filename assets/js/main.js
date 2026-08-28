@@ -951,7 +951,7 @@ function fleetRenderRows(vessels) {
   var tbody = document.getElementById('fleet-catalog-tbody');
   if (!tbody) return;
   if (!vessels.length) {
-    tbody.innerHTML = '<tr><td colspan="5">'
+    tbody.innerHTML = '<tr><td colspan="6">'
       + '<span data-lang="en">No vessels yet — add the first one above.</span>'
       + '<span data-lang="es">Aún no hay embarcaciones — agrega la primera arriba.</span></td></tr>';
     return;
@@ -960,10 +960,16 @@ function fleetRenderRows(vessels) {
     var statusLabel = v.verification_status === 'verified'
       ? '<span class="pill pill-green"><span data-lang="en">Verified</span><span data-lang="es">Verificado</span></span>'
       : '<span class="pill pill-orange"><span data-lang="en">Pending</span><span data-lang="es">Pendiente</span></span>';
+    var specsParts = [];
+    if (v.cabins_count != null) { specsParts.push(v.cabins_count + ' 🛏️'); }
+    if (v.bathrooms_count != null) { specsParts.push(v.bathrooms_count + ' 🚿'); }
+    if (v.crew_capacity != null) { specsParts.push(v.crew_capacity + ' 👥'); }
+    var specsLabel = specsParts.length ? specsParts.join(' · ') : '—';
     return '<tr data-vessel-id="' + v.id + '">'
       + '<td><strong>' + fleetEscape(v.vessel_name) + '</strong>' + (v.vessel_slug ? '<br><small>' + fleetEscape(v.vessel_slug) + '</small>' : '') + '</td>'
       + '<td>' + (v.max_pax != null ? v.max_pax : '—') + '</td>'
       + '<td>' + (v.length_ft != null ? v.length_ft + ' ft' : '—') + '</td>'
+      + '<td>' + specsLabel + '</td>'
       + '<td>' + statusLabel + '</td>'
       + '<td><button type="button" class="fleet-row-edit" title="Edit">✏️</button> <button type="button" class="fleet-row-delete" title="Delete">✕</button></td>'
       + '</tr>';
@@ -998,6 +1004,16 @@ function fleetPopulateFormForEdit(vessel) {
   document.getElementById('fleet-vessel-slug').value = vessel.vessel_slug || '';
   document.getElementById('fleet-max-pax').value = vessel.max_pax != null ? vessel.max_pax : '';
   document.getElementById('fleet-length-ft').value = vessel.length_ft != null ? vessel.length_ft : '';
+  document.getElementById('fleet-beam-ft').value = vessel.beam_ft != null ? vessel.beam_ft : '';
+  document.getElementById('fleet-cabins').value = vessel.cabins_count != null ? vessel.cabins_count : '';
+  document.getElementById('fleet-bathrooms').value = vessel.bathrooms_count != null ? vessel.bathrooms_count : '';
+  document.getElementById('fleet-crew-capacity').value = vessel.crew_capacity != null ? vessel.crew_capacity : '';
+  document.getElementById('fleet-year-built').value = vessel.year_built != null ? vessel.year_built : '';
+  document.getElementById('fleet-fuel-capacity').value = vessel.fuel_capacity_gal != null ? vessel.fuel_capacity_gal : '';
+  document.getElementById('fleet-water-capacity').value = vessel.water_capacity_gal != null ? vessel.water_capacity_gal : '';
+  document.getElementById('fleet-engine-notes').value = vessel.engine_notes || '';
+  document.getElementById('fleet-home-marina').value = vessel.home_marina || '';
+  document.getElementById('fleet-registration').value = vessel.registration_number || '';
   document.getElementById('fleet-role-en').value = vessel.role_label_en || '';
   document.getElementById('fleet-role-es').value = vessel.role_label_es || '';
   document.getElementById('fleet-status-pill').value = vessel.status_pill || 'pill-orange';
@@ -1025,6 +1041,16 @@ function initFleetCatalogPanel() {
         vessel_slug: document.getElementById('fleet-vessel-slug').value,
         max_pax: document.getElementById('fleet-max-pax').value,
         length_ft: document.getElementById('fleet-length-ft').value,
+        beam_ft: document.getElementById('fleet-beam-ft').value,
+        cabins_count: document.getElementById('fleet-cabins').value,
+        bathrooms_count: document.getElementById('fleet-bathrooms').value,
+        crew_capacity: document.getElementById('fleet-crew-capacity').value,
+        year_built: document.getElementById('fleet-year-built').value,
+        fuel_capacity_gal: document.getElementById('fleet-fuel-capacity').value,
+        water_capacity_gal: document.getElementById('fleet-water-capacity').value,
+        engine_notes: document.getElementById('fleet-engine-notes').value,
+        home_marina: document.getElementById('fleet-home-marina').value,
+        registration_number: document.getElementById('fleet-registration').value,
         role_label_en: document.getElementById('fleet-role-en').value,
         role_label_es: document.getElementById('fleet-role-es').value,
         status_pill: document.getElementById('fleet-status-pill').value,
@@ -2085,6 +2111,53 @@ function initChecklistHistoryRowActions() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   9i-bis. FLEET CATALOG VESSEL AUTOCOMPLETE (checklist.php — guards on
+   #op-vessel-list absence for every other page). Enriches all three of
+   checklist.php's vessel <input list="…"> fields (Checklist tab, Crew tab,
+   Utensils tab) with the real fleet catalog (ll_fleet_catalog via
+   api/fleet_catalog.php action=names) — additive, never overwrites the
+   "vessels already used here" suggestions each tab loads on its own
+   (crewLoadVesselSuggestions/invLoadVesselSuggestions below), since a
+   fresh vessel from the catalog with zero crew/inventory rows yet is
+   exactly the case this is meant to surface.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/** Appends any names not already present as <option> children — safe against either source resolving first. */
+function llyAppendVesselOptions(datalistId, names) {
+  var list = document.getElementById(datalistId);
+  if (!list) return;
+  var existing = {};
+  Array.prototype.forEach.call(list.querySelectorAll('option'), function (opt) { existing[opt.value] = true; });
+  (names || []).forEach(function (name) {
+    if (!name || existing[name]) return;
+    existing[name] = true;
+    var opt = document.createElement('option');
+    opt.value = name;
+    list.appendChild(opt);
+  });
+}
+
+function loadFleetVesselDatalist() {
+  if (!document.getElementById('op-vessel-list')) return; /* only checklist.php ships this */
+  var csrfField = document.getElementById('checklist-csrf-field') || document.getElementById('crew-csrf-field') || document.getElementById('inv-csrf-field');
+  if (!csrfField) return;
+  var body = new URLSearchParams();
+  body.set('action', 'names');
+  body.set('csrf_token', csrfField.value);
+  fetch('api/fleet_catalog.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+  }).then(function (res) { return res.json(); }).then(function (data) {
+    if (data.status !== 'success') return;
+    var names = data.vessels || [];
+    llyAppendVesselOptions('op-vessel-list', names);
+    llyAppendVesselOptions('crew-vessel-list', names);
+    llyAppendVesselOptions('inv-vessel-list', names);
+  }).catch(function () { /* datalist enrichment is a convenience — never blocks the page */ });
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    9j. CREW ROSTER + POSITIONS CATALOG (checklist.php "👥 Crew" view —
    guards on #crew-member-form absence for every other page). Two related
    pieces sharing api/crew.php: a small global "positions" catalog
@@ -2242,11 +2315,10 @@ function crewPopulateMemberFormForEdit(member) {
 }
 
 function crewLoadVesselSuggestions() {
-  var list = document.getElementById('crew-vessel-list');
-  if (!list) return;
+  if (!document.getElementById('crew-vessel-list')) return;
   crewPost('vessel_suggestions').then(function (data) {
     if (data.status !== 'success') return;
-    list.innerHTML = (data.vessels || []).map(function (v) { return '<option value="' + crewEscape(v) + '">'; }).join('');
+    llyAppendVesselOptions('crew-vessel-list', data.vessels || []);
   });
 }
 
@@ -2480,11 +2552,10 @@ function invPopulateItemFormForEdit(item) {
 }
 
 function invLoadVesselSuggestions() {
-  var list = document.getElementById('inv-vessel-list');
-  if (!list) return;
+  if (!document.getElementById('inv-vessel-list')) return;
   invPost('vessel_suggestions').then(function (data) {
     if (data.status !== 'success') return;
-    list.innerHTML = (data.vessels || []).map(function (v) { return '<option value="' + invEscape(v) + '">'; }).join('');
+    llyAppendVesselOptions('inv-vessel-list', data.vessels || []);
   });
 }
 
@@ -2646,6 +2717,7 @@ function llyInitAll() {
   llySafeInit(initChecklistPrint);           /* #btn-print → validate signature, force panels visible, window.print() */
   llySafeInit(initChecklistHistoryFilters);  /* #checklist-search-input / date filters → checklistLoadHistory() */
   llySafeInit(initChecklistHistoryRowActions); /* #checklist-history-tbody → View/Edit/Delete per row */
+  llySafeInit(loadFleetVesselDatalist);      /* #op-vessel-list → enrich all 3 vessel fields with the real fleet catalog */
   llySafeInit(initCrewPanel);                /* #crew-member-form → positions catalog + per-vessel roster CRUD */
   llySafeInit(initInventoryCatalogPanel);    /* #inv-item-form → per-vessel kitchen utensils catalog CRUD */
 }

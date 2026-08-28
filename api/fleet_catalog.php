@@ -94,6 +94,19 @@ function lly_fc_read_fields(): array
         $raw = trim((string) $_POST['length_ft']);
         $fields['length_ft'] = $raw !== '' ? max(0, (int) $raw) : null;
     }
+    // Operational specs (sql/014) — all optional/nullable, same "empty string → NULL" convention as max_pax/length_ft above.
+    foreach (['cabins_count', 'bathrooms_count', 'crew_capacity', 'beam_ft', 'year_built', 'fuel_capacity_gal', 'water_capacity_gal'] as $key) {
+        if (isset($_POST[$key])) {
+            $raw = trim((string) $_POST[$key]);
+            $fields[$key] = $raw !== '' ? max(0, (int) $raw) : null;
+        }
+    }
+    foreach (['engine_notes', 'home_marina', 'registration_number'] as $key) {
+        if (isset($_POST[$key])) {
+            $val = trim(strip_tags((string) $_POST[$key]));
+            $fields[$key] = $val !== '' ? $val : null;
+        }
+    }
     if (isset($_POST['display_order'])) {
         $fields['display_order'] = max(0, (int) $_POST['display_order']);
     }
@@ -117,6 +130,16 @@ try {
                 'csrf_token' => $rotatedCsrf,
             ]);
             // no break — lly_fc_json exits
+
+        case 'names':
+            // Lightweight vessel-name list (any verification_status) — feeds the
+            // Inventory Checklist module's (checklist.php) vessel autocomplete,
+            // which doesn't need marketing fields, just the name strings.
+            lly_fc_json('success', [
+                'vessels'    => FleetCatalogRepository::listAllVesselNames($pdo),
+                'csrf_token' => $rotatedCsrf,
+            ]);
+            // no break
 
         case 'create':
             $fields = lly_fc_read_fields();

@@ -156,6 +156,59 @@ $lly_is_super_admin = ($_SESSION['lly_role'] ?? '') === 'super_admin';
                 <span data-lang="en">Length (ft)</span><span data-lang="es">Eslora (pies)</span>
               </label>
               <input type="number" id="fleet-length-ft" name="length_ft" min="0" max="500" />
+              <label for="fleet-beam-ft">
+                <span data-lang="en">Beam (ft)</span><span data-lang="es">Manga (pies)</span>
+              </label>
+              <input type="number" id="fleet-beam-ft" name="beam_ft" min="0" max="100" />
+            </div>
+
+            <div class="ephemeral-form-row ephemeral-form-row--inline">
+              <label for="fleet-cabins">
+                <span data-lang="en">Cabins</span><span data-lang="es">Camarotes</span>
+              </label>
+              <input type="number" id="fleet-cabins" name="cabins_count" min="0" max="20" />
+              <label for="fleet-bathrooms">
+                <span data-lang="en">Bathrooms</span><span data-lang="es">Baños</span>
+              </label>
+              <input type="number" id="fleet-bathrooms" name="bathrooms_count" min="0" max="20" />
+              <label for="fleet-crew-capacity">
+                <span data-lang="en">Crew Capacity</span><span data-lang="es">Capacidad de Tripulación</span>
+              </label>
+              <input type="number" id="fleet-crew-capacity" name="crew_capacity" min="0" max="50" />
+            </div>
+
+            <div class="ephemeral-form-row ephemeral-form-row--inline">
+              <label for="fleet-year-built">
+                <span data-lang="en">Year Built</span><span data-lang="es">Año de Fabricación</span>
+              </label>
+              <input type="number" id="fleet-year-built" name="year_built" min="1950" max="2100" />
+              <label for="fleet-fuel-capacity">
+                <span data-lang="en">Fuel Capacity (gal)</span><span data-lang="es">Capacidad de Combustible (gal)</span>
+              </label>
+              <input type="number" id="fleet-fuel-capacity" name="fuel_capacity_gal" min="0" max="20000" />
+              <label for="fleet-water-capacity">
+                <span data-lang="en">Water Capacity (gal)</span><span data-lang="es">Capacidad de Agua (gal)</span>
+              </label>
+              <input type="number" id="fleet-water-capacity" name="water_capacity_gal" min="0" max="20000" />
+            </div>
+
+            <div class="ephemeral-form-row">
+              <label for="fleet-engine-notes">
+                <span data-lang="en">Engine Notes (make / model / count / HP)</span>
+                <span data-lang="es">Notas del Motor (marca / modelo / cantidad / HP)</span>
+              </label>
+              <input type="text" id="fleet-engine-notes" name="engine_notes" maxlength="255" placeholder="e.g. Twin Volvo Penta D6, 2×440 HP" />
+            </div>
+
+            <div class="ephemeral-form-row ephemeral-form-row--inline">
+              <label for="fleet-home-marina">
+                <span data-lang="en">Home Marina / Berth</span><span data-lang="es">Marina / Atraque Base</span>
+              </label>
+              <input type="text" id="fleet-home-marina" name="home_marina" maxlength="120" />
+              <label for="fleet-registration">
+                <span data-lang="en">Registration / Hull Number</span><span data-lang="es">Matrícula / Número de Casco</span>
+              </label>
+              <input type="text" id="fleet-registration" name="registration_number" maxlength="60" />
             </div>
 
             <div class="ephemeral-form-row ephemeral-form-row--inline">
@@ -211,12 +264,13 @@ $lly_is_super_admin = ($_SESSION['lly_role'] ?? '') === 'super_admin';
                   <th><span data-lang="en">Vessel</span><span data-lang="es">Embarcación</span></th>
                   <th><span data-lang="en">PAX</span><span data-lang="es">PAX</span></th>
                   <th><span data-lang="en">Length</span><span data-lang="es">Eslora</span></th>
+                  <th><span data-lang="en">Specs</span><span data-lang="es">Specs</span></th>
                   <th><span data-lang="en">Status</span><span data-lang="es">Estado</span></th>
                   <th><span data-lang="en">Actions</span><span data-lang="es">Acciones</span></th>
                 </tr>
               </thead>
               <tbody id="fleet-catalog-tbody">
-                <tr><td colspan="5"><span data-lang="en">Loading…</span><span data-lang="es">Cargando…</span></td></tr>
+                <tr><td colspan="6"><span data-lang="en">Loading…</span><span data-lang="es">Cargando…</span></td></tr>
               </tbody>
             </table>
           </div>
