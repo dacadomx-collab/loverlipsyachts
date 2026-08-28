@@ -457,7 +457,7 @@ $lly_pagos_trade_total = array_sum(array_column($lly_pagos, 'trade'));
     </form>
   </div>
 
-  <script src="assets/js/main.js" defer></script>
+  <script src="assets/js/main.js?v=<?= filemtime(__DIR__ . '/assets/js/main.js') ?>" defer></script>
   <script src="assets/js/pg_ai_widget.js" defer></script>
 
 </body>

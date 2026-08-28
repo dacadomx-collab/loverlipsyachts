@@ -351,7 +351,7 @@ $lly_batch2_ids = ['d', 'f', 'g', 'h', 'i'];
 
   <script type="application/json" id="lly-reportes-data"><?= json_encode($lly_reportes, JSON_UNESCAPED_UNICODE) ?></script>
 
-  <script src="assets/js/main.js" defer></script>
+  <script src="assets/js/main.js?v=<?= filemtime(__DIR__ . '/assets/js/main.js') ?>" defer></script>
 
 </body>
 </html>

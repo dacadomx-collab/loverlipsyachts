@@ -494,7 +494,7 @@ $hasSample = ($book['sample_chapter']['en'] !== '' || $book['sample_chapter']['e
     </form>
   </div>
 
-  <script src="<?= $baseAssetsUrl ?>js/main.js" defer></script>
+  <script src="<?= $baseAssetsUrl ?>js/main.js?v=<?= filemtime(__DIR__ . '/assets/js/main.js') ?>" defer></script>
 
   <!-- PG-AI widget connector reads its gateway URL from this global —
        keeps assets/js/pg_ai_widget.js host-agnostic (no hardcoded path)

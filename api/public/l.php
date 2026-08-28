@@ -138,7 +138,7 @@ function lly_l_render_quote_page(string $title, string $payloadHtml, string $bad
         . '</a>'
         . '</div>'
         . '</main>'
-        . '<script src="' . $base . '/assets/js/main.js" defer></script>'
+        . '<script src="' . $base . '/assets/js/main.js?v=' . filemtime(__DIR__ . '/../../assets/js/main.js') . '" defer></script>'
         . '</body></html>';
     exit;
 }

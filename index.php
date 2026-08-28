@@ -132,7 +132,7 @@ if (lly_is_authenticated()) {
     </form>
   </div>
 
-  <script src="assets/js/main.js" defer></script>
+  <script src="assets/js/main.js?v=<?= filemtime(__DIR__ . '/assets/js/main.js') ?>" defer></script>
   <script src="assets/js/auth.js" defer></script>
   <script src="assets/js/pg_ai_widget.js" defer></script>
 

@@ -287,7 +287,7 @@ $lly_showcaseBaseUrl = lly_showcase_base_url();
     </p>
   </footer>
 
-  <script src="assets/js/main.js" defer></script>
+  <script src="assets/js/main.js?v=<?= filemtime(__DIR__ . '/assets/js/main.js') ?>" defer></script>
 
   <!-- Page-specific inline script — scroll-reveal + the "Copy Direct
        Link" buttons, same "independent and modular" convention as
