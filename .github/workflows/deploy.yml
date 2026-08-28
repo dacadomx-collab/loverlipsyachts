@@ -104,10 +104,12 @@ jobs:
             # ── Internal architecture docs & knowledge base ───────
             docs/**
             knowledge/**
+            modulos/**
 
-            # ── Markdown & plain-text files (anywhere in tree) ───
+            # ── Root-level markdown / plain-text (NOT **/*.md — that
+            #    also excluded core/prompts/pg_ai_lester_master.md, the
+            #    live AI system prompt, from every deploy) ────────────
             *.md
-            **/*.md
             *.txt
             **/*.txt
 
