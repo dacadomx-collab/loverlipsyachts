@@ -1210,3 +1210,46 @@ El Arquitecto pidió actualizar `docs/00_ADN_DEL_PROYECTO.md`, `docs/02_SYSTEM_C
 
 ### Verificación técnica
 Ningún `.php` fue modificado en este hito (solo `.md`/`.html`) — `php -l` no aplica. Balance de `<fieldset>` (6/6) y pares `data-lang` (25/25) confirmado en `Manual_Administrador.html`. Escaneo dirigido del diff completo contra patrones de credenciales — solo se encontraron nombres de variables de GitHub Secrets ya públicos en `deploy.yml` (`FTP_SERVER`/`FTP_USERNAME`/`FTP_PASSWORD`), ningún valor real. Ningún secreto expuesto.
+
+## 📌 REGISTRO FORMAL — Módulo "Inventory Checklist": Tripulación (Crew) + Catálogo de Utensilios de Cocina (vigente, 2026-08-27)
+
+### Contexto
+El Arquitecto pidió, dentro del módulo ya existente `checklist.php` (Catamaran Inventory Checklist), dos catálogos administrables (alta/edición/eliminación, bilingüe EN/ES, guardado en la BD real del servidor):
+1. **Tripulación** — puestos (Capitán, Marinero, Tripulación, Chef, Hostess 1, Hostess 2, Ingeniero + capacidad de agregar puestos nuevos) y, por cada persona: nombre, teléfono, WhatsApp, nota/descripción.
+2. **Utensilios de cocina** — catálogo separado (Tostadora, Cafetera, Licuadora, Cucharas, Cuchillos de mesa, Tenedores, como filas individuales, no un "set" agrupado) con capacidad de agregar más utensilios libremente.
+
+### Decisión de alcance confirmada con el Arquitecto — por yate, no global
+Antes de tocar código se preguntó explícitamente si ambos catálogos son un roster único de empresa o por embarcación — el Arquitecto confirmó **por yate**. Consecuencia de diseño: ambas tablas nuevas usan `vessel_name` (VARCHAR libre) como llave de alcance, **replicando exactamente** la misma convención ya usada por `ll_inventory_checklists.vessel_name` (sql/012) — **no** una FK a `ll_fleet_catalog`, porque ese catálogo solo tiene 3 de 42 embarcaciones provisionadas hoy y este módulo debe funcionar para cualquier yate que Lester escriba, sin bloquear la operación a que primero se complete el levantamiento de flota (Fase 1 pendiente, ver hito "Cierre de Hito — 2026-06-22" arriba).
+
+### Modelo de datos — dos formas distintas, deliberadamente
+- **Puestos (`ll_crew_roles`)**: catálogo **global** pequeño (Capitán/Chef/etc. no varían por barco) — normalizado, con FK `RESTRICT` desde `ll_crew_members.role_id` (borrar un puesto en uso se bloquea con `409`, mensaje claro, no un error 500 crudo).
+- **Utensilios (`ll_inventory_catalog`)**: catálogo **plano por yate**, sin tabla de referencia separada — cada fila ES un utensilio de un barco concreto (ej. "Tostadora x1 en NOMADA"). Se decidió así (no un catálogo global + tabla de cantidades) porque, a diferencia de un puesto, dos "Tostadora" de dos yates distintos no son el mismo recurso reutilizable — normalizar habría añadido un join sin beneficio real. Columna `category` (default `kitchen`) reservada para futuros grupos de equipo (cubierta, seguridad, etc.) sin requerir nueva migración — **solo** la pestaña de cocina está expuesta en esta v1.
+
+### Esquema — `sql/013_create_ll_crew_and_inventory_catalog.sql`
+Tres tablas: `ll_crew_roles` (id, label_en, label_es, display_order), `ll_crew_members` (id, vessel_name, role_id → FK, full_name, phone, whatsapp, email, status enum active/inactive, note, display_order), `ll_inventory_catalog` (id, vessel_name, category, name_en, name_es, quantity, condition_status enum good/fair/damaged/missing, note, display_order). Sembrado: los 7 puestos pedidos textualmente por el Arquitecto, y los 6 utensilios pedidos (separados, no agrupados) para `NOMADA` — el único yate al que `checklist.php` apunta por defecto hoy.
+
+**Ejecutado en vivo contra la BD real del servidor** (autorización explícita del Arquitecto en esta misma directiva: "trabajando de manera directa en la base de datos del servidor... con todo por favor") — no quedó como script pendiente de phpMyAdmin, a diferencia de sql/001-012. Corrido vía un script PHP CLI de un solo uso (mismo patrón de "creado, ejecutado una vez, verificado, borrado inmediatamente — nunca llegó a git" ya documentado en hitos anteriores), forzando `$_SERVER['HTTP_HOST']='localhost'` antes de `require conexion.php` para que `Conexion::isLocalRequest()` enrutara por `DB_HOST_LOCAL` (TCP remoto) en vez de asumir el socket de producción — sin ese forzado, ejecutar desde CLI local habría intentado conectar a un `localhost` inexistente para esta BD. Verificado por conteo de filas tras la corrida: `ll_crew_roles` 7, `ll_crew_members` 0, `ll_inventory_catalog` 6.
+
+### Backend
+`core/CrewRepository.php` (roles + members) y `core/InventoryCatalogRepository.php` (utensilios) — mismo patrón de whitelist de columnas editables que `core/FleetCatalogRepository.php`. `api/crew.php` (`list_roles`/`create_role`/`update_role`/`delete_role`/`list_members`/`create_member`/`update_member`/`delete_member`/`vessel_suggestions`) y `api/inventory_catalog.php` (`list`/`create`/`update`/`delete`/`vessel_suggestions`) — mismo pipeline de 6 capas que `api/fleet_catalog.php` (sesión, POST-only, CSRF con rotación solo en mutaciones, prepared statements, try/catch con log interno).
+
+### Frontend — dos vistas nuevas en `checklist.php`, reutilizando el patrón de editor ya validado
+El switcher de vistas (antes binario Checklist/Historial) se generalizó a 4 vistas (`initChecklistViewSwitch()` en `assets/js/main.js`, ahora agnóstico sobre un arreglo en vez de un booleano hardcodeado) — nuevos botones "👥 Crew" y "🧰 Utensils". Cada vista reutiliza el patrón de "formulario inline arriba + tabla con ✏️/✕ por fila" ya construido para el Editor de Catálogo de Flota (`pg_ai_config.php` → `#fleet-catalog-table`, sección 9c de `main.js`) — mismo componente `.ephemeral-panel`/`.ephemeral-form`/`.data-table`, cero sistema de UI nuevo (Mandamiento 10). Selector de embarcación (input + `<datalist>` con autocompletado de yates ya usados) independiente por vista, no acoplado al campo `#op-vessel` del tab de inspección — evita estado compartido innecesario entre tres flujos distintos.
+
+**Puestos**: mini-panel "Administrar Puestos" (chips EN/ES + alta inline) sobre el formulario de alta de tripulante — el `<select>` de puesto del formulario de tripulante se repuebla automáticamente al guardar un puesto nuevo, sin recargar la página.
+
+**Utensilios — auto-traducción reutilizada, no reinventada**: botón 🌐 junto a los campos EN/ES llama a `api/translate.php` (el mismo proxy de Google Translate que ya usa `book_editor.php`, mismo contrato `{text, source_lang, target_lang, csrf_token}` → `{data:{translated_text}}`) para rellenar el idioma vacío con un clic — satisface el requisito explícito de "todo en los dos idiomas" sin forzar al usuario a escribir manualmente en ambos.
+
+### Corrección durante la construcción (encontrado antes de que fallara en producción)
+El primer borrador de `crewRenderRoleChips()`/`crewRenderMemberRows()`/`invRenderItemRows()` incluía una llamada a una función `llySyncLangVisibility()` que **no existe** en este proyecto — confirmado por `grep` que el motor de idioma real (`setLang()`, sección 1 de `main.js`) es 100% CSS-driven vía `body[data-active-lang]`, sin ningún paso de sincronización JS por elemento. Eliminadas las 3 llamadas antes de considerar el hito cerrado; de haber quedado, cada guardado exitoso habría lanzado un `ReferenceError` silencioso que rompía el refresco de la tabla justo después de guardar.
+
+### `.htaccess`
+`crew` e `inventory_catalog` añadidos a la whitelist de `<FilesMatch>` — mismo patrón de "olvidar esto rompe todo con 403" documentado repetidamente en hitos anteriores, no se repitió el olvido esta vez.
+
+### Verificación técnica
+`php -l` limpio en `core/CrewRepository.php`, `core/InventoryCatalogRepository.php`, `api/crew.php`, `api/inventory_catalog.php`, `checklist.php`. `node --check` limpio en `assets/js/main.js` tras el fix de `llySyncLangVisibility`. Balance de `<div>` (83/83), `<form>` (3/3) y pares `data-lang` (64/64) confirmado en `checklist.php`. Migración ejecutada y verificada por conteo de filas contra la BD real (ver arriba) — no simulada. Ningún secreto expuesto; el script CLI de migración de un solo uso fue borrado inmediatamente después de confirmar la corrida.
+
+### Alcance sin cambio / pendiente
+- Las 9 pestañas de inspección pre/post-charter existentes (Cocina, Camarotes, etc.) **no** se tocaron — siguen siendo listas hardcodeadas en el `<script>` inline de `checklist.php`, sin relación con los nuevos catálogos (decisión deliberada: mezclar un catálogo maestro editable con un flujo de inspección pass/fail habría confundido ambos propósitos).
+- Solo la categoría `kitchen` está expuesta en la UI del catálogo de utensilios — la columna `category` queda lista para una futura pestaña de equipo de cubierta/seguridad sin requerir nueva migración, pero esa UI no se construyó (fuera del alcance pedido en este hito).
+- Se sembraron los 6 utensilios y 7 puestos solo para `NOMADA` — cualquier otro yate empieza sin filas y se puebla desde la UI misma.

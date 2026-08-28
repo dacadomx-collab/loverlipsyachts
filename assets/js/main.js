@@ -1398,27 +1398,39 @@ function checklistShowValidationAlert(message) {
   checklistShowValidationAlert._t = setTimeout(function () { alertBox.classList.remove('show'); }, 5000);
 }
 
-/* ── View switch — "📝 Checklist" / "📜 Historial" (only one visible) ── */
+/* ── View switch — "📝 Checklist" / "👥 Crew" / "🧰 Utensils" / "📜 Historial"
+   (only one visible at a time). Generic over N views instead of a hardcoded
+   boolean pair, so adding a 5th view later never touches this function. ── */
 function initChecklistViewSwitch() {
-  var btnChecklist = document.getElementById('view-btn-checklist');
-  var btnHistory   = document.getElementById('view-btn-history');
-  var viewChecklist = document.getElementById('view-checklist');
-  var viewHistory   = document.getElementById('view-history');
-  if (!btnChecklist || !btnHistory || !viewChecklist || !viewHistory) return;
+  var views = [
+    { key: 'checklist', btn: document.getElementById('view-btn-checklist'), el: document.getElementById('view-checklist') },
+    { key: 'crew',      btn: document.getElementById('view-btn-crew'),      el: document.getElementById('view-crew') },
+    { key: 'inventory', btn: document.getElementById('view-btn-inventory'), el: document.getElementById('view-inventory') },
+    { key: 'history',   btn: document.getElementById('view-btn-history'),   el: document.getElementById('view-history') },
+  ];
+  if (!views[0].btn || !views[0].el) return; /* only checklist.php ships this switcher */
 
   function showView(view) {
-    var isHistory = view === 'history';
-    viewChecklist.classList.toggle('hidden-view', isHistory);
-    viewHistory.classList.toggle('active', isHistory);
-    btnChecklist.classList.toggle('active', !isHistory);
-    btnChecklist.setAttribute('aria-pressed', String(!isHistory));
-    btnHistory.classList.toggle('active', isHistory);
-    btnHistory.setAttribute('aria-pressed', String(isHistory));
-    if (isHistory) { checklistLoadHistory(); }
+    views.forEach(function (v) {
+      if (!v.btn || !v.el) return;
+      var isActive = v.key === view;
+      if (v.key === 'checklist') {
+        v.el.classList.toggle('hidden-view', !isActive);
+      } else {
+        v.el.classList.toggle('active', isActive);
+      }
+      v.btn.classList.toggle('active', isActive);
+      v.btn.setAttribute('aria-pressed', String(isActive));
+    });
+    if (view === 'history') { checklistLoadHistory(); }
+    if (view === 'crew' && typeof crewLoadRoster === 'function') { crewLoadRoster(); }
+    if (view === 'inventory' && typeof invLoadItems === 'function') { invLoadItems(); }
   }
 
-  btnChecklist.addEventListener('click', function () { showView('checklist'); });
-  btnHistory.addEventListener('click', function () { showView('history'); });
+  views.forEach(function (v) {
+    if (!v.btn) return;
+    v.btn.addEventListener('click', function () { showView(v.key); });
+  });
 }
 
 /* ── Tab nav — only the active section panel is ever visible ── */
@@ -1900,6 +1912,510 @@ function initChecklistDetailModal() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   9j. CREW ROSTER + POSITIONS CATALOG (checklist.php "👥 Crew" view —
+   guards on #crew-member-form absence for every other page). Two related
+   pieces sharing api/crew.php: a small global "positions" catalog
+   (ll_crew_roles — add/edit/delete a role type, shared across every
+   vessel) and the per-vessel roster (ll_crew_members) that assigns real
+   people to one of those positions.
+   ═══════════════════════════════════════════════════════════════════ */
+
+var crewRolesCache = [];
+var crewMembersCache = [];
+
+function crewPost(action, extraFields) {
+  var csrfField = document.getElementById('crew-csrf-field');
+  var body = new URLSearchParams();
+  body.set('action', action);
+  body.set('csrf_token', csrfField ? csrfField.value : '');
+  if (extraFields) {
+    Object.keys(extraFields).forEach(function (key) {
+      body.set(key, extraFields[key] == null ? '' : String(extraFields[key]));
+    });
+  }
+  return fetch('api/crew.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+  }).then(function (res) {
+    return res.json().then(function (data) {
+      llySyncCsrfFields(data.csrf_token);
+      return data;
+    });
+  });
+}
+
+function crewEscape(str) {
+  var div = document.createElement('div');
+  div.textContent = str == null ? '' : str;
+  return div.innerHTML;
+}
+
+function crewCurrentVessel() {
+  var input = document.getElementById('crew-vessel-input');
+  return input && input.value.trim() ? input.value.trim() : 'NOMADA';
+}
+
+/* ── Positions catalog (chips above the roster form) ── */
+function crewRenderRoleChips() {
+  var wrap = document.getElementById('crew-role-list');
+  var select = document.getElementById('crew-member-role');
+  if (!wrap) return;
+
+  if (!crewRolesCache.length) {
+    wrap.innerHTML = '<span style="color:var(--ink-60);font-size:.8rem;">'
+      + '<span data-lang="en">No positions yet — add one below.</span>'
+      + '<span data-lang="es">Aún no hay puestos — agrega uno abajo.</span></span>';
+  } else {
+    wrap.innerHTML = crewRolesCache.map(function (r) {
+      return '<span class="catalog-role-chip" data-role-id="' + r.id + '">'
+        + crewEscape(r.label_en) + ' / ' + crewEscape(r.label_es)
+        + ' <button type="button" class="crew-role-edit" title="Edit">✏️</button>'
+        + '<button type="button" class="crew-role-delete" title="Delete">✕</button></span>';
+    }).join('');
+  }
+
+  if (select) {
+    var prev = select.value;
+    select.innerHTML = crewRolesCache.map(function (r) {
+      return '<option value="' + r.id + '">' + crewEscape(r.label_en) + ' / ' + crewEscape(r.label_es) + '</option>';
+    }).join('');
+    if (prev && crewRolesCache.some(function (r) { return String(r.id) === String(prev); })) {
+      select.value = prev;
+    }
+  }
+
+}
+
+function crewLoadRoles() {
+  return crewPost('list_roles').then(function (data) {
+    if (data.status !== 'success') return;
+    crewRolesCache = data.roles || [];
+    crewRenderRoleChips();
+  });
+}
+
+function crewResetRoleForm() {
+  var form = document.getElementById('crew-role-form');
+  if (!form) return;
+  document.getElementById('crew-role-id').value = '';
+  document.getElementById('crew-role-en').value = '';
+  document.getElementById('crew-role-es').value = '';
+  var cancelBtn = document.getElementById('crew-role-cancel-btn');
+  if (cancelBtn) { cancelBtn.hidden = true; }
+}
+
+/* ── Roster (per vessel) ── */
+function crewRenderMemberRows() {
+  var tbody = document.getElementById('crew-members-tbody');
+  if (!tbody) return;
+
+  if (!crewMembersCache.length) {
+    tbody.innerHTML = '<tr><td colspan="5">'
+      + '<span data-lang="en">No crew assigned to this vessel yet.</span>'
+      + '<span data-lang="es">Aún no hay tripulación asignada a esta embarcación.</span></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = crewMembersCache.map(function (m) {
+    var contact = [m.phone, m.whatsapp ? ('WA: ' + m.whatsapp) : null, m.email].filter(Boolean).map(crewEscape).join('<br>') || '—';
+    var statusPill = m.status === 'inactive'
+      ? '<span class="pill pill-orange">Inactive / Inactivo</span>'
+      : '<span class="pill pill-green">Active / Activo</span>';
+    return '<tr data-member-id="' + m.id + '">'
+      + '<td>' + crewEscape(m.role_label_en) + ' / ' + crewEscape(m.role_label_es) + '</td>'
+      + '<td><strong>' + crewEscape(m.full_name) + '</strong>' + (m.note ? '<br><small>' + crewEscape(m.note) + '</small>' : '') + '</td>'
+      + '<td>' + contact + '</td>'
+      + '<td>' + statusPill + '</td>'
+      + '<td><button type="button" class="crew-member-edit" title="Edit">✏️</button> <button type="button" class="crew-member-delete" title="Delete">✕</button></td>'
+      + '</tr>';
+  }).join('');
+}
+
+function crewLoadRoster() {
+  var tbody = document.getElementById('crew-members-tbody');
+  if (!tbody) return;
+  crewPost('list_members', { vessel_name: crewCurrentVessel() }).then(function (data) {
+    if (data.status !== 'success') return;
+    crewMembersCache = data.members || [];
+    crewRenderMemberRows();
+  });
+}
+
+function crewResetMemberForm() {
+  var form = document.getElementById('crew-member-form');
+  if (!form) return;
+  form.reset();
+  document.getElementById('crew-member-id').value = '';
+  document.getElementById('crew-member-submit-btn').querySelector('[data-lang="en"]').textContent = '💾 Save Crew Member';
+  document.getElementById('crew-member-submit-btn').querySelector('[data-lang="es"]').textContent = '💾 Guardar Tripulante';
+  var cancelBtn = document.getElementById('crew-member-cancel-btn');
+  if (cancelBtn) { cancelBtn.hidden = true; }
+}
+
+function crewPopulateMemberFormForEdit(member) {
+  document.getElementById('crew-member-id').value = member.id;
+  document.getElementById('crew-member-role').value = member.role_id;
+  document.getElementById('crew-member-status').value = member.status || 'active';
+  document.getElementById('crew-member-name').value = member.full_name || '';
+  document.getElementById('crew-member-phone').value = member.phone || '';
+  document.getElementById('crew-member-whatsapp').value = member.whatsapp || '';
+  document.getElementById('crew-member-email').value = member.email || '';
+  document.getElementById('crew-member-note').value = member.note || '';
+  document.getElementById('crew-member-submit-btn').querySelector('[data-lang="en"]').textContent = '💾 Update Crew Member';
+  document.getElementById('crew-member-submit-btn').querySelector('[data-lang="es"]').textContent = '💾 Actualizar Tripulante';
+  document.getElementById('crew-member-cancel-btn').hidden = false;
+  document.getElementById('crew-member-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function crewLoadVesselSuggestions() {
+  var list = document.getElementById('crew-vessel-list');
+  if (!list) return;
+  crewPost('vessel_suggestions').then(function (data) {
+    if (data.status !== 'success') return;
+    list.innerHTML = (data.vessels || []).map(function (v) { return '<option value="' + crewEscape(v) + '">'; }).join('');
+  });
+}
+
+function initCrewPanel() {
+  var memberForm = document.getElementById('crew-member-form');
+  if (!memberForm) return; /* only checklist.php ships this panel */
+
+  crewLoadVesselSuggestions();
+  crewLoadRoles().then(function () { crewLoadRoster(); });
+
+  var loadBtn = document.getElementById('crew-vessel-load');
+  if (loadBtn) { loadBtn.addEventListener('click', crewLoadRoster); }
+
+  var roleForm = document.getElementById('crew-role-form');
+  if (roleForm) {
+    roleForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var feedback = document.getElementById('crew-role-feedback');
+      var id = document.getElementById('crew-role-id').value;
+      var fields = {
+        label_en: document.getElementById('crew-role-en').value,
+        label_es: document.getElementById('crew-role-es').value,
+      };
+      var action = id ? 'update_role' : 'create_role';
+      if (id) { fields.id = id; }
+      crewPost(action, fields).then(function (data) {
+        if (!feedback) return;
+        if (data.status === 'success') {
+          feedback.textContent = '';
+          crewResetRoleForm();
+          crewLoadRoles();
+        } else {
+          feedback.textContent = data.message || 'Could not save the position.';
+        }
+      });
+    });
+  }
+
+  var roleCancelBtn = document.getElementById('crew-role-cancel-btn');
+  if (roleCancelBtn) { roleCancelBtn.addEventListener('click', crewResetRoleForm); }
+
+  var roleList = document.getElementById('crew-role-list');
+  if (roleList) {
+    roleList.addEventListener('click', function (e) {
+      var chip = e.target.closest('[data-role-id]');
+      if (!chip) return;
+      var id = chip.getAttribute('data-role-id');
+      var role = crewRolesCache.find(function (r) { return String(r.id) === String(id); });
+
+      if (e.target.classList.contains('crew-role-edit') && role) {
+        document.getElementById('crew-role-id').value = role.id;
+        document.getElementById('crew-role-en').value = role.label_en;
+        document.getElementById('crew-role-es').value = role.label_es;
+        document.getElementById('crew-role-cancel-btn').hidden = false;
+      }
+
+      if (e.target.classList.contains('crew-role-delete')) {
+        if (!window.confirm('Delete this position? Crew members using it must be reassigned first.')) return;
+        crewPost('delete_role', { id: id }).then(function (data) {
+          var feedback = document.getElementById('crew-role-feedback');
+          if (data.status === 'success') {
+            crewLoadRoles();
+          } else if (feedback) {
+            feedback.textContent = data.message || 'Could not delete this position.';
+          }
+        });
+      }
+    });
+  }
+
+  memberForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var feedback = document.getElementById('crew-member-feedback');
+    var id = document.getElementById('crew-member-id').value;
+    var fields = {
+      vessel_name: crewCurrentVessel(),
+      role_id: document.getElementById('crew-member-role').value,
+      status: document.getElementById('crew-member-status').value,
+      full_name: document.getElementById('crew-member-name').value,
+      phone: document.getElementById('crew-member-phone').value,
+      whatsapp: document.getElementById('crew-member-whatsapp').value,
+      email: document.getElementById('crew-member-email').value,
+      note: document.getElementById('crew-member-note').value,
+    };
+    var action = id ? 'update_member' : 'create_member';
+    if (id) { fields.id = id; }
+    crewPost(action, fields).then(function (data) {
+      if (!feedback) return;
+      if (data.status === 'success') {
+        feedback.textContent = '';
+        crewResetMemberForm();
+        crewLoadRoster();
+        crewLoadVesselSuggestions();
+      } else {
+        feedback.textContent = data.message || 'Could not save this crew member.';
+      }
+    });
+  });
+
+  var memberCancelBtn = document.getElementById('crew-member-cancel-btn');
+  if (memberCancelBtn) { memberCancelBtn.addEventListener('click', crewResetMemberForm); }
+
+  var table = document.getElementById('crew-members-table');
+  if (table) {
+    table.addEventListener('click', function (e) {
+      var row = e.target.closest('tr[data-member-id]');
+      if (!row) return;
+      var id = row.getAttribute('data-member-id');
+
+      if (e.target.classList.contains('crew-member-edit')) {
+        var member = crewMembersCache.find(function (m) { return String(m.id) === String(id); });
+        if (member) { crewPopulateMemberFormForEdit(member); }
+      }
+
+      if (e.target.classList.contains('crew-member-delete')) {
+        if (!window.confirm('Delete this crew member? This cannot be undone.')) return;
+        crewPost('delete_member', { id: id }).then(function () { crewLoadRoster(); });
+      }
+    });
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   9k. KITCHEN UTENSILS CATALOG (checklist.php "🧰 Utensils" view — guards
+   on #inv-item-form absence for every other page). Per-vessel flat catalog
+   (ll_inventory_catalog via api/inventory_catalog.php) — every row is one
+   physical utensil on one boat; add/edit/delete freely, bilingual name
+   fields with an optional one-click auto-translate (api/translate.php,
+   same Google Translate proxy book_editor.php already uses).
+   ═══════════════════════════════════════════════════════════════════ */
+
+var invItemsCache = [];
+
+function invPost(action, extraFields) {
+  var csrfField = document.getElementById('inv-csrf-field');
+  var body = new URLSearchParams();
+  body.set('action', action);
+  body.set('csrf_token', csrfField ? csrfField.value : '');
+  if (extraFields) {
+    Object.keys(extraFields).forEach(function (key) {
+      body.set(key, extraFields[key] == null ? '' : String(extraFields[key]));
+    });
+  }
+  return fetch('api/inventory_catalog.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+  }).then(function (res) {
+    return res.json().then(function (data) {
+      llySyncCsrfFields(data.csrf_token);
+      return data;
+    });
+  });
+}
+
+function invEscape(str) {
+  var div = document.createElement('div');
+  div.textContent = str == null ? '' : str;
+  return div.innerHTML;
+}
+
+function invCurrentVessel() {
+  var input = document.getElementById('inv-vessel-input');
+  return input && input.value.trim() ? input.value.trim() : 'NOMADA';
+}
+
+var CONDITION_LABELS = {
+  good: 'Good / Bien', fair: 'Fair / Regular', damaged: 'Damaged / Dañado', missing: 'Missing / Falta',
+};
+var CONDITION_PILLS = {
+  good: 'pill-green', fair: 'pill-gold', damaged: 'pill-orange', missing: 'pill-pink',
+};
+
+function invRenderItemRows() {
+  var tbody = document.getElementById('inv-items-tbody');
+  if (!tbody) return;
+
+  if (!invItemsCache.length) {
+    tbody.innerHTML = '<tr><td colspan="5">'
+      + '<span data-lang="en">No utensils catalogued for this vessel yet.</span>'
+      + '<span data-lang="es">Aún no hay utensilios catalogados para esta embarcación.</span></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = invItemsCache.map(function (it) {
+    var pill = CONDITION_PILLS[it.condition_status] || 'pill-green';
+    var label = CONDITION_LABELS[it.condition_status] || it.condition_status;
+    return '<tr data-item-id="' + it.id + '">'
+      + '<td><strong>' + invEscape(it.name_en) + '</strong> / ' + invEscape(it.name_es) + '</td>'
+      + '<td>' + (it.quantity != null ? it.quantity : '—') + '</td>'
+      + '<td><span class="pill ' + pill + '">' + label + '</span></td>'
+      + '<td>' + (it.note ? invEscape(it.note) : '—') + '</td>'
+      + '<td><button type="button" class="inv-item-edit" title="Edit">✏️</button> <button type="button" class="inv-item-delete" title="Delete">✕</button></td>'
+      + '</tr>';
+  }).join('');
+}
+
+function invLoadItems() {
+  var tbody = document.getElementById('inv-items-tbody');
+  if (!tbody) return;
+  invPost('list', { vessel_name: invCurrentVessel(), category: 'kitchen' }).then(function (data) {
+    if (data.status !== 'success') return;
+    invItemsCache = data.items || [];
+    invRenderItemRows();
+  });
+}
+
+function invResetItemForm() {
+  var form = document.getElementById('inv-item-form');
+  if (!form) return;
+  form.reset();
+  document.getElementById('inv-item-id').value = '';
+  document.getElementById('inv-item-qty').value = '1';
+  document.getElementById('inv-item-submit-btn').querySelector('[data-lang="en"]').textContent = '💾 Save Utensil';
+  document.getElementById('inv-item-submit-btn').querySelector('[data-lang="es"]').textContent = '💾 Guardar Utensilio';
+  var cancelBtn = document.getElementById('inv-item-cancel-btn');
+  if (cancelBtn) { cancelBtn.hidden = true; }
+}
+
+function invPopulateItemFormForEdit(item) {
+  document.getElementById('inv-item-id').value = item.id;
+  document.getElementById('inv-item-name-en').value = item.name_en || '';
+  document.getElementById('inv-item-name-es').value = item.name_es || '';
+  document.getElementById('inv-item-qty').value = item.quantity != null ? item.quantity : 1;
+  document.getElementById('inv-item-condition').value = item.condition_status || 'good';
+  document.getElementById('inv-item-note').value = item.note || '';
+  document.getElementById('inv-item-submit-btn').querySelector('[data-lang="en"]').textContent = '💾 Update Utensil';
+  document.getElementById('inv-item-submit-btn').querySelector('[data-lang="es"]').textContent = '💾 Actualizar Utensilio';
+  document.getElementById('inv-item-cancel-btn').hidden = false;
+  document.getElementById('inv-item-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function invLoadVesselSuggestions() {
+  var list = document.getElementById('inv-vessel-list');
+  if (!list) return;
+  invPost('vessel_suggestions').then(function (data) {
+    if (data.status !== 'success') return;
+    list.innerHTML = (data.vessels || []).map(function (v) { return '<option value="' + invEscape(v) + '">'; }).join('');
+  });
+}
+
+/** Auto-translates whichever of EN/ES is empty from the other — same one-click pattern as book_editor.php's "Translate Missing Fields", scoped to this one row. */
+function invTranslateItemName() {
+  var btn = document.getElementById('inv-item-translate-btn');
+  var enField = document.getElementById('inv-item-name-en');
+  var esField = document.getElementById('inv-item-name-es');
+  var csrfField = document.getElementById('inv-csrf-field');
+  if (!btn || !enField || !esField) return;
+
+  var sourceField, targetField, sourceLang, targetLang;
+  if (enField.value.trim() && !esField.value.trim()) {
+    sourceField = enField; targetField = esField; sourceLang = 'EN'; targetLang = 'ES';
+  } else if (esField.value.trim() && !enField.value.trim()) {
+    sourceField = esField; targetField = enField; sourceLang = 'ES'; targetLang = 'EN';
+  } else {
+    return; /* both filled or both empty — nothing to auto-fill */
+  }
+
+  btn.disabled = true;
+  fetch('api/translate.php', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      text: sourceField.value.trim(),
+      source_lang: sourceLang,
+      target_lang: targetLang,
+      csrf_token: csrfField ? csrfField.value : '',
+    }),
+  }).then(function (res) { return res.json(); }).then(function (json) {
+    if (json && json.status === 'success' && json.data && json.data.translated_text) {
+      targetField.value = json.data.translated_text;
+    }
+  }).catch(function () { /* silent — translation is a convenience, never blocks manual entry */ })
+    .then(function () { btn.disabled = false; });
+}
+
+function initInventoryCatalogPanel() {
+  var itemForm = document.getElementById('inv-item-form');
+  if (!itemForm) return; /* only checklist.php ships this panel */
+
+  invLoadVesselSuggestions();
+  invLoadItems();
+
+  var loadBtn = document.getElementById('inv-vessel-load');
+  if (loadBtn) { loadBtn.addEventListener('click', invLoadItems); }
+
+  var translateBtn = document.getElementById('inv-item-translate-btn');
+  if (translateBtn) { translateBtn.addEventListener('click', invTranslateItemName); }
+
+  itemForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var feedback = document.getElementById('inv-item-feedback');
+    var id = document.getElementById('inv-item-id').value;
+    var fields = {
+      vessel_name: invCurrentVessel(),
+      category: 'kitchen',
+      name_en: document.getElementById('inv-item-name-en').value,
+      name_es: document.getElementById('inv-item-name-es').value,
+      quantity: document.getElementById('inv-item-qty').value,
+      condition_status: document.getElementById('inv-item-condition').value,
+      note: document.getElementById('inv-item-note').value,
+    };
+    var action = id ? 'update' : 'create';
+    if (id) { fields.id = id; }
+    invPost(action, fields).then(function (data) {
+      if (!feedback) return;
+      if (data.status === 'success') {
+        feedback.textContent = '';
+        invResetItemForm();
+        invLoadItems();
+        invLoadVesselSuggestions();
+      } else {
+        feedback.textContent = data.message || 'Could not save this utensil.';
+      }
+    });
+  });
+
+  var cancelBtn = document.getElementById('inv-item-cancel-btn');
+  if (cancelBtn) { cancelBtn.addEventListener('click', invResetItemForm); }
+
+  var table = document.getElementById('inv-items-table');
+  if (table) {
+    table.addEventListener('click', function (e) {
+      var row = e.target.closest('tr[data-item-id]');
+      if (!row) return;
+      var id = row.getAttribute('data-item-id');
+
+      if (e.target.classList.contains('inv-item-edit')) {
+        var item = invItemsCache.find(function (it) { return String(it.id) === String(id); });
+        if (item) { invPopulateItemFormForEdit(item); }
+      }
+
+      if (e.target.classList.contains('inv-item-delete')) {
+        if (!window.confirm('Delete this utensil? This cannot be undone.')) return;
+        invPost('delete', { id: id }).then(function () { invLoadItems(); });
+      }
+    });
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    10. INIT — readyState-aware entry point
    Deferred scripts run after HTML parse; document.readyState is
    already 'interactive' or 'complete' by that time.  Using the
@@ -1948,7 +2464,7 @@ function llyInitAll() {
   llySafeInit(initModuleDocEditorPanel);     /* #moduledoc-editor-textarea → get/save knowledge module doc */
   llySafeInit(initHandshakeTestPanel);       /* #handshake-test-btn → one-click AURA handshake test */
   llySafeInit(initOpenAiTestPanel);          /* #openai-test-btn → one-click OpenAI connection test */
-  llySafeInit(initChecklistViewSwitch);      /* #view-btn-checklist/#view-btn-history → show one view at a time */
+  llySafeInit(initChecklistViewSwitch);      /* #view-btn-checklist/#view-btn-crew/#view-btn-inventory/#view-btn-history → show one view at a time */
   llySafeInit(initChecklistTabs);            /* #checklist-tabs → show one section panel at a time + Prev/Next */
   llySafeInit(initChecklistForm);            /* #checklist-panels → status buttons, mode toggle, guests-vs-vests check */
   llySafeInit(initChecklistLangSync);        /* #btn-en/#btn-es → re-sync data-ph-en/es placeholders after language switch */
@@ -1956,6 +2472,8 @@ function llyInitAll() {
   llySafeInit(initChecklistPrint);           /* #btn-print → validate signature, force panels visible, window.print() */
   llySafeInit(initChecklistHistoryFilters);  /* #checklist-search-input / date filters → checklistLoadHistory() */
   llySafeInit(initChecklistDetailModal);     /* #checklist-detail-dialog → "View" per-row read-only bitácora entry */
+  llySafeInit(initCrewPanel);                /* #crew-member-form → positions catalog + per-vessel roster CRUD */
+  llySafeInit(initInventoryCatalogPanel);    /* #inv-item-form → per-vessel kitchen utensils catalog CRUD */
 }
 
 if (document.readyState === 'loading') {

@@ -115,10 +115,22 @@ $lly_csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
 
   #checklist-toast { top: 5.5rem; }
 
-  /* ── History view ─────────────────────────────────────────────────── */
-  #view-history { display: none; }
-  #view-history.active { display: block; }
+  /* ── History / Crew / Utensils views ──────────────────────────────── */
+  #view-history, #view-crew, #view-inventory { display: none; }
+  #view-history.active, #view-crew.active, #view-inventory.active { display: block; }
   #view-checklist.hidden-view { display: none; }
+
+  .catalog-vessel-bar { display: flex; align-items: flex-end; gap: .7rem; flex-wrap: wrap; margin-bottom: 1rem; }
+  .catalog-vessel-bar .op-field { flex: 1 1 220px; max-width: 320px; margin: 0; }
+  .catalog-subpanel { background: var(--surface-2); border: 1px solid var(--ink-10); border-radius: var(--r-md); padding: .9rem; margin-bottom: 1.1rem; }
+  .catalog-subpanel h3 { font-family: var(--font-display); font-size: .92rem; margin: 0 0 .6rem; }
+  .catalog-role-list { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .7rem; }
+  .catalog-role-chip { display: inline-flex; align-items: center; gap: .35rem; background: var(--surface); border: 1px solid var(--ink-10); border-radius: var(--r-full); padding: .3rem .4rem .3rem .7rem; font-size: .78rem; font-weight: 600; }
+  .catalog-role-chip button { background: none; border: none; cursor: pointer; font-size: .78rem; line-height: 1; padding: .15rem; color: var(--ink-60); }
+  .catalog-role-chip button:hover { color: var(--pink); }
+  .catalog-translate-btn { flex: 0 0 auto; background: var(--surface); border: 1px solid var(--gold); color: var(--gold); border-radius: var(--r-sm); padding: .4rem .6rem; font-size: .72rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .catalog-translate-btn:hover { background: var(--gold-10); }
+  .catalog-translate-btn[disabled] { opacity: .6; cursor: wait; }
   .checklist-detail-block-title { font-family: var(--font-display); font-size: 1rem; font-weight: 700; color: var(--ink); margin: 1.4rem 0 .5rem; }
   .checklist-detail-block-title:first-of-type { margin-top: 0; }
   .checklist-detail-row { display: flex; justify-content: space-between; gap: .8rem; padding: .5rem 0; border-bottom: 1px solid var(--ink-10); font-size: .88rem; }
@@ -197,6 +209,8 @@ $lly_csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
         <div class="view-switch-wrap">
           <div class="lang-toggle" role="group" aria-label="View / Vista">
             <button type="button" class="lang-btn active" id="view-btn-checklist" data-view="checklist">📝 <span data-lang="en">Checklist</span><span data-lang="es">Checklist</span></button>
+            <button type="button" class="lang-btn" id="view-btn-crew" data-view="crew">👥 <span data-lang="en">Crew</span><span data-lang="es">Tripulación</span></button>
+            <button type="button" class="lang-btn" id="view-btn-inventory" data-view="inventory">🧰 <span data-lang="en">Utensils</span><span data-lang="es">Utensilios</span></button>
             <button type="button" class="lang-btn" id="view-btn-history" data-view="history">📜 <span data-lang="en">Historial</span><span data-lang="es">Historial</span></button>
           </div>
         </div>
@@ -289,6 +303,174 @@ $lly_csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
               </thead>
               <tbody id="checklist-history-tbody">
                 <tr><td colspan="7"><span data-lang="en">Loading…</span><span data-lang="es">Cargando…</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             VIEW — CREW (roster + positions catalog, per vessel)
+        ═══════════════════════════════════════════════════════════ -->
+        <div id="view-crew">
+
+          <div class="catalog-vessel-bar">
+            <div class="op-field">
+              <label><span data-lang="en">Vessel / Catamaran</span><span data-lang="es">Embarcación / Catamarán</span></label>
+              <input type="text" id="crew-vessel-input" value="NOMADA" list="crew-vessel-list" />
+              <datalist id="crew-vessel-list"></datalist>
+            </div>
+            <button type="button" class="dash-card-btn dash-card-btn--secondary" id="crew-vessel-load">
+              <span data-lang="en">Load Roster</span><span data-lang="es">Cargar Tripulación</span>
+            </button>
+          </div>
+
+          <input type="hidden" id="crew-csrf-field" value="<?= $lly_csrf ?>">
+
+          <div class="catalog-subpanel">
+            <h3><span data-lang="en">⚙️ Manage Positions (shared across all vessels)</span><span data-lang="es">⚙️ Administrar Puestos (compartido entre todas las embarcaciones)</span></h3>
+            <div class="catalog-role-list" id="crew-role-list"></div>
+            <form id="crew-role-form" class="ephemeral-form-row ephemeral-form-row--inline" style="margin:0;">
+              <input type="hidden" id="crew-role-id" value="">
+              <input type="text" id="crew-role-en" placeholder="Position (EN)" maxlength="80" required style="flex:1 1 160px;">
+              <input type="text" id="crew-role-es" placeholder="Puesto (ES)" maxlength="80" required style="flex:1 1 160px;">
+              <button type="submit" class="dash-card-btn" style="flex:0 0 auto;">
+                <span data-lang="en">+ Add Position</span><span data-lang="es">+ Agregar Puesto</span>
+              </button>
+              <button type="button" class="dash-card-btn dash-card-btn--secondary" id="crew-role-cancel-btn" hidden style="flex:0 0 auto;">
+                <span data-lang="en">Cancel</span><span data-lang="es">Cancelar</span>
+              </button>
+            </form>
+            <p id="crew-role-feedback" class="ephemeral-feedback" role="status" aria-live="polite"></p>
+          </div>
+
+          <div class="op-card">
+            <form id="crew-member-form" class="ephemeral-form">
+              <input type="hidden" id="crew-member-id" value="">
+              <div class="ephemeral-form-row ephemeral-form-row--inline">
+                <label for="crew-member-role"><span data-lang="en">Position</span><span data-lang="es">Puesto</span></label>
+                <select id="crew-member-role" required></select>
+                <label for="crew-member-status"><span data-lang="en">Status</span><span data-lang="es">Estatus</span></label>
+                <select id="crew-member-status">
+                  <option value="active" selected>Active / Activo</option>
+                  <option value="inactive">Inactive / Inactivo</option>
+                </select>
+              </div>
+              <div class="ephemeral-form-row">
+                <label for="crew-member-name"><span data-lang="en">Full name</span><span data-lang="es">Nombre completo</span></label>
+                <input type="text" id="crew-member-name" maxlength="150" required>
+              </div>
+              <div class="ephemeral-form-row ephemeral-form-row--inline">
+                <label for="crew-member-phone"><span data-lang="en">Phone</span><span data-lang="es">Teléfono</span></label>
+                <input type="tel" id="crew-member-phone" maxlength="30">
+                <label for="crew-member-whatsapp">WhatsApp</label>
+                <input type="tel" id="crew-member-whatsapp" maxlength="30">
+              </div>
+              <div class="ephemeral-form-row">
+                <label for="crew-member-email">Email</label>
+                <input type="email" id="crew-member-email" maxlength="190">
+              </div>
+              <div class="ephemeral-form-row">
+                <label for="crew-member-note"><span data-lang="en">Note / description</span><span data-lang="es">Nota / descripción</span></label>
+                <textarea id="crew-member-note" rows="2" maxlength="2000"></textarea>
+              </div>
+              <div class="ephemeral-form-row ephemeral-form-row--inline">
+                <button type="submit" id="crew-member-submit-btn" class="dash-card-btn">
+                  <span data-lang="en">💾 Save Crew Member</span><span data-lang="es">💾 Guardar Tripulante</span>
+                </button>
+                <button type="button" id="crew-member-cancel-btn" class="dash-card-btn dash-card-btn--secondary" hidden>
+                  <span data-lang="en">Cancel Edit</span><span data-lang="es">Cancelar Edición</span>
+                </button>
+              </div>
+            </form>
+            <p id="crew-member-feedback" class="ephemeral-feedback" role="status" aria-live="polite"></p>
+          </div>
+
+          <div class="table-wrap">
+            <table class="data-table" id="crew-members-table">
+              <thead>
+                <tr>
+                  <th><span data-lang="en">Position</span><span data-lang="es">Puesto</span></th>
+                  <th><span data-lang="en">Name</span><span data-lang="es">Nombre</span></th>
+                  <th><span data-lang="en">Contact</span><span data-lang="es">Contacto</span></th>
+                  <th><span data-lang="en">Status</span><span data-lang="es">Estatus</span></th>
+                  <th><span data-lang="en">Actions</span><span data-lang="es">Acciones</span></th>
+                </tr>
+              </thead>
+              <tbody id="crew-members-tbody">
+                <tr><td colspan="5"><span data-lang="en">Loading…</span><span data-lang="es">Cargando…</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             VIEW — KITCHEN UTENSILS (per-vessel inventory catalog)
+        ═══════════════════════════════════════════════════════════ -->
+        <div id="view-inventory">
+
+          <div class="catalog-vessel-bar">
+            <div class="op-field">
+              <label><span data-lang="en">Vessel / Catamaran</span><span data-lang="es">Embarcación / Catamarán</span></label>
+              <input type="text" id="inv-vessel-input" value="NOMADA" list="inv-vessel-list" />
+              <datalist id="inv-vessel-list"></datalist>
+            </div>
+            <button type="button" class="dash-card-btn dash-card-btn--secondary" id="inv-vessel-load">
+              <span data-lang="en">Load Utensils</span><span data-lang="es">Cargar Utensilios</span>
+            </button>
+          </div>
+
+          <input type="hidden" id="inv-csrf-field" value="<?= $lly_csrf ?>">
+
+          <div class="op-card">
+            <form id="inv-item-form" class="ephemeral-form">
+              <input type="hidden" id="inv-item-id" value="">
+              <div class="ephemeral-form-row ephemeral-form-row--inline">
+                <label for="inv-item-name-en"><span data-lang="en">Item name (EN)</span><span data-lang="es">Artículo (EN)</span></label>
+                <input type="text" id="inv-item-name-en" maxlength="120" required style="flex:1 1 200px;">
+                <label for="inv-item-name-es"><span data-lang="en">Item name (ES)</span><span data-lang="es">Artículo (ES)</span></label>
+                <input type="text" id="inv-item-name-es" maxlength="120" required style="flex:1 1 200px;">
+                <button type="button" class="catalog-translate-btn" id="inv-item-translate-btn" title="Auto-translate the empty field / Auto-traducir el campo vacío">🌐</button>
+              </div>
+              <div class="ephemeral-form-row ephemeral-form-row--inline">
+                <label for="inv-item-qty"><span data-lang="en">Quantity</span><span data-lang="es">Cantidad</span></label>
+                <input type="number" id="inv-item-qty" min="0" max="999" value="1">
+                <label for="inv-item-condition"><span data-lang="en">Condition</span><span data-lang="es">Condición</span></label>
+                <select id="inv-item-condition">
+                  <option value="good" selected>Good / Bien</option>
+                  <option value="fair">Fair / Regular</option>
+                  <option value="damaged">Damaged / Dañado</option>
+                  <option value="missing">Missing / Falta</option>
+                </select>
+              </div>
+              <div class="ephemeral-form-row">
+                <label for="inv-item-note"><span data-lang="en">Note</span><span data-lang="es">Nota</span></label>
+                <input type="text" id="inv-item-note" maxlength="255">
+              </div>
+              <div class="ephemeral-form-row ephemeral-form-row--inline">
+                <button type="submit" id="inv-item-submit-btn" class="dash-card-btn">
+                  <span data-lang="en">💾 Save Utensil</span><span data-lang="es">💾 Guardar Utensilio</span>
+                </button>
+                <button type="button" id="inv-item-cancel-btn" class="dash-card-btn dash-card-btn--secondary" hidden>
+                  <span data-lang="en">Cancel Edit</span><span data-lang="es">Cancelar Edición</span>
+                </button>
+              </div>
+            </form>
+            <p id="inv-item-feedback" class="ephemeral-feedback" role="status" aria-live="polite"></p>
+          </div>
+
+          <div class="table-wrap">
+            <table class="data-table" id="inv-items-table">
+              <thead>
+                <tr>
+                  <th><span data-lang="en">Item</span><span data-lang="es">Artículo</span></th>
+                  <th><span data-lang="en">Qty</span><span data-lang="es">Cant.</span></th>
+                  <th><span data-lang="en">Condition</span><span data-lang="es">Condición</span></th>
+                  <th><span data-lang="en">Note</span><span data-lang="es">Nota</span></th>
+                  <th><span data-lang="en">Actions</span><span data-lang="es">Acciones</span></th>
+                </tr>
+              </thead>
+              <tbody id="inv-items-tbody">
+                <tr><td colspan="5"><span data-lang="en">Loading…</span><span data-lang="es">Cargando…</span></td></tr>
               </tbody>
             </table>
           </div>
