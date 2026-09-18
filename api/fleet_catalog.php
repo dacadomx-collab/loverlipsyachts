@@ -25,6 +25,7 @@ declare(strict_types=1);
 require __DIR__ . '/conexion.php';
 require __DIR__ . '/../core/auth_check.php';
 require __DIR__ . '/../core/FleetCatalogRepository.php';
+require __DIR__ . '/../core/FleetCatalogPhotoRepository.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -148,6 +149,15 @@ try {
             $id = (int) ($_POST['id'] ?? 0);
             if ($id <= 0) {
                 lly_fc_json('error', ['message' => 'Invalid vessel id.', 'csrf_token' => $rotatedCsrf], 400);
+            }
+            // Vessel photos cascade-delete in the DB (sql/013 FK), but the
+            // actual WebP files on disk don't — unlink them first so they
+            // don't pile up as orphans in assets/img/fleet/{id}/.
+            foreach (FleetCatalogPhotoRepository::listPathsForVessel($pdo, $id) as $photoPath) {
+                $absolute = __DIR__ . '/../' . $photoPath;
+                if (is_file($absolute)) {
+                    @unlink($absolute);
+                }
             }
             FleetCatalogRepository::delete($pdo, $id);
             lly_fc_json('success', ['csrf_token' => $rotatedCsrf]);

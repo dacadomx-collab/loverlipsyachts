@@ -200,6 +200,25 @@ $lly_is_super_admin = ($_SESSION['lly_role'] ?? '') === 'super_admin';
                 <span data-lang="es">Cancelar Edición</span>
               </button>
             </div>
+
+            <!-- Photos — only shown while editing an existing vessel
+                 (a photo has to belong to a saved vessel id). Click
+                 "✏️" on a row below, then add photos here. -->
+            <div class="ephemeral-form-row" id="fleet-photos-row" hidden>
+              <label>
+                <span data-lang="en">Photos for this vessel</span>
+                <span data-lang="es">Fotos de esta embarcación</span>
+              </label>
+              <div id="fleet-photos-gallery" class="fleet-photos-gallery"></div>
+              <div class="ephemeral-form-row--inline">
+                <input type="file" id="fleet-photo-upload-input" accept="image/jpeg,image/png" />
+                <button type="button" id="fleet-photo-upload-btn" class="dash-card-btn dash-card-btn--secondary">
+                  <span data-lang="en">📷 Add Photo</span>
+                  <span data-lang="es">📷 Agregar Foto</span>
+                </button>
+              </div>
+              <p id="fleet-photos-feedback" class="ephemeral-feedback" role="status" aria-live="polite"></p>
+            </div>
           </form>
 
           <p id="fleet-feedback" class="ephemeral-feedback" role="status" aria-live="polite"></p>

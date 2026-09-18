@@ -1033,6 +1033,40 @@ body[data-active-lang="es"] ul[data-lang="es"] { display: flex; }
 .pill-green  { background: rgba(16,185,129,.10); color: var(--success); border: 1px solid rgba(16,185,129,.20); }
 .pill-orange { background: rgba(245,158,11,.10); color: var(--warning);  border: 1px solid rgba(245,158,11,.20); }
 
+/* Fleet Catalog Editor — per-vessel photo gallery (pg_ai_config.php) */
+.fleet-photos-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+  margin: .4rem 0;
+}
+.fleet-photos-empty { color: var(--ink-60); font-size: .85rem; }
+.fleet-photo-thumb {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  border: 1px solid var(--ink-10);
+  background: var(--bg);
+}
+.fleet-photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.fleet-photo-delete {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
+  line-height: 1;
+  border: none;
+  border-radius: var(--r-full);
+  background: rgba(0,0,0,.65);
+  color: #fff;
+  font-size: .7rem;
+  cursor: pointer;
+}
+.fleet-photo-delete:hover { background: var(--pink); }
+
 .policy-list {
   list-style: none;
   display: flex;

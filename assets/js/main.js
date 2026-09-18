@@ -990,6 +990,8 @@ function fleetResetForm() {
   document.getElementById('fleet-submit-btn').querySelector('[data-lang="es"]').textContent = '💾 Guardar Embarcación';
   var cancelBtn = document.getElementById('fleet-cancel-edit-btn');
   if (cancelBtn) { cancelBtn.hidden = true; }
+  var photosRow = document.getElementById('fleet-photos-row');
+  if (photosRow) { photosRow.hidden = true; }
 }
 
 function fleetPopulateFormForEdit(vessel) {
@@ -1006,6 +1008,116 @@ function fleetPopulateFormForEdit(vessel) {
   document.getElementById('fleet-submit-btn').querySelector('[data-lang="es"]').textContent = '💾 Actualizar Embarcación';
   document.getElementById('fleet-cancel-edit-btn').hidden = false;
   document.getElementById('fleet-vessel-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  var photosRow = document.getElementById('fleet-photos-row');
+  if (photosRow) {
+    photosRow.hidden = false;
+    fleetPhotosLoad(vessel.id);
+  }
+}
+
+/* ── Fleet Catalog · photo gallery (per vessel, api/fleet_catalog_photos.php) ── */
+
+function fleetPhotosPost(action, extraFields) {
+  var csrfField = document.getElementById('fleet-csrf-field');
+  var body = new URLSearchParams();
+  body.set('action', action);
+  body.set('csrf_token', csrfField ? csrfField.value : '');
+  if (extraFields) {
+    Object.keys(extraFields).forEach(function (key) {
+      body.set(key, extraFields[key] == null ? '' : String(extraFields[key]));
+    });
+  }
+  return fetch('api/fleet_catalog_photos.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+  }).then(function (res) {
+    return res.json().then(function (data) {
+      llySyncCsrfFields(data.csrf_token);
+      return data;
+    });
+  });
+}
+
+function fleetPhotosRender(photos) {
+  var gallery = document.getElementById('fleet-photos-gallery');
+  if (!gallery) return;
+  if (!photos.length) {
+    gallery.innerHTML = '<p class="fleet-photos-empty">'
+      + '<span data-lang="en">No photos yet — add the first one below.</span>'
+      + '<span data-lang="es">Aún no hay fotos — agrega la primera abajo.</span></p>';
+    return;
+  }
+  gallery.innerHTML = photos.map(function (p) {
+    return '<div class="fleet-photo-thumb" data-photo-id="' + p.id + '">'
+      + '<img src="' + p.photo_path + '" alt="" loading="lazy" />'
+      + '<button type="button" class="fleet-photo-delete" title="Delete photo">✕</button>'
+      + '</div>';
+  }).join('');
+}
+
+function fleetPhotosLoad(vesselId) {
+  fleetPhotosPost('list', { fleet_catalog_id: vesselId }).then(function (data) {
+    if (data.status !== 'success') return;
+    fleetPhotosRender(data.photos || []);
+  });
+}
+
+function initFleetPhotosPanel() {
+  var photosRow = document.getElementById('fleet-photos-row');
+  if (!photosRow) return; /* only pg_ai_config.php ships this panel */
+
+  var uploadBtn = document.getElementById('fleet-photo-upload-btn');
+  if (uploadBtn) {
+    uploadBtn.addEventListener('click', function () {
+      var vesselId = document.getElementById('fleet-id').value;
+      var input = document.getElementById('fleet-photo-upload-input');
+      var feedback = document.getElementById('fleet-photos-feedback');
+      if (!vesselId) return;
+      if (!input || !input.files || !input.files[0]) {
+        if (feedback) { feedback.textContent = 'Choose a photo first.'; }
+        return;
+      }
+
+      var csrfField = document.getElementById('fleet-csrf-field');
+      var formData = new FormData();
+      formData.set('action', 'upload');
+      formData.set('csrf_token', csrfField ? csrfField.value : '');
+      formData.set('fleet_catalog_id', vesselId);
+      formData.set('photo', input.files[0]);
+
+      uploadBtn.disabled = true;
+      fetch('api/fleet_catalog_photos.php', { method: 'POST', body: formData })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          llySyncCsrfFields(data.csrf_token);
+          uploadBtn.disabled = false;
+          if (data.status === 'success') {
+            if (feedback) { feedback.textContent = ''; }
+            input.value = '';
+            fleetPhotosLoad(vesselId);
+          } else if (feedback) {
+            feedback.textContent = data.message || 'Could not upload the photo.';
+          }
+        })
+        .catch(function () {
+          uploadBtn.disabled = false;
+          if (feedback) { feedback.textContent = 'Upload failed — please try again.'; }
+        });
+    });
+  }
+
+  photosRow.addEventListener('click', function (e) {
+    if (!e.target.classList.contains('fleet-photo-delete')) return;
+    var thumb = e.target.closest('[data-photo-id]');
+    if (!thumb) return;
+    if (!window.confirm('Delete this photo? This cannot be undone.')) return;
+    fleetPhotosPost('delete', { id: thumb.getAttribute('data-photo-id') }).then(function () {
+      var vesselId = document.getElementById('fleet-id').value;
+      if (vesselId) { fleetPhotosLoad(vesselId); }
+    });
+  });
 }
 
 function initFleetCatalogPanel() {
@@ -2116,6 +2228,7 @@ function llyInitAll() {
   llySafeInit(initLeadDetailModal);     /* #lead-detail-dialog → "Ver Resumen y Charla" per-row modal */
   llySafeInit(initPgaiSettingsPanel);   /* #pgai-settings-form → get/save AURA+WhatsApp config */
   llySafeInit(initFleetCatalogPanel);   /* #fleet-catalog-table → create/list/update/delete vessels */
+  llySafeInit(initFleetPhotosPanel);    /* #fleet-photos-row → upload/list/delete photos for the vessel being edited */
   llySafeInit(initPromptEditorPanel);        /* #prompt-editor-textarea → get/save master prompt */
   llySafeInit(initNotificationTemplatesPanel); /* #templates-list → list/update lead notification templates */
   llySafeInit(initModuleDocEditorPanel);     /* #moduledoc-editor-textarea → get/save knowledge module doc */

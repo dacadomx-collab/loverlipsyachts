@@ -24,6 +24,12 @@ if (!lly_is_authenticated()) {
  * a payment batch to the exact reports it covers.
  */
 $lly_reportes = [
+    'j' => [
+        'date_en' => 'September 18, 2026', 'date_es' => '18 de Septiembre, 2026',
+        'title_en' => 'Homepage Text Fixed', 'title_es' => 'Texto de la Página Principal Corregido',
+        'benefit_en' => 'Fixed the homepage headline showing cut off on the left, plus the language button overlapping text on mobile.',
+        'benefit_es' => 'Corregimos el título de la página principal que se veía cortado a la izquierda, y el botón de idioma que se encimaba con el texto en móvil.',
+    ],
     'i' => [
         'date_en' => 'July 1, 2026', 'date_es' => '1 de Julio, 2026',
         'title_en' => 'Edit Your Own Book Page', 'title_es' => 'Edita Tu Propia Página del Libro',
@@ -74,7 +80,7 @@ $lly_reportes = [
     ],
 ];
 
-$lly_reportes_recientes = ['i', 'h', 'g', 'f', 'd'];
+$lly_reportes_recientes = ['j', 'i', 'h', 'g', 'f'];
 
 $lly_pagos = [
     [
@@ -194,16 +200,58 @@ $lly_pagos_trade_total = array_sum(array_column($lly_pagos, 'trade'));
     </section>
 
     <!-- ═══════════════════════════════════════════════════════════════
-         2. THE 4 MAIN CARDS (ARF-GRID) — PG-AI Hub · Book · Work Report · Payments
+         2. THE 6 MAIN CARDS — Fleet · Calendar · Concierge IA · Book ·
+            Work Report · Payments (2026-09-18: split from 4 to 6 so Fleet
+            Catalog and Calendar get their own top-level shortcuts)
     ═══════════════════════════════════════════════════════════════ -->
-    <section class="section access-grid-section" id="access-grid" aria-label="Your 4 Main Cards">
+    <section class="section access-grid-section" id="access-grid" aria-label="Your 6 Main Cards">
       <div class="container">
         <div class="dash-grid">
 
-          <!-- ── MASTER CARD — 🤖 CONCIERGE IA LOVER LIPS ─────────────────
-               Full-width, first position (2026-08-18 directive) — the
-               single entry point to the whole AI system: config, live
-               leads, booking calendar, and the chat testbed. ─────────── -->
+          <!-- ── CARD 1 — 🛥️ FLEET CATALOG ────────────────────────────
+               First thing Lester sees (2026-09-18 directive) — pulled out
+               of the Concierge IA master card into its own top-level
+               shortcut, short and direct on purpose. ─────────────────── -->
+          <article class="dash-card dash-card--pink">
+            <div class="dash-card-icon">🛥️</div>
+            <h2 class="dash-card-title">
+              <span data-lang="en">Fleet Catalog</span>
+              <span data-lang="es">Catálogo de Flota</span>
+            </h2>
+            <p class="dash-card-body">
+              <span data-lang="en">Add, edit, and add photos for your yachts.</span>
+              <span data-lang="es">Agrega, edita y sube fotos de tus yates.</span>
+            </p>
+            <a class="dash-card-btn" href="pg_ai_config.php#pgcfg-section-fleet">
+              <span data-lang="en">🛥️ Open Fleet Catalog</span>
+              <span data-lang="es">🛥️ Abrir Catálogo de Flota</span>
+            </a>
+          </article>
+
+          <!-- ── CARD 2 — 📅 CALENDAR & AGENDA ─────────────────────────
+               Second position (2026-09-18 directive) — client booking
+               requests, pulled out of the Concierge IA master card. ──── -->
+          <article class="dash-card dash-card--gold">
+            <div class="dash-card-icon">📅</div>
+            <h2 class="dash-card-title">
+              <span data-lang="en">Calendar &amp; Agenda</span>
+              <span data-lang="es">Calendario y Agenda</span>
+            </h2>
+            <p class="dash-card-body">
+              <span data-lang="en">See the dates your clients are booking.</span>
+              <span data-lang="es">Mira las fechas que tus clientes están reservando.</span>
+            </p>
+            <a class="dash-card-btn" href="agenda.php">
+              <span data-lang="en">📅 Open Calendar</span>
+              <span data-lang="es">📅 Abrir Calendario</span>
+            </a>
+          </article>
+
+          <!-- ── CARD 3 — 🤖 CONCIERGE IA LOVER LIPS ───────────────────
+               Full-width (2026-08-18 directive, kept), third position as
+               of 2026-09-18 — Fleet Catalog and Calendar moved to their
+               own cards above, so this keeps only Configuration, Live
+               Leads, and the chat testbed. ─────────────────────────── -->
           <article class="dash-card dash-card--pink dash-card--featured">
             <div class="dash-card-icon">🤖</div>
             <h2 class="dash-card-title">
@@ -211,8 +259,8 @@ $lly_pagos_trade_total = array_sum(array_column($lly_pagos, 'trade'));
               <span data-lang="es">Concierge IA Lover Lips</span>
             </h2>
             <p class="dash-card-body">
-              <span data-lang="en">The 24/7 AI concierge that answers guests, captures leads, generates quotes, and now syncs straight into the booking calendar — everything in one place.</span>
-              <span data-lang="es">El concierge de IA 24/7 que responde a los huéspedes, captura leads, genera cotizaciones, y ahora se sincroniza directo con el calendario de reservas — todo en un solo lugar.</span>
+              <span data-lang="en">Your 24/7 AI concierge — answers guests, captures leads, and generates quotes.</span>
+              <span data-lang="es">Tu concierge de IA 24/7 — responde a los huéspedes, captura leads y genera cotizaciones.</span>
             </p>
             <div class="dash-card-btn-grid">
               <a class="dash-card-btn" href="pg_ai_config.php">
@@ -222,10 +270,6 @@ $lly_pagos_trade_total = array_sum(array_column($lly_pagos, 'trade'));
               <a class="dash-card-btn" href="leads.php">
                 <span data-lang="en">📋 Live Leads</span>
                 <span data-lang="es">📋 Leads en Vivo</span>
-              </a>
-              <a class="dash-card-btn" href="agenda.php">
-                <span data-lang="en">📅 Calendar &amp; Agenda</span>
-                <span data-lang="es">📅 Calendario y Agenda</span>
               </a>
               <a class="dash-card-btn" href="chat-lab.php">
                 <span data-lang="en">💬 Test Chatbot</span>
@@ -238,7 +282,7 @@ $lly_pagos_trade_total = array_sum(array_column($lly_pagos, 'trade'));
             </a>
           </article>
 
-          <!-- ── CARD 2 — 📘 THE BOOK ─────────────────────────────────── -->
+          <!-- ── CARD 4 — 📘 THE BOOK ─────────────────────────────────── -->
           <article class="dash-card dash-card--gold">
             <div class="dash-card-icon">📘</div>
             <h2 class="dash-card-title">
@@ -259,7 +303,7 @@ $lly_pagos_trade_total = array_sum(array_column($lly_pagos, 'trade'));
             </a>
           </article>
 
-          <!-- ── CARD 3 — 📑 WORK REPORT (plain language) ────────────── -->
+          <!-- ── CARD 5 — 📑 WORK REPORT (plain language) ────────────── -->
           <article class="dash-card dash-card--navy">
             <div class="dash-card-icon">📑</div>
             <h2 class="dash-card-title">
@@ -290,7 +334,7 @@ $lly_pagos_trade_total = array_sum(array_column($lly_pagos, 'trade'));
             </a>
           </article>
 
-          <!-- ── CARD 4 — 💳 PAYMENTS & AGREEMENTS (50/50 Cash / Trade) ── -->
+          <!-- ── CARD 6 — 💳 PAYMENTS & AGREEMENTS (50/50 Cash / Trade) ── -->
           <article class="dash-card dash-card--pink">
             <div class="dash-card-icon">💳</div>
             <h2 class="dash-card-title">
