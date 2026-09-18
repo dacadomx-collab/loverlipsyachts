@@ -397,6 +397,15 @@ final class PgAiActionProcessor
         'very', 'just', 'here', 'now', 'fine', 'good', 'sure', 'not', 'from', 'new',
     ];
 
+    // Confirmed live 2026-09-18: "Mi nombre es Carlos Ruiz y mi correo es..." was
+    // captured as lead_name "Carlos Ruiz Y", and "Soy Pedro y quiero..." as
+    // "Pedro Y Quiero" — the up-to-3-word capture group below has no concept of
+    // a sentence boundary, so a guest stating their name and the next clause in
+    // one breath sweeps the connector (and whatever follows it) into the "name".
+    // The name capture is cut at the first occurrence of any of these, wherever
+    // it falls in the up-to-3 captured words.
+    private const CONNECTOR_WORDS = ['y', 'e', 'and'];
+
     private static function extractName(string $text): ?string
     {
         // (2026-08-18) Trigger phrase AND the captured name are now BOTH
@@ -425,6 +434,23 @@ final class PgAiActionProcessor
         if ($name === '') {
             return null;
         }
+
+        // Stop at the FIRST connector, not just a trailing one — "Soy Pedro y
+        // quiero..." and "I'm Mary and I'd like..." both put the connector in
+        // the middle of the up-to-3-word capture, not at the end, once the
+        // word(s) after it are themselves ordinary lowercase words.
+        $words = preg_split('/[^\S\n]+/', $name) ?: [];
+        $kept = [];
+        foreach ($words as $word) {
+            if (in_array(mb_strtolower($word), self::CONNECTOR_WORDS, true)) {
+                break;
+            }
+            $kept[] = $word;
+        }
+        if ($kept === []) {
+            return null;
+        }
+        $name = implode(' ', $kept);
 
         $firstWord = mb_strtolower(explode(' ', $name)[0]);
         if (in_array($firstWord, self::NAME_STOPWORDS, true)) {
