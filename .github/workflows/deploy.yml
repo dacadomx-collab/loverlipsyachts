@@ -104,10 +104,16 @@ jobs:
             # ── Internal architecture docs & knowledge base ───────
             docs/**
             knowledge/**
+            modulos/**
 
-            # ── Markdown & plain-text files (anywhere in tree) ───
-            *.md
-            **/*.md
+            # ── Plain-text files (NOT *.md / **/*.md — either form
+            #    of that pattern also matched, and excluded,
+            #    core/prompts/pg_ai_lester_master.md: the live AI
+            #    system prompt, silently missing from every deploy
+            #    since this pipeline existed. Directory-scoped
+            #    exclusion above already covers every real .md doc
+            #    in this repo — confirmed via `git ls-files "*.md"` —
+            #    so no extension-based markdown rule is needed at all.
             *.txt
             **/*.txt
 
