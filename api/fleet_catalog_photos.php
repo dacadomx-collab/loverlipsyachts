@@ -5,7 +5,7 @@ declare(strict_types=1);
  * LOVER LIPS YACHTS — api/fleet_catalog_photos.php
  * Owner-only endpoint for the Fleet Catalog Editor's photo gallery
  * (pg_ai_config.php Section 1). Reads/writes `ll_fleet_catalog_photos`
- * (sql/013) plus the actual files under assets/img/fleet/{vessel_id}/.
+ * (sql/015) plus the actual files under assets/img/fleet/{vessel_id}/.
  *
  * Security pipeline mirrors api/fleet_catalog.php: session auth, POST-only,
  * CSRF token (hash_equals + rotation). Image validation mirrors

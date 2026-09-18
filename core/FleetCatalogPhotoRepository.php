@@ -4,7 +4,7 @@ declare(strict_types=1);
 /**
  * LOVER LIPS YACHTS — core/FleetCatalogPhotoRepository.php
  * Photo gallery for one Fleet Catalog vessel (`ll_fleet_catalog_photos`,
- * sql/013). Separate from FleetCatalogRepository because this is a 1:many
+ * sql/015). Separate from FleetCatalogRepository because this is a 1:many
  * child table (several photos per vessel), not another flat column — kept
  * as its own small repository the same way NotificationTemplateRepository
  * is split out from the vessel-facts repository next to it.

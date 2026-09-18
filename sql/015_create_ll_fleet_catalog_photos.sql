@@ -1,5 +1,5 @@
 -- =============================================================================
--- LOVER LIPS YACHTS — sql/013_create_ll_fleet_catalog_photos.sql
+-- LOVER LIPS YACHTS — sql/015_create_ll_fleet_catalog_photos.sql
 -- Photo gallery for the Fleet Catalog Editor (pg_ai_config.php Section 1).
 -- ll_fleet_catalog itself has no image column — a vessel can have several
 -- photos, so this is a proper child table (one row per photo) rather than
@@ -7,7 +7,7 @@
 -- CRUD Lester asked for per photo, not per vessel.
 -- Run manually once via phpMyAdmin / cPanel on u713871298_lly_db.
 -- Not executed automatically — no migration runner exists in this project
--- (same convention as sql/001-012).
+-- (same convention as sql/001-014).
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS `ll_fleet_catalog_photos` (
