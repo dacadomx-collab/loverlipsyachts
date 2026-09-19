@@ -190,6 +190,15 @@ foreach ((is_array($entries) ? $entries : []) as $entry) {
                 if (($response['status'] ?? '') === 'success' && !empty($response['reply'])) {
                     OmnichannelRepository::persistOutbound($pdo, $tenantId, $sessionPk, (string) $response['reply']);
                 }
+
+                // (2026-09-19) Was missing entirely on this channel — confirmed
+                // live during QA: a WhatsApp guest who gave name/email/date/pax
+                // exactly like a web-widget guest ended up with every lead_*
+                // column NULL, because api/public/ai_widget_gateway.php calls
+                // this and this file never did. Same call, same place in the
+                // flow (right after both turns are persisted), as the widget
+                // gateway — see that file for why the ordering matters.
+                PgAiActionProcessor::extractAndSummarizeLead($pdo, $sessionPk);
             } catch (\Throwable $e) {
                 error_log('[PG-AI · whatsapp_webhook] Omnichannel persistence failed — ' . $e->getMessage());
             }
