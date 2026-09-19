@@ -326,7 +326,38 @@ final class PgAiActionProcessor
             }
         }
 
-        self::regenerateSummary($pdo, $sessionId);
+        self::regenerateSummary($pdo, $sessionId, $guestText);
+    }
+
+    // (2026-09-19) Chat conversations now cover EN/ES/FR/DE/IT (master prompt
+    // §1), but the stored summary is internal Cockpit copy for Lester (reads
+    // English only) and the wider team (reads Spanish) — it must never land
+    // in French/German/Italian. Cheap, deterministic ES-vs-not-ES check on
+    // the guest's own text (not the model's reply) decides between the two
+    // fixed templates below; anything that isn't detected as Spanish falls
+    // to English, same "unlisted language -> English" default as the prompt.
+    // 'con'/'uno'/'una' deliberately excluded — Italian uses the same words
+    // ("con", "uno", "una"), which produced a false positive on a real
+    // Italian test message ("vorrei prenotare uno yacht") during QA
+    // 2026-09-19. Every word below was checked against the other 4
+    // supported languages (EN/FR/DE/IT) before being added.
+    private const SPANISH_MARKERS = [
+        'hola', 'quiero', 'quisiera', 'para', 'somos', 'gracias',
+        'información', 'informacion', 'correo', 'nombre', 'cuánto', 'cuanto', 'días', 'dias',
+    ];
+
+    private static function looksSpanish(string $text): bool
+    {
+        $lower = mb_strtolower($text);
+        if (preg_match('/[¿¡ñ]/u', $lower)) {
+            return true;
+        }
+        foreach (self::SPANISH_MARKERS as $word) {
+            if (preg_match('/\b' . preg_quote($word, '/') . '\b/u', $lower)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -334,7 +365,7 @@ final class PgAiActionProcessor
      * reasoning as the extraction above: reliable and free, versus another
      * network call to a provider already shown flaky for this project.
      */
-    private static function regenerateSummary(PDO $pdo, int $sessionId): void
+    private static function regenerateSummary(PDO $pdo, int $sessionId, string $guestText): void
     {
         try {
             $stmt = $pdo->prepare(
@@ -347,20 +378,28 @@ final class PgAiActionProcessor
                 return;
             }
 
-            $parts = [];
+            $spanish = self::looksSpanish($guestText);
+            $parts   = [];
 
             if ($row['lead_route'] || $row['lead_pax'] || $row['lead_date']) {
-                $ask = 'Solicitó chárter';
-                if ($row['lead_route']) { $ask .= ' a ' . $row['lead_route']; }
-                if ($row['lead_pax'])   { $ask .= ' para ' . $row['lead_pax'] . ' personas'; }
-                if ($row['lead_date'])  { $ask .= ' el ' . self::formatSpanishDate($row['lead_date']); }
+                if ($spanish) {
+                    $ask = 'Solicitó chárter';
+                    if ($row['lead_route']) { $ask .= ' a ' . $row['lead_route']; }
+                    if ($row['lead_pax'])   { $ask .= ' para ' . $row['lead_pax'] . ' personas'; }
+                    if ($row['lead_date'])  { $ask .= ' el ' . self::formatSpanishDate($row['lead_date']); }
+                } else {
+                    $ask = 'Requested a charter';
+                    if ($row['lead_route']) { $ask .= ' to ' . $row['lead_route']; }
+                    if ($row['lead_pax'])   { $ask .= ' for ' . $row['lead_pax'] . ' guests'; }
+                    if ($row['lead_date'])  { $ask .= ' on ' . self::formatEnglishDate($row['lead_date']); }
+                }
                 $parts[] = $ask . '.';
             }
 
             $contactBits = array_filter([$row['lead_name'], $row['lead_phone'], $row['lead_email']]);
             $parts[] = $contactBits
-                ? 'Datos de contacto confirmados: ' . implode(', ', $contactBits) . '.'
-                : 'Datos de contacto aún no capturados.';
+                ? ($spanish ? 'Datos de contacto confirmados: ' : 'Contact details confirmed: ') . implode(', ', $contactBits) . '.'
+                : ($spanish ? 'Datos de contacto aún no capturados.' : 'Contact details not yet captured.');
 
             $summary = trim(implode(' ', $parts));
             if ($summary === '') {
@@ -516,11 +555,18 @@ final class PgAiActionProcessor
         7 => 'julio', 8 => 'agosto', 9 => 'septiembre', 10 => 'octubre', 11 => 'noviembre', 12 => 'diciembre',
     ];
 
-    /** The summary is Spanish-only by design (internal Cockpit copy) — PHP's own format('F') would give the English month name, so this maps it explicitly rather than depending on the server locale. */
+    /** PHP's own format('F') would give the English month name regardless of server locale — mapped explicitly so this never silently depends on that locale. */
     private static function formatSpanishDate(string $ymd): string
     {
         $date = new \DateTimeImmutable($ymd);
         return $date->format('d') . ' de ' . self::SPANISH_MONTHS[(int) $date->format('n')];
+    }
+
+    /** English-summary counterpart to formatSpanishDate() (2026-09-19) — "Month D" reads more naturally in an English sentence than "D Month". */
+    private static function formatEnglishDate(string $ymd): string
+    {
+        $date = new \DateTimeImmutable($ymd);
+        return $date->format('F j');
     }
 
     private static function extractRoute(string $text): ?string
