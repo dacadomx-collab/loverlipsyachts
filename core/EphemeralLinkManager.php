@@ -91,11 +91,19 @@ final class EphemeralLinkManager
      */
     public static function redeem(PDO $pdo, string $token): ?array
     {
+        // Confirmed live 2026-09-19: a link with max_views=3 was expiring after
+        // only 2 successful views. Root cause — MySQL evaluates a multi-column
+        // SET left to right within one UPDATE, so by the time the `status`
+        // expression runs, `view_count` already refers to the value THIS SAME
+        // statement just assigned it (old+1), not the pre-update value. The
+        // original `view_count + 1 >= max_views` therefore compared
+        // (old+1)+1 against max_views — one view too early. `view_count` alone
+        // here is already the new value, so no second +1 is needed.
         $stmt = $pdo->prepare(
             "UPDATE ll_ephemeral_links
              SET view_count = view_count + 1,
                  last_viewed_at = NOW(),
-                 status = IF(view_count + 1 >= max_views, 'expired', status)
+                 status = IF(view_count >= max_views, 'expired', status)
              WHERE token = :token AND status = 'active' AND view_count < max_views"
         );
         $stmt->execute(['token' => $token]);
