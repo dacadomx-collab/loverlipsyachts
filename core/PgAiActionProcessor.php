@@ -462,7 +462,14 @@ final class PgAiActionProcessor
         // correo es...") as if it were a third name word, producing
         // "David Cabrera\nMi". [^\S\n] (whitespace, but never \n) keeps
         // every word of the captured name on the one message it came from.
-        $pattern = '/\b(?:soy|me llamo|mi nombre es|i am|i\'m|my name is)[^\S\n]+'
+        // (2026-09-19) Added FR/DE/IT trigger phrases — the master prompt now
+        // lets guests chat in French/German/Italian too (§1), but this regex
+        // still only recognized EN/ES ones, so a French/German/Italian guest
+        // who introduced themselves naturally ("Je m'appelle...", "Ich
+        // heiße...", "Mi chiamo...") got lead_name = NULL every time even
+        // though the model addressed them by name in its own reply.
+        $pattern = '/\b(?:soy|me llamo|mi nombre es|i am|i\'m|my name is'
+            . '|je m[\'\x{2019}]appelle|ich hei(?:ß|ss)e|ich bin|mi chiamo)[^\S\n]+'
             . '([a-zà-öø-ÿ]+(?:[^\S\n]+[a-zà-öø-ÿ]+){0,2})/iu';
 
         if (!preg_match($pattern, $text, $m)) {
@@ -520,10 +527,18 @@ final class PgAiActionProcessor
                 return $date;
             }
         }
-        // English: "November 20" / "Nov 20th"
-        if (preg_match('/\b([a-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?\b/i', $text, $m)
-            && isset(self::MONTHS[mb_strtolower($m[1])])) {
-            return self::buildDate((int) $m[2], $m[1]);
+        // English: "November 20" / "Nov 20th". Confirmed live 2026-09-19:
+        // preg_match() only ever inspects the FIRST "word + number" match in
+        // the whole text — "...for 3 people on December 8th" matches "for 3"
+        // first, "for" isn't a month, and the function returned null without
+        // ever reaching the real "December 8th" later in the same message.
+        // preg_match_all() + scanning every candidate fixes it.
+        if (preg_match_all('/\b([a-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?\b/i', $text, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $m) {
+                if (isset(self::MONTHS[mb_strtolower($m[1])])) {
+                    return self::buildDate((int) $m[2], $m[1]);
+                }
+            }
         }
         return null;
     }
